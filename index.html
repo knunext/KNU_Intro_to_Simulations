@@ -1,0 +1,1027 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>모델링과 시뮬레이션 학습 자료</title>
+<!--
+  링크 수정 위치 (GitHub Pages에 올릴 때 실제 파일명/경로로 바꾸세요)
+    0. 시뮬레이션 101        : simulation-101.html
+    1. 큐잉 이론과 리틀의 법칙 : littles-law.html
+    2. DES (프롬프트 커피점)   : prompt-cafe-des.html
+    3. ABM (생태계)           : abm-ecosystem.html
+    4. 입력 모델링            : input-modeling.html
+    5. 출력 분석과 실험 설계   : output-analysis.html
+    6. 시스템 다이내믹스       : system-dynamics.html
+    7. 연속 시스템 시뮬레이션  : continuous-simulation.html
+    8. 검증, 타당성, 최적화    : verification-optimization.html
+    9. 프로젝트               : simulation-project.html     (아직 페이지 없음, 더미 링크)
+  각 편의 노드 색은 그 편 페이지의 강조색(--acc)과 같습니다.
+  아직 없는 편을 "준비 중"으로 넣을 때: li에 data-status="soon", 제목을 span.title-link로, <span class="soon">준비 중</span> 추가
+  각 항목 오른쪽의 미니 데모는 맨 아래 <script>에 있으며 외부 라이브러리 없이 동작합니다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F8; --panel:#FFFFFF; --ink:#17202E; --muted:#5A6577; --line:#D5DBE3; --soft:#E8ECF1;
+  --c0:#6A44B0; --c1:#3557C9; --c2:#C27C00; --c3:#0E7C6B;
+  --c4:#A63D6B; --c5:#1F7A99; --c6:#B4531F; --c7:#4B5BD6; --c8:#4F7A12; --c9:#4A5568; --miss:#C8372D;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --math:"STIX Two Text","Times New Roman",Times,serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+    --c0:#B394F0; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D;
+    --c4:#F08AB5; --c5:#5EC3E3; --c6:#F49A6A; --c7:#98A3FF; --c8:#A8D25E; --c9:#8C97A8; --miss:#EE5D52;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+  --c0:#B394F0; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D;
+    --c4:#F08AB5; --c5:#5EC3E3; --c6:#F49A6A; --c7:#98A3FF; --c8:#A8D25E; --c9:#8C97A8; --miss:#EE5D52;
+  color-scheme:dark;
+}
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:400 17px/1.7 var(--sans); -webkit-font-smoothing:antialiased;
+  word-break:keep-all; overflow-wrap:break-word;
+}
+.wrap{max-width:980px; margin:0 auto; padding:56px 24px 40px}
+
+/* 머리말 */
+.org{margin:0 0 14px; color:var(--muted); font-size:15px}
+h1{margin:0; font-weight:700; font-size:clamp(34px,6vw,52px); line-height:1.15; letter-spacing:-0.02em}
+.lead{margin:18px 0 0; max-width:36em; color:var(--muted)}
+
+/* 학습 경로 */
+.path{list-style:none; margin:56px 0 0; padding:0; position:relative}
+.step{
+  --c:var(--c1);
+  position:relative; display:grid; grid-template-columns:1fr 264px; gap:28px; align-items:start;
+  padding:26px 0 26px 72px;
+}
+.step + .step::before{content:""; position:absolute; left:72px; right:0; top:0; border-top:1px solid var(--line)}
+.step[data-n="0"]{--c:var(--c0)}
+.step[data-n="2"]{--c:var(--c2)}
+.step[data-n="3"]{--c:var(--c3)}
+.step[data-n="4"]{--c:var(--c4)}
+.step[data-n="5"]{--c:var(--c5)}
+.step[data-n="6"]{--c:var(--c6)}
+.step[data-n="7"]{--c:var(--c7)}
+.step[data-n="8"]{--c:var(--c8)}
+.step[data-n="9"]{--c:var(--c9)}
+.step:not(:last-child)::after{
+  content:""; position:absolute; left:23px; top:74px; bottom:-26px; width:2px; background:var(--c); opacity:.4;
+}
+.group{
+  list-style:none; margin:0; padding:34px 0 10px 72px; position:relative;
+  font-size:14.5px; color:var(--muted);
+}
+.group b{display:block; color:var(--ink); font-size:16px; margin-bottom:2px}
+.group::after{content:""; position:absolute; left:23px; top:0; bottom:0; width:2px; background:var(--line)}
+.node{
+  width:48px; height:48px; border-radius:50%;
+  display:grid; place-items:center;
+  background:var(--c); color:var(--panel);
+  font:500 24px/1 var(--math);
+  position:absolute; left:0; top:26px; z-index:1;
+}
+.step[data-status="soon"] .node{background:var(--bg); color:var(--c); border:2px dashed var(--c)}
+.body h2{margin:6px 0 6px; font-size:22px; line-height:1.35; font-weight:700}
+.title-link{color:inherit; text-decoration:none}
+a.title-link::after{content:""; position:absolute; inset:0}
+.step:has(a.title-link):hover h2 a{color:var(--c)}
+a.title-link:focus-visible{outline:none}
+.step:has(a.title-link:focus-visible){outline:2px solid var(--c); outline-offset:6px; border-radius:6px}
+.soon{
+  display:inline-block; margin-left:8px; padding:1px 8px; border-radius:4px;
+  font-size:13px; font-weight:500; color:var(--muted); background:var(--soft); vertical-align:3px;
+}
+.desc{margin:0; max-width:34em}
+.has{margin:8px 0 0; font-size:14.5px; color:var(--muted); max-width:38em}
+.eq{font-family:var(--math); font-style:italic; font-size:1.08em; white-space:nowrap}
+
+/* 미니 데모 */
+.demo{
+  position:relative; z-index:2; margin:0;
+  background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:8px 8px 10px;
+}
+.demo canvas{display:block; width:100%; aspect-ratio:26/15; border-radius:6px; touch-action:manipulation}
+.demo[data-click] canvas{cursor:crosshair}
+.ctrl{display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px; margin-top:8px; font-size:13px; line-height:1.4}
+.ctrl button{
+  font:500 13px/1 var(--sans); color:var(--ink); background:var(--soft);
+  border:1px solid var(--line); border-radius:6px; padding:6px 9px; cursor:pointer;
+}
+.ctrl button:hover{border-color:var(--c)}
+.ctrl button:focus-visible, .ctrl input:focus-visible{outline:2px solid var(--c); outline-offset:2px}
+.ctrl button[aria-pressed="true"]{background:var(--c); border-color:var(--c); color:var(--panel)}
+.ctrl label{display:flex; align-items:center; gap:6px; color:var(--muted); flex:1 1 100%}
+.ctrl input[type=range]{flex:1; accent-color:var(--c); min-width:0}
+.readout{margin:6px 2px 0; font-size:13px; line-height:1.45; color:var(--muted); font-variant-numeric:tabular-nums}
+.readout b{color:var(--ink); font-weight:500}
+.hint{margin:2px 2px 0; font-size:12.5px; color:var(--muted)}
+
+.pick{margin-top:8px; font-size:13.5px; line-height:1.6}
+.pick dl{margin:0; display:grid; grid-template-columns:auto 1fr; gap:3px 10px}
+.pick dt{color:var(--muted); white-space:nowrap}
+.pick dd{margin:0}
+.pick .q{margin:0 0 8px; font-weight:500}
+.ctrl .seg{display:flex; flex-wrap:wrap; gap:4px}
+.ctrl .seg button[aria-pressed="true"]{background:var(--c); border-color:var(--c); color:var(--panel)}
+
+/* 비교표 */
+.compare{margin-top:72px}
+.compare h2{font-size:24px; margin:0 0 8px}
+.compare > p{margin:0 0 20px; color:var(--muted); max-width:36em}
+.scroll{overflow-x:auto; background:var(--panel); border:1px solid var(--line); border-radius:10px}
+table{border-collapse:collapse; width:100%; min-width:760px; font-size:15px; line-height:1.55}
+th,td{padding:12px 14px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line)}
+tr:last-child th, tr:last-child td{border-bottom:0}
+thead th{font-weight:700; background:var(--soft)}
+thead th span{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:7px; vertical-align:1px}
+tbody th{font-weight:500; color:var(--muted); width:7.5em; white-space:nowrap}
+
+footer{margin-top:64px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:14px}
+footer a{color:inherit}
+
+@media (max-width:760px){
+  .wrap{padding:36px 18px 32px}
+  .step{grid-template-columns:1fr; gap:16px; padding-left:64px}
+  .step + .step::before{left:64px}
+  .group{padding-left:64px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="org">경북대학교 컴퓨터학부 NCSL</p>
+  <h1>모델링과 시뮬레이션</h1>
+  <p class="lead">줄 서는 손님에서 시작해, 시간을 사건 단위로 쪼개 보고, 마지막에는 스스로 판단하는 개체들의 세계로 갑니다. 각 페이지에는 브라우저에서 바로 돌려 볼 수 있는 시뮬레이터가 들어 있고, 항목마다 붙은 작은 데모는 그 맛보기입니다. 0~3편에서 기초와 대표 기법을 익히고, 4~8편에서 시뮬레이션을 제대로 쓰기 위한 도구와 다른 모델링 방식을 배운 뒤, 9편 프로젝트로 마무리합니다. 위에서부터 순서대로 보는 것을 권합니다.</p>
+</header>
+
+<ol class="path">
+  <li class="group" aria-hidden="false"><b>기초와 세 가지 대표 기법</b>시뮬레이션의 바탕, 그리고 큐잉, DES, ABM</li>
+
+  <li class="step" data-n="0">
+    <div class="node" aria-hidden="true">0</div>
+    <div class="body">
+      <h2><a class="title-link" href="simulation-101.html">시뮬레이션 101</a></h2>
+      <p class="desc">모델이란 무엇이고 언제 시뮬레이션을 쓰는지, 그리고 시뮬레이션에 필요한 만큼의 확률과 통계를 다룹니다.</p>
+      <p class="has">생일 문제, 난수 생성기와 시드, 분포 탐색기, 역변환법, 신뢰구간 실험, 시리즈 지도</p>
+    </div>
+    <figure class="demo" id="d0">
+      <canvas role="img" aria-label="정사각형에 무작위로 점을 던져 사분원 안에 들어간 비율로 원주율을 추정하는 몬테카를로 데모"></canvas>
+      <div class="ctrl">
+        <button type="button" data-act="more">점 500개 더</button>
+        <button type="button" data-act="reset">다시 던지기</button>
+      </div>
+      <p class="readout" data-out></p>
+      <p class="hint">무작위 점으로 π 추정하기. 던질수록 오른쪽 선이 π에 가까워집니다.</p>
+    </figure>
+  </li>
+
+  <li class="step" data-n="1">
+    <div class="node" aria-hidden="true">1</div>
+    <div class="body">
+      <h2><a class="title-link" href="littles-law.html">큐잉 이론과 리틀의 법칙</a></h2>
+      <p class="desc"><span class="eq">L = λW</span>. 시스템 안에 있는 손님 수, 도착률, 머무는 시간 사이의 관계를 실시간 대기열 시뮬레이터로 확인합니다.</p>
+      <p class="has">시스템 경계 정하기, 그림으로 보는 증명, M/M/1 이용률 곡선, 연습 문제 다섯 개, 사건 리스트 Python 코드</p>
+    </div>
+    <figure class="demo" id="d1">
+      <canvas role="img" aria-label="손님이 도착해 줄을 서고 서버 한 대에서 처리되는 M/M/1 대기열 애니메이션"></canvas>
+      <div class="ctrl">
+        <label>이용률 ρ <input type="range" min="0.3" max="0.95" step="0.05" value="0.8" data-rho> <b data-rhov>0.80</b></label>
+        <button type="button" data-act="play" aria-pressed="true">재생 중</button>
+      </div>
+      <p class="readout" data-out></p>
+      <p class="hint">ρ를 0.9 이상으로 올리면 줄이 급격히 길어집니다.</p>
+    </figure>
+  </li>
+
+  <li class="step" data-n="2">
+    <div class="node" aria-hidden="true">2</div>
+    <div class="body">
+      <h2><a class="title-link" href="prompt-cafe-des.html">이산사건 시뮬레이션 (DES)</a></h2>
+      <p class="desc">교내 프롬프트 커피점을 여덟 단계에 걸쳐 모델링합니다. 메뉴, 직원 수, 머신 제약, 시간대별 혼잡을 차례로 더하며 대기시간과 가동률을 측정합니다.</p>
+      <p class="has">Kendall 표기법, 사건 리스트(FEL)와 사건 그래프, 대기 네트워크 보기, 반복 실행과 신뢰구간, SimPy 코드</p>
+    </div>
+    <figure class="demo" id="d2">
+      <canvas role="img" aria-label="미래 사건 리스트에서 가장 이른 사건으로 시계가 건너뛰는 이산사건 시뮬레이션 데모"></canvas>
+      <div class="ctrl">
+        <button type="button" data-act="step">다음 사건 처리</button>
+        <button type="button" data-act="auto" aria-pressed="true">자동</button>
+      </div>
+      <p class="readout" data-out></p>
+      <p class="hint">시계는 흐르지 않고, 다음 사건 시각으로 건너뜁니다.</p>
+    </figure>
+  </li>
+
+  <li class="step" data-n="3">
+    <div class="node" aria-hidden="true">3</div>
+    <div class="body">
+      <h2><a class="title-link" href="abm-ecosystem.html">에이전트 기반 모델링 (ABM)</a></h2>
+      <p class="desc">여우, 토끼, 풀이 사는 격자 생태계입니다. 개체마다 다른 규칙과 성질이 모여 개체 수의 출렁임 같은 전체 패턴이 생기는 과정을 봅니다.</p>
+      <p class="has">에이전트의 코드 구조, Schelling 분리 모델과 개미 길 찾기 워밍업, 틱 단위 스테퍼, 몬테카를로 반복 실행, 실험 과제 여섯 개</p>
+    </div>
+    <figure class="demo" id="d3" data-click>
+      <canvas role="img" aria-label="풀, 토끼, 여우가 격자 위에서 움직이며 먹고 번식하는 생태계 시뮬레이션. 격자를 누르면 여우가 추가됩니다"></canvas>
+      <div class="ctrl">
+        <button type="button" data-act="play" aria-pressed="true">재생 중</button>
+        <button type="button" data-act="reset">새로 시작</button>
+      </div>
+      <p class="readout" data-out></p>
+      <p class="hint">격자를 누르면 그 자리에 여우 세 마리가 생깁니다.</p>
+    </figure>
+  </li>
+
+  <li class="group"><b>시뮬레이션을 제대로 쓰기 위한 도구</b>입력과 출력, 다른 모델링 방식, 검증과 최적화. 내용과 순서는 바뀔 수 있습니다.</li>
+
+  <li class="step" data-n="4">
+    <div class="node" aria-hidden="true">4</div>
+    <div class="body">
+      <h2><a class="title-link" href="input-modeling.html">입력 모델링: 데이터에서 분포로</a></h2>
+      <p class="desc">시뮬레이션의 결과는 입력만큼만 믿을 수 있습니다. 커피점에서 잰 도착 간격과 제조 시간을 보고 분포를 고르고, 모수를 정하고, 잘 맞는지 확인합니다.</p>
+      <p class="has">데이터 살펴보기, 후보 분포 가족, 적률법과 최대우도법, Q-Q 그림과 K-S 검정, 데이터가 없을 때, 시간에 따라 변하는 도착, 직접 잰 데이터 분석</p>
+    </div>
+    <figure class="demo" id="d4">
+      <canvas role="img" aria-label="도착 간격 데이터의 히스토그램과 후보 분포 곡선"></canvas>
+      <div class="ctrl">
+        <div class="seg" data-cand>
+          <button type="button" aria-pressed="true" data-v="exp">지수</button>
+          <button type="button" aria-pressed="false" data-v="nor">정규</button>
+          <button type="button" aria-pressed="false" data-v="uni">균등</button>
+        </div>
+        <button type="button" data-act="new">새 데이터</button>
+      </div>
+      <p class="readout" data-out></p>
+      <p class="hint">잰 도착 간격 80개에 어떤 분포가 맞을까요? 후보를 바꿔 보세요.</p>
+    </figure>
+  </li>
+
+  <li class="step" data-n="5">
+    <div class="node" aria-hidden="true">5</div>
+    <div class="body">
+      <h2><a class="title-link" href="output-analysis.html">출력 분석과 실험 설계</a></h2>
+      <p class="desc">시뮬레이션을 한 번 돌려 나온 숫자는 결론이 아니라 표본 하나입니다. 몇 번 돌려야 하는지, 결과를 범위로 말하는 법, 두 대안을 공정하게 비교하는 법을 배웁니다.</p>
+      <p class="has">종료형과 비종료형, t 신뢰구간과 필요한 반복 횟수, 자기상관, 워밍업과 배치 평균, 공통 난수, 2<sup>k</sup> 요인 설계, 점심 피크 대책 사례</p>
+    </div>
+    <figure class="demo" id="d5">
+      <canvas role="img" aria-label="하루씩 반복 실행한 평균 대기시간과 95% 신뢰구간"></canvas>
+      <div class="ctrl">
+        <button type="button" data-act="one">하루 더</button>
+        <button type="button" data-act="ten">10일 더</button>
+        <button type="button" data-act="reset">처음부터</button>
+      </div>
+      <p class="readout" data-out></p>
+      <p class="hint">점 하나가 하루 영업을 돌린 결과입니다. 반복할수록 구간이 좁아집니다.</p>
+    </figure>
+  </li>
+
+  <li class="step" data-n="6">
+    <div class="node" aria-hidden="true">6</div>
+    <div class="body">
+      <h2><a class="title-link" href="system-dynamics.html">시스템 다이내믹스: 저량과 유량</a></h2>
+      <p class="desc">개체 하나하나 대신 얼마나 쌓여 있는가(저량)와 얼마나 빨리 들고 나는가(유량)로 세상을 봅니다. 3편의 여우와 토끼를 식 두 줄로 다시 모델링해 ABM과 비교합니다.</p>
+      <p class="has">욕조 문제, 오일러 한 걸음, 강화 루프와 균형 루프, 로지스틱 성장, 포식자와 피식자, SIR 감염병 모델, 지연과 진동, 원두 재고의 채찍 효과, 캠퍼스 독감 대응</p>
+    </div>
+    <figure class="demo" id="d6">
+      <canvas role="img" aria-label="접촉을 줄였을 때 SIR 감염병 곡선의 변화"></canvas>
+      <div class="ctrl">
+        <label>접촉 줄이기 <input type="range" min="0" max="70" step="5" value="0" data-cut> <b data-cutv>0%</b></label>
+      </div>
+      <p class="readout" data-out></p>
+      <p class="hint">캠퍼스 독감을 SIR 모델로. 점선은 아무 대책이 없을 때의 감염자 곡선입니다.</p>
+    </figure>
+  </li>
+
+  <li class="step" data-n="7">
+    <div class="node" aria-hidden="true">7</div>
+    <div class="body">
+      <h2><a class="title-link" href="continuous-simulation.html">연속 시스템 시뮬레이션</a></h2>
+      <p class="desc">공, 진자, 드론, 로봇처럼 위치와 속도가 매끄럽게 변하는 시스템을 시간을 잘게 쪼개 계산합니다. 오차와 안정성, 충돌 처리, 시뮬레이션에서 잘 되던 제어기가 실물에서 실패하는 이유를 다룹니다.</p>
+      <p class="has">상태와 미분방정식, 오차의 차수, 안정성, 에너지를 지키는 적분, 룽게-쿠타 4차(RK4), 충돌과 전환, 드론 고도 유지 PID, sim2real 격차</p>
+    </div>
+    <figure class="demo" id="d7">
+      <canvas role="img" aria-label="용수철에 매달린 물체를 세 가지 적분 방법으로 계산한 궤적과 에너지 변화"></canvas>
+      <div class="ctrl">
+        <div class="seg" data-int>
+          <button type="button" aria-pressed="true" data-v="euler">오일러</button>
+          <button type="button" aria-pressed="false" data-v="semi">반암시적</button>
+          <button type="button" aria-pressed="false" data-v="rk4">RK4</button>
+        </div>
+        <label>Δt <input type="range" min="0.05" max="0.5" step="0.05" value="0.2" data-dt> <b data-dtv>0.20</b></label>
+      </div>
+      <p class="readout" data-out></p>
+      <p class="hint">용수철 진동을 30초 계산합니다. 점선 원이 정답이고, 에너지는 그대로여야 합니다.</p>
+    </figure>
+  </li>
+
+  <li class="step" data-n="8">
+    <div class="node" aria-hidden="true">8</div>
+    <div class="body">
+      <h2><a class="title-link" href="verification-optimization.html">검증, 타당성, 최적화</a></h2>
+      <p class="desc">그럴듯한 숫자가 곧 믿을 수 있는 숫자는 아닙니다. 프로그램이 의도대로 도는지, 모델이 현실을 닮았는지, 어떤 입력이 결론을 좌우하는지 확인한 뒤 가장 좋은 운영 방안을 찾습니다.</p>
+      <p class="has">사전트의 틀, 검증 기법과 버그 찾기, 실측 데이터와 비교하기, 보정과 과적합, 민감도 분석(토네이도 그림), 공통 난수와 지역 탐색을 이용한 최적화, 시간대별 근무표 최적화</p>
+    </div>
+    <figure class="demo" id="d8">
+      <canvas role="img" aria-label="입력을 바꿨을 때 평균 대기시간이 얼마나 변하는지 보여 주는 토네이도 그림"></canvas>
+      <div class="ctrl">
+        <label>입력 변화 폭 ± <input type="range" min="5" max="30" step="5" value="10" data-pct> <b data-pctv>10%</b></label>
+      </div>
+      <p class="readout" data-out></p>
+      <p class="hint">바리스타 한 명인 커피점의 축소판입니다. 연한 막대는 입력을 줄였을 때, 진한 막대는 늘렸을 때입니다. 어떤 입력을 가장 정확히 재야 할까요?</p>
+    </figure>
+  </li>
+
+  <li class="group"><b>마무리</b>배운 것을 내 주변 문제에 적용하기</li>
+
+  <li class="step" data-n="9">
+    <div class="node" aria-hidden="true">9</div>
+    <div class="body">
+      <h2><a class="title-link" href="simulation-project.html">프로젝트: 내 주변 시스템 모델링</a></h2>
+      <p class="desc">캠퍼스의 시스템 하나를 골라 0편 1.5절의 일곱 단계, 질문 정하기부터 결론까지를 직접 밟아 봅니다. 4~8편의 도구를 실제로 써 보는 자리입니다.</p>
+      <p class="has">주제 고르기, 개념 모델과 데이터 수집 계획, 구현과 검증, 실험 설계와 분석, 발표</p>
+    </div>
+    <figure class="demo" id="d9">
+      <div class="ctrl" style="margin-top:0">
+        <div class="seg" data-topic>
+          <button type="button" aria-pressed="true" data-v="lib">도서관 좌석</button>
+          <button type="button" aria-pressed="false" data-v="bus">셔틀버스</button>
+          <button type="button" aria-pressed="false" data-v="caf">학생식당</button>
+          <button type="button" aria-pressed="false" data-v="elv">엘리베이터</button>
+        </div>
+      </div>
+      <div class="pick" data-pick aria-live="polite"></div>
+    </figure>
+  </li>
+
+</ol>
+<section class="compare" aria-labelledby="cmp">
+  <h2 id="cmp">네 방법은 무엇이 다른가</h2>
+  <p>“점심시간 커피점에서 손님은 얼마나 기다릴까?”라는 같은 질문도 방법에 따라 답을 얻는 방식이 달라집니다.</p>
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col"></th>
+          <th scope="col"><span style="background:var(--c1)"></span>큐잉 이론</th>
+          <th scope="col"><span style="background:var(--c2)"></span>DES</th>
+          <th scope="col"><span style="background:var(--c3)"></span>ABM</th>
+          <th scope="col"><span style="background:var(--c6)"></span>SD</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">보는 단위</th><td>시스템 전체의 평균</td><td>도착, 서비스 시작, 종료 같은 사건</td><td>개체 하나하나와 그 행동 규칙</td><td>쌓인 양(저량)과 들고 나는 속도(유량)</td></tr>
+        <tr><th scope="row">시간의 흐름</th><td>오래 돌렸을 때의 정상 상태</td><td>다음 사건 시각으로 건너뜀</td><td>매 틱마다 모든 개체가 한 걸음씩</td><td>일정한 간격 Δt로 식을 한 걸음씩</td></tr>
+        <tr><th scope="row">답을 얻는 법</th><td>공식으로 계산</td><td>사건을 처리하며 통계를 모으고, 여러 번 반복해 구간 추정</td><td>상호작용에서 생기는 패턴을 관찰하고, 여러 번 돌려 분포를 봄</td><td>식을 계산하고, 피드백 루프 구조로 결과를 해석</td></tr>
+        <tr><th scope="row">잘 맞는 질문</th><td>평균 대기시간, 필요한 서버 수</td><td>자원 제약, 시간대별 혼잡, 운영 정책 비교</td><td>개체 차이, 공간, 적응이 결과를 바꾸는 문제</td><td>피드백과 지연이 얽힌 집단 수준의 흐름</td></tr>
+        <tr><th scope="row">이 자료의 예</th><td>학생식당, API 서버, 프린터</td><td>프롬프트 커피점</td><td>여우, 토끼, 풀 생태계</td><td>캠퍼스 독감, 원두 재고, 앱 입소문</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <a href="https://sites.google.com/view/knunextcom">Next-generation Computing Systems Lab</a>, 경북대학교 컴퓨터학부
+</footer>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+var VW = 260, VH = 150;                       // 모든 데모의 논리 좌표계
+var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+var COL = {};
+function readColors(){
+  var s = getComputedStyle(document.documentElement);
+  ["ink","muted","line","soft","panel","miss","c0","c1","c2","c3","c4","c5","c6","c7","c8","c9"].forEach(function(k){ COL[k] = s.getPropertyValue("--"+k).trim(); });
+}
+readColors();
+function rgba(hex, a){
+  var h = hex.replace("#",""); if(h.length===3) h = h.replace(/(.)/g,"$1$1");
+  var n = parseInt(h,16); return "rgba("+(n>>16&255)+","+(n>>8&255)+","+(n&255)+","+a+")";
+}
+function expo(rate){ return -Math.log(1-Math.random())/rate; }
+var FONT = '10px "IBM Plex Sans KR","Apple SD Gothic Neo",sans-serif';
+
+var demos = [];
+function makeDemo(id, spec){
+  var fig = document.getElementById(id), cv = fig.querySelector("canvas"), ctx = cv.getContext("2d");
+  var d = Object.assign({fig:fig, cv:cv, ctx:ctx, out:fig.querySelector("[data-out]"), visible:false, playing:!REDUCED}, spec);
+  function fit(){
+    var w = cv.clientWidth || VW, dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round(w*dpr); cv.height = Math.round(w*VH/VW*dpr);
+    ctx.setTransform(cv.width/VW,0,0,cv.height/VH,0,0);
+    d.draw();
+  }
+  d.fit = fit;
+  d.btn = function(act){ return fig.querySelector('[data-act="'+act+'"]'); };
+  d.setPlaying = function(p, act, onTxt, offTxt){
+    d.playing = p; var b = d.btn(act); if(!b) return;
+    b.setAttribute("aria-pressed", p ? "true" : "false"); b.textContent = p ? onTxt : offTxt;
+  };
+  d.init();
+  new ResizeObserver(fit).observe(cv);
+  demos.push(d);
+  return d;
+}
+
+/* ---------- 0. 몬테카를로로 π 추정 ---------- */
+makeDemo("d0", {
+  MAX: 4000,
+  init: function(){
+    var d = this; d.reset();
+    d.btn("more").onclick = function(){ d.target = Math.min(d.MAX, d.target + 500); d.playing = true; };
+    d.btn("reset").onclick = function(){ d.reset(); d.playing = true; };
+    if(REDUCED) d.target = 0;
+  },
+  reset: function(){ this.pts = []; this.est = []; this.n = 0; this.inside = 0; this.target = 1500; this.draw && this.draw(); },
+  add: function(k){
+    for(var i=0;i<k && this.n<this.target;i++){
+      var x = Math.random(), y = Math.random(), ins = x*x + y*y <= 1;
+      this.pts.push(x, y, ins ? 1 : 0); this.n++; if(ins) this.inside++;
+      if(this.n % 10 === 0) this.est.push(4*this.inside/this.n);
+    }
+  },
+  update: function(dt){ if(this.n < this.target) this.add(Math.max(1, Math.round(600*dt))); },
+  draw: function(){
+    var c = this.ctx, S = 128, sx = 6, sy = 11;
+    c.clearRect(0,0,VW,VH);
+    c.strokeStyle = COL.line; c.lineWidth = 1; c.strokeRect(sx+.5, sy+.5, S, S);
+    c.beginPath(); c.arc(sx, sy+S, S, -Math.PI/2, 0); c.strokeStyle = COL.c0; c.stroke();
+    var inC = rgba(COL.c0, .85), outC = rgba(COL.muted, .3);
+    for(var i=0;i<this.pts.length;i+=3){
+      c.fillStyle = this.pts[i+2] ? inC : outC;
+      c.fillRect(sx + this.pts[i]*S - .7, sy + S - this.pts[i+1]*S - .7, 1.4, 1.4);
+    }
+    // 수렴 그래프
+    var x0 = 150, x1 = 254, y0 = 11, y1 = 139, lo = 2.7, hi = 3.6;
+    var Y = function(v){ return y1 - (Math.max(lo, Math.min(hi, v)) - lo)/(hi-lo)*(y1-y0); };
+    c.strokeStyle = COL.line; c.beginPath(); c.moveTo(x0+.5,y0); c.lineTo(x0+.5,y1); c.lineTo(x1,y1+.5); c.stroke();
+    c.setLineDash([3,3]); c.strokeStyle = COL.muted; c.beginPath(); c.moveTo(x0, Y(Math.PI)); c.lineTo(x1, Y(Math.PI)); c.stroke(); c.setLineDash([]);
+    c.fillStyle = COL.muted; c.font = 'italic 12px "STIX Two Text",serif'; c.fillText("π", x1-8, Y(Math.PI)-4);
+    c.font = FONT; c.fillText("n", x1-6, y1-4);
+    if(this.est.length > 1){
+      c.strokeStyle = COL.c0; c.lineWidth = 1.4; c.beginPath();
+      for(var j=0;j<this.est.length;j++){
+        var x = x0 + (j+1)/(this.MAX/10)*(x1-x0);
+        j ? c.lineTo(x, Y(this.est[j])) : c.moveTo(x, Y(this.est[j]));
+      }
+      c.stroke(); c.lineWidth = 1;
+    }
+    var e = this.n ? (4*this.inside/this.n) : 0;
+    this.out.innerHTML = this.n
+      ? "점 <b>" + this.n + "</b>개 중 원 안 <b>" + this.inside + "</b>개, π ≈ <b>" + e.toFixed(4) + "</b> (오차 " + Math.abs(e-Math.PI).toFixed(4) + ")"
+      : "버튼을 눌러 점을 던져 보세요.";
+  }
+});
+
+/* ---------- 1. M/M/1 대기열 ---------- */
+makeDemo("d1", {
+  SPEED: 3,      // 시뮬레이션 시간 단위 / 실제 초
+  init: function(){
+    var d = this, r = d.fig.querySelector("[data-rho]"), rv = d.fig.querySelector("[data-rhov]");
+    d.rho = +r.value;
+    r.oninput = function(){ d.rho = +r.value; rv.textContent = d.rho.toFixed(2); d.reset(); };
+    d.btn("play").onclick = function(){ d.setPlaying(!d.playing, "play", "재생 중", "정지됨"); };
+    if(REDUCED) d.setPlaying(false, "play", "재생 중", "정지됨");
+    d.reset();
+  },
+  reset: function(){
+    this.t = 0; this.nextArr = expo(this.rho); this.busy = null; this.depT = Infinity;
+    this.q = []; this.gone = []; this.area = 0; this.arr = 0; this.dep = 0; this.sumW = 0;
+    this.draw && this.draw();
+  },
+  N: function(){ return this.q.length + (this.busy ? 1 : 0); },
+  update: function(dt){
+    var end = this.t + dt*this.SPEED;
+    while(true){
+      var nx = Math.min(this.nextArr, this.depT);
+      if(nx > end) break;
+      this.area += this.N()*(nx - this.t); this.t = nx;
+      if(this.nextArr <= this.depT){
+        var cu = {a:this.t, x:-8}; this.arr++;
+        if(!this.busy){ this.busy = cu; this.depT = this.t + expo(1); } else this.q.push(cu);
+        this.nextArr = this.t + expo(this.rho);
+      } else {
+        this.dep++; this.sumW += this.t - this.busy.a; this.gone.push(this.busy);
+        this.busy = this.q.shift() || null; this.depT = this.busy ? this.t + expo(1) : Infinity;
+      }
+    }
+    this.area += this.N()*(end - this.t); this.t = end;
+    // 위치 보간
+    var k = Math.min(1, dt*9);
+    if(this.busy) this.busy.x += (212 - this.busy.x)*k;
+    for(var i=0;i<this.q.length;i++){ var tx = 180 - Math.min(i,11)*14; this.q[i].x += (tx - this.q[i].x)*k; }
+    for(var g=0; g<this.gone.length; g++) this.gone[g].x += 160*dt;
+    this.gone = this.gone.filter(function(c){ return c.x < 275; });
+  },
+  draw: function(){
+    var c = this.ctx, yc = 82;
+    c.clearRect(0,0,VW,VH);
+    c.strokeStyle = COL.line; c.beginPath(); c.moveTo(0, yc+12.5); c.lineTo(194, yc+12.5); c.stroke();
+    c.strokeStyle = COL.c1; c.lineWidth = 1.5; c.strokeRect(196, yc-16, 32, 32); c.lineWidth = 1;
+    c.fillStyle = COL.muted; c.font = FONT; c.textAlign = "center";
+    c.fillText("서버", 212, yc+30); c.fillText("대기열", 120, yc+30); c.textAlign = "left";
+    c.fillText("도착 λ = " + this.rho.toFixed(2) + "/분,  처리 μ = 1/분", 6, 18);
+    var self = this;
+    function dot(cu, a){ c.fillStyle = rgba(COL.c1, a); c.beginPath(); c.arc(cu.x, yc, 5.5, 0, 7); c.fill(); }
+    for(var i=Math.min(this.q.length,12)-1;i>=0;i--) dot(this.q[i], .55);
+    if(this.q.length > 12){ c.fillStyle = COL.c1; c.font = '500 11px "IBM Plex Sans KR",sans-serif'; c.fillText("+" + (this.q.length-12), 6, yc+4); }
+    if(this.busy) dot(this.busy, 1);
+    this.gone.forEach(function(cu){ dot(cu, .3); });
+    // N(t) 막대
+    var n = this.N(); c.fillStyle = COL.muted; c.font = FONT;
+    c.fillText("시스템 안 " + n + "명", 6, 36);
+    c.fillStyle = rgba(COL.c1, .18); c.fillRect(6, 42, Math.min(248, n*10), 5);
+    var T = this.t;
+    if(T < 20 || this.dep < 5){ this.out.innerHTML = "측정 중… (시뮬레이션 " + T.toFixed(0) + "분)"; return; }
+    var L = this.area/T, lam = this.arr/T, W = this.sumW/this.dep;
+    this.out.innerHTML = "측정 <b>L = " + L.toFixed(2) + "</b>, <b>λW = " + (lam*W).toFixed(2) + "</b>"
+      + " <span style='white-space:nowrap'>(λ " + lam.toFixed(2) + ", W " + W.toFixed(1) + "분)</span>";
+  }
+});
+
+/* ---------- 2. DES: 미래 사건 리스트와 시계 건너뛰기 ---------- */
+makeDemo("d2", {
+  LAM: 0.8, WIN: 9, PERIOD: 1.0,
+  init: function(){
+    var d = this;
+    d.btn("step").onclick = function(){ d.setPlaying(false, "auto", "자동", "자동"); d.step(); };
+    d.btn("auto").onclick = function(){ d.setPlaying(!d.playing, "auto", "자동", "자동"); d.acc = d.PERIOD; };
+    if(REDUCED) d.setPlaying(false, "auto", "자동", "자동");
+    d.reset();
+  },
+  reset: function(){
+    this.clock = 0; this.view = 0; this.N = 0; this.busy = false; this.log = []; this.acc = 0; this.flash = 0;
+    this.fel = [{t: expo(this.LAM), k:"A"}];
+    this.draw && this.draw();
+  },
+  sched: function(e){ this.fel.push(e); this.fel.sort(function(a,b){ return a.t-b.t; }); },
+  step: function(){
+    var e = this.fel.shift(); this.clock = e.t; this.last = e; this.flash = 1;
+    if(e.k === "A"){
+      this.N++; this.sched({t: this.clock + expo(this.LAM), k:"A"});
+      if(!this.busy){ this.busy = true; this.sched({t: this.clock + expo(1), k:"D"}); }
+    } else {
+      this.N--; if(this.N > 0) this.sched({t: this.clock + expo(1), k:"D"}); else this.busy = false;
+    }
+    this.log.push(e); if(this.log.length > 12) this.log.shift();
+    if(this.clock > 5000) this.reset();
+  },
+  update: function(dt){ this.acc += dt; if(this.acc >= this.PERIOD){ this.acc = 0; this.step(); } },
+  draw: function(dt){
+    var c = this.ctx;
+    this.view += (this.clock - this.view)*Math.min(1, (dt||1)*7);
+    this.flash = Math.max(0, this.flash - (dt||1)*1.5);
+    c.clearRect(0,0,VW,VH);
+    var x0 = 12, x1 = 250, ya = 104, self = this;
+    var X = function(t){ return x0 + (t - self.view + 1.5)/self.WIN*(x1-x0); };
+    // 상태
+    c.fillStyle = COL.muted; c.font = FONT; c.fillText("상태: 시스템 안 " + this.N + "명", 6, 18);
+    for(var i=0;i<Math.min(this.N,14);i++){
+      if(i===0){ c.strokeStyle = COL.c2; c.lineWidth = 1.5; c.strokeRect(8.5, 28.5, 13, 13); c.lineWidth = 1; }
+      c.fillStyle = rgba(COL.c2, i===0 ? 1 : .5); c.fillRect(i===0 ? 11 : 14 + i*16, 31, 8, 8);
+    }
+    // 시간축
+    c.strokeStyle = COL.line; c.beginPath(); c.moveTo(0, ya+.5); c.lineTo(VW, ya+.5); c.stroke();
+    var t0 = Math.ceil(this.view - 1.5);
+    c.fillStyle = COL.muted; c.textAlign = "center";
+    for(var t=t0; t<this.view + this.WIN; t++){ var tx = X(t); if(tx < 0 || tx > VW) continue;
+      c.fillRect(tx, ya, 1, 4); c.fillText(t, tx, ya+15); }
+    function tri(e, alpha, big){
+      var x = X(e.t), s = big ? 6.5 : 5; if(x < -8 || x > VW+8) return;
+      c.beginPath();
+      if(e.k === "A"){ c.moveTo(x, ya-2-2*s); c.lineTo(x-s, ya-2); c.lineTo(x+s, ya-2); }
+      else { c.moveTo(x, ya-2); c.lineTo(x-s, ya-2-2*s); c.lineTo(x+s, ya-2-2*s); }
+      c.closePath();
+      if(e.k === "A"){ c.fillStyle = rgba(COL.c2, alpha); c.fill(); }
+      else { c.strokeStyle = rgba(COL.c2, alpha); c.lineWidth = 1.5; c.stroke(); c.lineWidth = 1; }
+    }
+    this.log.forEach(function(e){ tri(e, .22, false); });
+    this.fel.forEach(function(e, i){ tri(e, 1, i===0); });
+    // 현재 시각
+    var cx = X(this.view);
+    c.strokeStyle = COL.ink; c.setLineDash([2,2]); c.beginPath(); c.moveTo(cx+.5, 52); c.lineTo(cx+.5, ya+20); c.stroke(); c.setLineDash([]);
+    c.fillStyle = COL.ink; c.fillText("t = " + this.clock.toFixed(2), Math.max(24, cx), 64 - 0);
+    if(this.fel.length){ var nx = X(this.fel[0].t); c.fillStyle = COL.c2; c.fillText("다음", nx, ya-20); }
+    c.textAlign = "left"; c.fillStyle = COL.muted;
+    c.fillText("▲ 도착   ▽ 떠남   흐린 것은 처리 끝", 6, VH-6);
+    if(this.flash > 0){ c.strokeStyle = rgba(COL.c2, this.flash); c.lineWidth = 2; c.beginPath(); c.arc(cx, ya, 9 + (1-this.flash)*10, 0, 7); c.stroke(); c.lineWidth = 1; }
+    var nxt = this.fel[0], nm = function(k){ return k === "A" ? "도착" : "떠남"; };
+    this.out.innerHTML = (this.last ? "방금 처리: <b>" + nm(this.last.k) + "</b> @ " + this.last.t.toFixed(2) + ", " : "")
+      + "다음: <b>" + nm(nxt.k) + "</b> @ " + nxt.t.toFixed(2) + " <span style='white-space:nowrap'>(사건 리스트 " + this.fel.length + "개)</span>";
+  }
+});
+
+/* ---------- 3. ABM: 여우, 토끼, 풀 ---------- */
+makeDemo("d3", {
+  W: 30, H: 17, TPS: 8,
+  P: {regrow:10, r0:40, f0:5, see:2, flee:0.8, rgain:4, rcap:14, rbreed:9, rbp:0.3, fsee:3, catchp:0.8, fgain:10, fcap:30, fbreed:20, fbp:0.12},
+  init: function(){
+    var d = this;
+    d.g = new Int16Array(d.W*d.H);
+    d.btn("play").onclick = function(){ d.setPlaying(!d.playing, "play", "재생 중", "정지됨"); };
+    d.btn("reset").onclick = function(){ d.reset(); };
+    if(REDUCED) d.setPlaying(false, "play", "재생 중", "정지됨");
+    d.cv.addEventListener("click", function(ev){
+      var r = d.cv.getBoundingClientRect();
+      var cx = Math.floor((ev.clientX - r.left)/r.width*d.W), cy = Math.floor((ev.clientY - r.top)/r.height*d.H);
+      for(var i=0;i<3;i++) d.f.push({x:(cx + (i-1) + d.W)%d.W, y:Math.min(d.H-1, Math.max(0, cy)), e:12});
+      d.draw();
+    });
+    d.reset();
+  },
+  reset: function(){
+    var P = this.P, W = this.W, H = this.H;
+    this.t = 0; this.acc = 0; this.dead = 0; this.r = []; this.f = [];
+    for(var i=0;i<W*H;i++) this.g[i] = Math.random() < .6 ? 0 : Math.floor(Math.random()*P.regrow);
+    for(var k=0;k<P.r0;k++) this.r.push({x:Math.random()*W|0, y:Math.random()*H|0, e:3+Math.random()*6|0});
+    for(k=0;k<P.f0;k++) this.f.push({x:Math.random()*W|0, y:Math.random()*H|0, e:8+Math.random()*8|0});
+    this.draw && this.draw();
+  },
+  tick: function(){
+    var P = this.P, W = this.W, H = this.H, g = this.g, R = Math.random;
+    var DIRS = [[1,0],[-1,0],[0,1],[0,-1],[0,0]];
+    function wrap(v,m){ return (v+m)%m; }
+    function dd(a,b,m){ var d = Math.abs(a-b); return Math.min(d, m-d); }
+    function dist(a,b){ return dd(a.x,b.x,W) + dd(a.y,b.y,H); }
+    this.t++;
+    for(var i=0;i<W*H;i++) if(g[i] > 0) g[i]--;
+    var nr = [], self = this;
+    this.r.forEach(function(a){
+      var near = null, bd = 99;
+      self.f.forEach(function(f){ var d = dist(a,f); if(d < bd){ bd = d; near = f; } });
+      var mv = DIRS[R()*5|0];
+      if(near && bd <= P.see && R() < P.flee){
+        var best = -1; DIRS.forEach(function(d){ var dv = dist({x:wrap(a.x+d[0],W), y:wrap(a.y+d[1],H)}, near); if(dv > best){ best = dv; mv = d; } });
+      }
+      a.x = wrap(a.x+mv[0],W); a.y = wrap(a.y+mv[1],H); a.e--;
+      var c = a.y*W + a.x;
+      if(g[c] === 0){ g[c] = P.regrow + (R()*P.regrow|0); a.e = Math.min(a.e + P.rgain, P.rcap); }
+      if(a.e <= 0) return;
+      nr.push(a);
+      if(a.e >= P.rbreed && R() < P.rbp){ a.e = Math.floor(a.e/2); nr.push({x:a.x, y:a.y, e:a.e}); }
+    });
+    this.r = nr;
+    var nf = [], eaten = new Set();
+    this.f.forEach(function(f){
+      var tgt = null, bd = 99;
+      self.r.forEach(function(a){ if(eaten.has(a)) return; var d = dist(f,a); if(d < bd){ bd = d; tgt = a; } });
+      var mv = DIRS[R()*4|0];
+      if(tgt && bd <= P.fsee){ var best = 99; DIRS.forEach(function(d){ var dv = dist({x:wrap(f.x+d[0],W), y:wrap(f.y+d[1],H)}, tgt); if(dv < best){ best = dv; mv = d; } }); }
+      f.x = wrap(f.x+mv[0],W); f.y = wrap(f.y+mv[1],H);
+      var prey = self.r.find(function(a){ return !eaten.has(a) && a.x === f.x && a.y === f.y; });
+      if(prey && R() < P.catchp){ eaten.add(prey); f.e = Math.min(f.e + P.fgain, P.fcap); }
+      f.e--; if(f.e <= 0) return;
+      nf.push(f);
+      if(f.e >= P.fbreed && R() < P.fbp){ f.e = Math.floor(f.e/2); nf.push({x:f.x, y:f.y, e:f.e}); }
+    });
+    this.f = nf;
+    if(eaten.size) this.r = this.r.filter(function(a){ return !eaten.has(a); });
+  },
+  update: function(dt){
+    if(!this.r.length || !this.f.length){ this.dead += dt; if(this.dead > 2.5) this.reset(); return; }
+    this.acc += dt;
+    while(this.acc >= 1/this.TPS){ this.acc -= 1/this.TPS; this.tick(); }
+  },
+  draw: function(){
+    var c = this.ctx, W = this.W, H = this.H, cs = VW/W, ch = VH/H;
+    c.clearRect(0,0,VW,VH);
+    var gr = rgba(COL.c3, .38), sp = rgba(COL.c3, .1);
+    for(var y=0;y<H;y++) for(var x=0;x<W;x++){
+      c.fillStyle = this.g[y*W+x] === 0 ? gr : sp; c.fillRect(x*cs+.4, y*ch+.4, cs-.8, ch-.8);
+    }
+    c.fillStyle = COL.ink;
+    this.r.forEach(function(a){ c.beginPath(); c.arc(a.x*cs+cs/2, a.y*ch+ch/2, 2.6, 0, 7); c.fill(); });
+    c.fillStyle = COL.c2;
+    this.f.forEach(function(f){ var px = f.x*cs+cs/2, py = f.y*ch+ch/2; c.beginPath(); c.moveTo(px, py-4); c.lineTo(px+4, py); c.lineTo(px, py+4); c.lineTo(px-4, py); c.closePath(); c.fill(); });
+    var ext = !this.r.length ? "토끼" : !this.f.length ? "여우" : "";
+    if(ext){
+      c.fillStyle = rgba(COL.panel, .82); c.fillRect(0, VH/2-16, VW, 32);
+      c.fillStyle = COL.ink; c.font = '500 12px "IBM Plex Sans KR",sans-serif'; c.textAlign = "center";
+      c.fillText(ext + " 멸종. 잠시 후 새로 시작합니다", VW/2, VH/2+4); c.textAlign = "left";
+    }
+    this.out.innerHTML = "<span style='color:var(--ink)'>●</span> 토끼 <b>" + this.r.length + "</b>, "
+      + "<span style='color:var(--c2)'>◆</span> 여우 <b>" + this.f.length + "</b>, "
+      + "<span style='color:var(--c3)'>■</span> 풀 <b>" + Array.prototype.filter.call(this.g, function(v){ return v === 0; }).length + "</b>칸, 틱 " + this.t;
+  }
+});
+
+/* ---------- 공통 도우미 (4~9편 데모) ---------- */
+function T(c, s, x, y, o){
+  o = o || {}; c.font = (o.w||400) + " " + (o.size||10) + 'px "IBM Plex Sans KR","Apple SD Gothic Neo",sans-serif';
+  c.fillStyle = o.color || COL.muted; c.textAlign = o.align || "left"; c.fillText(s, x, y); c.textAlign = "left";
+}
+function L(c, x0, y0, x1, y1, col, w, dash){
+  c.strokeStyle = col; c.lineWidth = w||1; c.setLineDash(dash||[]); c.beginPath(); c.moveTo(x0,y0); c.lineTo(x1,y1); c.stroke(); c.setLineDash([]); c.lineWidth = 1;
+}
+function segPick(fig, sel, fn){
+  var g = fig.querySelector(sel);
+  g.addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    g.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x===b ? "true" : "false"); });
+    fn(b.dataset.v);
+  });
+}
+function nrm(){ var u = 1-Math.random(), v = Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function erf(x){ var t = 1/(1+0.3275911*Math.abs(x)), y = 1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x); return x>=0 ? y : -y; }
+
+/* ---------- 4. 입력 모델링: 후보 분포 맞추기 ---------- */
+makeDemo("d4", {
+  still: true, N: 80, XMAX: 10,
+  init: function(){
+    var d = this; d.cand = "exp"; d.fresh();
+    segPick(d.fig, "[data-cand]", function(v){ d.cand = v; d.draw(); });
+    d.btn("new").onclick = function(){ d.fresh(); d.draw(); };
+  },
+  update: function(){},
+  fresh: function(){
+    var xs = []; for(var i=0;i<this.N;i++) xs.push(-2*Math.log(1-Math.random()));   // 평균 2분짜리 실측 예시
+    xs.sort(function(a,b){ return a-b; }); this.xs = xs;
+    var m = 0; xs.forEach(function(x){ m += x; }); m /= xs.length;
+    var v = 0; xs.forEach(function(x){ v += (x-m)*(x-m); }); this.m = m; this.s = Math.sqrt(v/(xs.length-1));
+  },
+  pdf: function(x){
+    var m = this.m, s = this.s, xs = this.xs;
+    if(this.cand === "exp") return x < 0 ? 0 : Math.exp(-x/m)/m;
+    if(this.cand === "nor"){ var z = (x-m)/s; return Math.exp(-z*z/2)/(s*Math.sqrt(2*Math.PI)); }
+    var a = xs[0], b = xs[xs.length-1]; return x>=a && x<=b ? 1/(b-a) : 0;
+  },
+  cdf: function(x){
+    var m = this.m, s = this.s, xs = this.xs;
+    if(this.cand === "exp") return x < 0 ? 0 : 1-Math.exp(-x/m);
+    if(this.cand === "nor") return .5*(1+erf((x-m)/(s*Math.SQRT2)));
+    var a = xs[0], b = xs[xs.length-1]; return Math.max(0, Math.min(1, (x-a)/(b-a)));
+  },
+  draw: function(){
+    var c = this.ctx, self = this, x0 = 14, x1 = 250, y0 = 10, y1 = 124, n = this.xs.length;
+    c.clearRect(0,0,VW,VH);
+    var X = function(v){ return x0 + Math.min(v, self.XMAX)/self.XMAX*(x1-x0); };
+    var nb = 20, bw = this.XMAX/nb, h = new Array(nb).fill(0);
+    this.xs.forEach(function(v){ var b = Math.floor(v/bw); if(b < nb) h[b]++; });
+    var dens = h.map(function(k){ return k/(n*bw); }), ym = Math.max(.6, Math.max.apply(null, dens)*1.1);
+    var Y = function(v){ return y1 - Math.min(v, ym)/ym*(y1-y0); };
+    dens.forEach(function(v, b){ c.fillStyle = rgba(COL.c4, .35); c.fillRect(X(b*bw)+.5, Y(v), X(bw)-X(0)-1, y1-Y(v)); });
+    c.strokeStyle = COL.c4; c.lineWidth = 2; c.beginPath();
+    for(var i=0;i<=200;i++){ var xv = -0.5 + i/200*(this.XMAX+0.5), px = x0 + xv/this.XMAX*(x1-x0); if(px < x0-6) continue;
+      i ? c.lineTo(px, Y(this.pdf(xv))) : c.moveTo(px, Y(this.pdf(xv))); }
+    c.stroke(); c.lineWidth = 1;
+    if(this.cand === "nor"){ c.fillStyle = rgba(COL.miss, .12); c.fillRect(0, y0, x0, y1-y0); }
+    L(c, x0, y1+.5, x1, y1+.5, COL.line);
+    [0,2,4,6,8,10].forEach(function(v){ T(c, v, X(v), y1+12, {align:"center"}); });
+    T(c, "도착 간격(분)", x1, y1+24, {align:"right"});
+    // K-S 거리
+    var D = 0; for(var k=0;k<n;k++){ var F = this.cdf(this.xs[k]); D = Math.max(D, Math.abs((k+1)/n - F), Math.abs(F - k/n)); }
+    var names = {exp:"지수분포 (평균 " + this.m.toFixed(2) + "분)", nor:"정규분포 (평균 " + this.m.toFixed(2) + ", σ " + this.s.toFixed(2) + ")", uni:"균등분포 (" + this.xs[0].toFixed(2) + "~" + this.xs[n-1].toFixed(2) + "분)"};
+    var ok = D < 0.12;
+    this.out.innerHTML = names[this.cand] + "<br>K-S 거리 <b>" + D.toFixed(3) + "</b> <span style='color:" + (ok ? "var(--c3)" : "var(--miss)") + "'>" + (ok ? "잘 맞음" : "잘 안 맞음") + "</span>"
+      + (this.cand === "nor" ? ", 음수 시간이 나올 수 있음" : "");
+  }
+});
+
+/* ---------- 5. 출력 분석: 반복 실행과 t 신뢰구간 ---------- */
+makeDemo("d5", {
+  still: true,
+  TT: [12.71,4.30,3.18,2.78,2.57,2.45,2.36,2.31,2.26,2.23,2.20,2.18,2.16,2.14,2.13,2.12,2.11,2.10,2.09,2.09,2.08,2.07,2.07,2.06,2.06,2.06,2.05,2.05,2.05,2.04],
+  init: function(){
+    var d = this; d.reset(); d.add(3);
+    d.btn("one").onclick = function(){ d.add(1); d.draw(); };
+    d.btn("ten").onclick = function(){ d.add(10); d.draw(); };
+    d.btn("reset").onclick = function(){ d.reset(); d.add(3); d.draw(); };
+  },
+  update: function(){},
+  reset: function(){ this.reps = []; },
+  day: function(){   // 하루 = 손님 300명, 도착 분당 0.8명, 처리 평균 1분인 바리스타 한 명. 그날의 평균 대기(분)
+    var w = 0, sum = 0; for(var i=0;i<300;i++){ sum += w; w = Math.max(0, w + expo(1) - expo(0.8)); } return sum/300;
+  },
+  add: function(k){ for(var i=0;i<k && this.reps.length < 200;i++) this.reps.push(this.day()); },
+  draw: function(){
+    var c = this.ctx, r = this.reps, n = r.length, x0 = 12, x1 = 250, VMAX = 12;
+    c.clearRect(0,0,VW,VH);
+    var X = function(v){ return x0 + Math.min(v, VMAX)/VMAX*(x1-x0); };
+    T(c, "하루 평균 대기, 날마다 다르다", x0, 12);
+    r.forEach(function(v, i){ var j = ((i*37)%9) - 4; c.fillStyle = rgba(COL.c5, .55); c.beginPath(); c.arc(X(v), 44 + j*3.2, 3, 0, 7); c.fill(); });
+    L(c, x0, 76.5, x1, 76.5, COL.line);
+    [0,3,6,9,12].forEach(function(v){ T(c, v, X(v), 88, {align:"center"}); });
+    T(c, "분", x1, 100, {align:"right"});
+    if(n >= 2){
+      var m = 0; r.forEach(function(v){ m += v; }); m /= n;
+      var s = 0; r.forEach(function(v){ s += (v-m)*(v-m); }); s = Math.sqrt(s/(n-1));
+      var t = n-1 <= 30 ? this.TT[n-2] : 1.96, h = t*s/Math.sqrt(n);
+      var y = 120;
+      T(c, "95% 신뢰구간", x0, 108);
+      L(c, X(Math.max(0,m-h)), y, X(m+h), y, COL.c5, 4);
+      L(c, X(Math.max(0,m-h)), y-6, X(Math.max(0,m-h)), y+6, COL.c5, 2); L(c, X(m+h), y-6, X(m+h), y+6, COL.c5, 2);
+      c.fillStyle = COL.ink; c.beginPath(); c.arc(X(m), y, 3.5, 0, 7); c.fill();
+      T(c, "± " + h.toFixed(2), Math.min(x1, X(m+h)+6), y+4, {color:COL.ink, align: X(m+h) > x1-40 ? "right" : "left"});
+      this.out.innerHTML = "<b>" + n + "</b>일 돌림: 평균 <b>" + m.toFixed(2) + "분</b>, 95% 구간 <b>± " + h.toFixed(2) + "분</b>"
+        + (n <= 31 ? " (t = " + t.toFixed(2) + ")" : "");
+    }
+  }
+});
+
+/* ---------- 6. 시스템 다이내믹스: SIR ---------- */
+makeDemo("d6", {
+  still: true, BETA: 0.5, GAMMA: 0.2, DAYS: 150, DT: 0.25, I0: 0.002,
+  init: function(){
+    var d = this, sl = d.fig.querySelector("[data-cut]"), lab = d.fig.querySelector("[data-cutv]");
+    d.cut = 0; d.base = d.run(0);
+    sl.addEventListener("input", function(){ d.cut = +sl.value; lab.textContent = d.cut + "%"; d.draw(); });
+  },
+  update: function(){},
+  run: function(cut){
+    var S = 1 - this.I0, I = this.I0, R = 0, b = this.BETA*(1-cut/100), out = [];
+    for(var t=0; t<=this.DAYS; t+=this.DT){
+      out.push([t,S,I,R]);
+      var inf = b*S*I, rec = this.GAMMA*I;        // 유량: 감염, 회복
+      S -= inf*this.DT; I += (inf-rec)*this.DT; R += rec*this.DT;   // 오일러 한 걸음
+    }
+    return out;
+  },
+  draw: function(){
+    var c = this.ctx, x0 = 36, x1 = 252, y0 = 10, y1 = 124, D = this.DAYS;
+    c.clearRect(0,0,VW,VH);
+    var X = function(t){ return x0 + t/D*(x1-x0); }, Y = function(v){ return y1 - v*(y1-y0); };
+    [0, .5, 1].forEach(function(v){ L(c, x0, Y(v)+.5, x1, Y(v)+.5, COL.soft); T(c, (v*100)+"%", x0-4, Y(v)+4, {align:"right"}); });
+    L(c, x0, y1+.5, x1, y1+.5, COL.line);
+    [0,50,100,150].forEach(function(t){ T(c, t, X(t), y1+12, {align:"center"}); });
+    T(c, "일", x1, y1+24, {align:"right"});
+    var res = this.run(this.cut);
+    function curve(data, idx, col, w, dash){
+      c.strokeStyle = col; c.lineWidth = w; c.setLineDash(dash||[]); c.beginPath();
+      data.forEach(function(p, i){ i ? c.lineTo(X(p[0]), Y(p[idx])) : c.moveTo(X(p[0]), Y(p[idx])); });
+      c.stroke(); c.setLineDash([]); c.lineWidth = 1;
+    }
+    if(this.cut > 0) curve(this.base, 2, rgba(COL.c6, .45), 1.4, [3,3]);
+    curve(res, 1, rgba(COL.muted, .7), 1.4);
+    curve(res, 3, rgba(COL.ink, .55), 1.4);
+    curve(res, 2, COL.c6, 2.4);
+    var pk = 0, pt = 0; res.forEach(function(p){ if(p[2] > pk){ pk = p[2]; pt = p[0]; } });
+    var last = res[res.length-1];
+    T(c, "감염 중", X(Math.min(pt, D-30))+6, Math.max(y0+10, Y(pk)-4), {color:COL.c6, w:500});
+    T(c, "아직 안 걸림", x1, Y(last[1])+(last[1] > .5 ? 12 : -4), {align:"right"});
+    T(c, "회복", x1, Y(last[3])+(last[3] > .5 ? -4 : 12), {align:"right", color:COL.ink});
+    var R0 = this.BETA*(1-this.cut/100)/this.GAMMA;
+    this.out.innerHTML = "기초감염재생산수 R₀ = <b>" + R0.toFixed(2) + "</b>. 동시 감염 최대 <b>" + (pk*100).toFixed(1) + "%</b>"
+      + (pk > this.I0*1.05 ? " (" + Math.round(pt) + "일째)" : "") + ", 결국 걸린 비율 <b>" + ((last[3]+last[2])*100).toFixed(0) + "%</b>";
+  }
+});
+
+/* ---------- 7. 연속 시스템: 적분 방법 비교 ---------- */
+makeDemo("d7", {
+  still: true, TEND: 30,
+  init: function(){
+    var d = this, sl = d.fig.querySelector("[data-dt]"), lab = d.fig.querySelector("[data-dtv]");
+    d.meth = "euler"; d.dt = 0.2;
+    segPick(d.fig, "[data-int]", function(v){ d.meth = v; d.draw(); });
+    sl.addEventListener("input", function(){ d.dt = +sl.value; lab.textContent = d.dt.toFixed(2); d.draw(); });
+  },
+  update: function(){},
+  run: function(){
+    var x = 1, v = 0, h = this.dt, pts = [[0,x,v]], f = function(x){ return -x; };   // 용수철: 가속도 = -위치
+    for(var t=h; t<=this.TEND+1e-9; t+=h){
+      if(this.meth === "euler"){ var nx = x + h*v; v = v + h*f(x); x = nx; }
+      else if(this.meth === "semi"){ v = v + h*f(x); x = x + h*v; }
+      else {
+        var k1x = v, k1v = f(x), k2x = v + h/2*k1v, k2v = f(x + h/2*k1x), k3x = v + h/2*k2v, k3v = f(x + h/2*k2x), k4x = v + h*k3v, k4v = f(x + h*k3x);
+        x += h/6*(k1x+2*k2x+2*k3x+k4x); v += h/6*(k1v+2*k2v+2*k3v+k4v);
+      }
+      pts.push([t,x,v]);
+    }
+    return pts;
+  },
+  draw: function(){
+    var c = this.ctx, pts = this.run(), col = COL.c7;
+    c.clearRect(0,0,VW,VH);
+    // 위상 평면 (위치, 속도)
+    var cx = 66, cy = 70, R = 34;
+    c.strokeStyle = COL.line; c.strokeRect(cx-60.5, cy-60.5, 121, 121);
+    c.save(); c.beginPath(); c.rect(cx-60, cy-60, 120, 120); c.clip();
+    c.strokeStyle = COL.ink; c.setLineDash([3,3]); c.beginPath(); c.arc(cx, cy, R, 0, 7); c.stroke(); c.setLineDash([]);
+    c.strokeStyle = col; c.lineWidth = 1.4; c.beginPath();
+    pts.forEach(function(p, i){ var px = cx + p[1]*R, py = cy - p[2]*R; i ? c.lineTo(px, py) : c.moveTo(px, py); });
+    c.stroke(); c.lineWidth = 1; c.restore();
+    T(c, "위치", cx+58, cy+72, {align:"right"}); T(c, "속도", cx-58, cy-50);
+    // 에너지
+    var ex0 = 146, ex1 = 252, ey0 = 14, ey1 = 124, EMAX = 3;
+    var EX = function(t){ return ex0 + t/30*(ex1-ex0); }, EY = function(e){ return ey1 - Math.min(e, EMAX)/EMAX*(ey1-ey0); };
+    L(c, ex0, ey1+.5, ex1, ey1+.5, COL.line); L(c, ex0+.5, ey0, ex0+.5, ey1, COL.line);
+    L(c, ex0, EY(1)+.5, ex1, EY(1)+.5, COL.ink, 1, [3,3]);
+    T(c, "1", ex0-4, EY(1)+4, {align:"right"}); T(c, "3", ex0-4, EY(3)+4, {align:"right"});
+    T(c, "에너지 / 처음 에너지", ex0, 9);
+    T(c, "0", ex0, ey1+12, {align:"center"}); T(c, "30초", ex1, ey1+12, {align:"right"});
+    c.strokeStyle = col; c.lineWidth = 1.8; c.beginPath();
+    pts.forEach(function(p, i){ var e = (p[1]*p[1] + p[2]*p[2]); i ? c.lineTo(EX(p[0]), EY(e)) : c.moveTo(EX(p[0]), EY(e)); });
+    c.stroke(); c.lineWidth = 1;
+    var lastp = pts[pts.length-1], E = lastp[1]*lastp[1] + lastp[2]*lastp[2];
+    var name = {euler:"오일러", semi:"반암시적 오일러", rk4:"RK4"}[this.meth];
+    var Es = E >= 1000 ? E.toExponential(1).replace("e+", "×10^") : E >= 10 ? E.toFixed(0) : E.toFixed(3);
+    this.out.innerHTML = name + ", Δt = " + this.dt.toFixed(2) + ": 30초 뒤 에너지가 처음의 <b>" + Es + "배</b>"
+      + (E > 1.5 ? " <span style='color:var(--miss)'>(점점 커짐)</span>" : Math.abs(E-1) < 0.05 ? " <span style='color:var(--c3)'>(거의 보존)</span>" : "");
+  }
+});
+
+/* ---------- 8. 민감도 분석: 토네이도 그림 ---------- */
+makeDemo("d8", {
+  still: true,
+  init: function(){
+    var d = this, sl = d.fig.querySelector("[data-pct]"), lab = d.fig.querySelector("[data-pctv]");
+    d.p = 10;
+    sl.addEventListener("input", function(){ d.p = +sl.value; lab.textContent = d.p + "%"; d.draw(); });
+  },
+  update: function(){},
+  // P-K 공식: 평균 대기 = λ·E[S²] / (2(1−ρ)),  E[S²] = 평균² × (1 + CV²)
+  wq: function(lam, m, cv){ var rho = lam*m; if(rho >= 1) return Infinity; return lam*m*m*(1+cv*cv)/(2*(1-rho)); },
+  draw: function(){
+    var c = this.ctx, f = this.p/100, B = {lam:.25, m:3, cv:.8};
+    c.clearRect(0,0,VW,VH);
+    var base = this.wq(B.lam, B.m, B.cv);
+    var rows = [
+      {name:"도착률", lo:this.wq(B.lam*(1-f), B.m, B.cv), hi:this.wq(B.lam*(1+f), B.m, B.cv)},
+      {name:"평균 제조 시간", lo:this.wq(B.lam, B.m*(1-f), B.cv), hi:this.wq(B.lam, B.m*(1+f), B.cv)},
+      {name:"제조 시간 퍼짐", lo:this.wq(B.lam, B.m, B.cv*(1-f)), hi:this.wq(B.lam, B.m, B.cv*(1+f))}
+    ].sort(function(a,b){ return (b.hi-b.lo) - (a.hi-a.lo); });
+    var x0 = 92, x1 = 236, top = 22, rh = 32, VMAX = Math.max(20, rows[0].hi*1.05);
+    var X = function(v){ return x0 + Math.min(v, VMAX)/VMAX*(x1-x0); };
+    T(c, "평균 대기(분)", x0, 12);
+    rows.forEach(function(rw, i){
+      var y = top + i*rh + 6;
+      T(c, rw.name, x0-6, y+12, {align:"right", color:COL.ink, size:10.5});
+      c.fillStyle = rgba(COL.c8, .4); c.fillRect(X(rw.lo), y, X(base)-X(rw.lo), 18);
+      c.fillStyle = rgba(COL.c8, .85); c.fillRect(X(base), y, X(rw.hi)-X(base), 18);
+      T(c, rw.lo.toFixed(1), X(rw.lo)-3, y+12, {align:"right", size:9.5});
+      T(c, rw.hi.toFixed(1), Math.min(X(rw.hi)+3, VW-20), y+12, {size:9.5, color:COL.ink});
+    });
+    var yb = top + rows.length*rh + 4;
+    L(c, X(base)+.5, top, X(base)+.5, yb, COL.ink, 1.2, [3,3]);
+    L(c, x0, yb+.5, x1, yb+.5, COL.line);
+    var step = VMAX > 60 ? 40 : VMAX > 30 ? 20 : 10;
+    for(var v=0; v<=VMAX; v+=step) T(c, v, X(v), yb+12, {align:"center"});
+    T(c, "기준 " + base.toFixed(1) + "분", X(base)+4, yb+24, {color:COL.ink});
+    var w = rows[0];
+    this.out.innerHTML = "입력을 ±" + this.p + "% 바꾸면 <b>" + w.name + "</b>이 결론을 가장 크게 흔듭니다 (" + w.lo.toFixed(1) + "~" + w.hi.toFixed(1) + "분). 바리스타가 75% 바쁜 상태라 늘리는 쪽이 훨씬 위험합니다.";
+  }
+});
+
+/* ---------- 9. 프로젝트 주제 고르기 ---------- */
+(function(){
+  var fig = document.getElementById("d9"), box = fig.querySelector("[data-pick]");
+  var T9 = {
+    lib: {q:"시험 기간에 좌석 이용 시간을 4시간에서 3시간으로 줄이면, 빈자리를 기다리는 시간이 얼마나 줄까?",
+          m:"DES (좌석 하나하나가 서버)", inp:"시간대별 도착 간격, 좌석 이용 시간", outp:"평균 대기, 좌석 가동률, 포기하고 돌아간 비율", rel:"2, 4, 5편"},
+    bus: {q:"배차 간격을 10분에서 8분으로 줄이면, 정원이 차서 못 타는 학생이 얼마나 줄까?",
+          m:"DES (버스가 한꺼번에 태우는 일괄 서비스)", inp:"수업 시간표에 따른 정류장 도착, 버스 정원과 운행 시간", outp:"탑승 실패 비율, 평균 대기", rel:"2, 4, 5, 8편"},
+    caf: {q:"점심 피크에 배식구를 하나 늘릴까, 키오스크를 하나 늘릴까?",
+          m:"DES (주문, 배식, 좌석으로 이어지는 대기 네트워크)", inp:"점심 시간대 도착, 메뉴별 비율, 단계별 처리 시간", outp:"단계별 대기, 좌석 혼잡도, 비용 대비 효과", rel:"1, 2, 4, 5, 8편"},
+    elv: {q:"수업 시작 10분 전, 엘리베이터 운행 규칙을 바꾸면 대기가 줄까? 계단을 고르는 학생은 얼마나 될까?",
+          m:"DES와 ABM의 혼합 (사람마다 기다릴지 계단으로 갈지 판단)", inp:"층별 도착과 목적층, 사람마다 다른 인내심", outp:"평균 대기, 계단 이용 비율, 피크 때 줄 길이", rel:"2, 3, 4, 5편"}
+  };
+  function show(k){
+    var t = T9[k];
+    box.innerHTML = '<p class="q">' + t.q + '</p><dl><dt>방법</dt><dd>' + t.m + '</dd><dt>잴 것</dt><dd>' + t.inp + '</dd><dt>볼 것</dt><dd>' + t.outp + '</dd><dt>참고할 편</dt><dd>' + t.rel + '</dd></dl>';
+  }
+  segPick(fig, "[data-topic]", show);
+  show("lib");
+})();
+
+/* ---------- 공통 루프: 화면에 보이는 데모만 돌린다 ---------- */
+var io = new IntersectionObserver(function(es){
+  es.forEach(function(e){ demos.forEach(function(d){ if(d.fig === e.target) d.visible = e.isIntersecting; }); });
+}, {rootMargin:"40px"});
+demos.forEach(function(d){ io.observe(d.fig); });
+var last = performance.now();
+function frame(now){
+  var dt = Math.min(0.05, (now - last)/1000); last = now;
+  demos.forEach(function(d){
+    if(!d.visible) return;
+    if(d.still) return;
+    if(d.playing) d.update(dt);
+    d.draw(dt);
+  });
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+function onTheme(){ readColors(); demos.forEach(function(d){ d.draw(); }); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onTheme);
+new MutationObserver(onTheme).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+})();
+</script>
+</body>
+</html>

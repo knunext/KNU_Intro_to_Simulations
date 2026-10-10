@@ -1,0 +1,2145 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>여우와 토끼와 풀로 배우는 에이전트 기반 모델링</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F4F6; --panel:#FFFFFF; --ink:#18202B; --muted:#5B6676; --line:#D6DCE3; --soft:#E9EDF1;
+  --moss:#2F6B3A; --link:#3557C9; --alert:#C8372D; --on:#FFFFFF;
+  --grass:#5E9E3F; --sprout:#B9D98F; --soil:#E6DAC2; --soil-dk:#C7AE86;
+  --rabbit:#FBF8F1; --rabbit-edge:#3B342C; --rabbit-ink:#7A6650; --flee:#E3A90F;
+  --fox:#DD6A1F; --fox-dk:#9E440B; --fear:#DD6A1F;
+  --sch-a:#3E6DB5; --sch-b:#E0A12E; --phero:#8A4FB8; --food:#1E8FB5; --nest:#5A3E2B; --ant:#25211C;
+  --code-k:#7A3EB1; --code-s:#0E7C6B; --code-c:#6B7685; --code-n:#B35C00; --code-f:#2F55C4;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --math:"STIX Two Text","Times New Roman",Times,serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+    --moss:#74B983; --link:#7690F2; --alert:#EE5D52; --on:#10151C;
+    --grass:#4C8A33; --sprout:#7FA95A; --soil:#3D362C; --soil-dk:#2A241D;
+    --rabbit:#F1ECE1; --rabbit-edge:#120F0B; --rabbit-ink:#D2BE9F; --flee:#F4C440;
+    --fox:#F27D2E; --fox-dk:#FFB27A; --fear:#F27D2E;
+  --sch-a:#6F9BE6; --sch-b:#F2C25A; --phero:#C08BEA; --food:#4FBBE0; --nest:#C9A27E; --ant:#EDE7DA;
+    --code-k:#C79BF2; --code-s:#5CD1B5; --code-c:#8893A3; --code-n:#F5B062; --code-f:#8FA8F7;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+  --moss:#74B983; --link:#7690F2; --alert:#EE5D52; --on:#10151C;
+  --grass:#4C8A33; --sprout:#7FA95A; --soil:#3D362C; --soil-dk:#2A241D;
+  --rabbit:#F1ECE1; --rabbit-edge:#120F0B; --rabbit-ink:#D2BE9F; --flee:#F4C440;
+  --fox:#F27D2E; --fox-dk:#FFB27A; --fear:#F27D2E;
+  --sch-a:#6F9BE6; --sch-b:#F2C25A; --phero:#C08BEA; --food:#4FBBE0; --nest:#C9A27E; --ant:#EDE7DA;
+  --code-k:#C79BF2; --code-s:#5CD1B5; --code-c:#8893A3; --code-n:#F5B062; --code-f:#8FA8F7;
+  color-scheme:dark;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16.5px;line-height:1.72;-webkit-text-size-adjust:100%;word-break:keep-all;overflow-wrap:anywhere}
+a{color:var(--link)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+.prose{max-width:68ch}
+h1,h2,h3{line-height:1.3;letter-spacing:-0.01em}
+h1{font-size:clamp(2rem,5.2vw,3.3rem);font-weight:700;margin:0 0 18px}
+h2{font-size:clamp(1.45rem,3vw,1.9rem);font-weight:700;margin:0 0 14px}
+h3{font-size:1.12rem;font-weight:700;margin:26px 0 8px}
+p{margin:0 0 14px}
+.m{font-family:var(--math);font-style:italic;font-size:1.08em}
+.mu{font-family:var(--math);font-size:1.08em}
+section.wrap{padding:56px 20px 8px}
+header.wrap.hero{padding:56px 20px 20px}
+.back{font-size:.92rem;color:var(--muted);margin-bottom:22px}
+.lede{font-size:1.12rem;color:var(--muted);max-width:62ch}
+.hint{font-size:.88rem;color:var(--muted)}
+.adv{display:inline-block;font-size:.74rem;font-weight:700;color:var(--moss);border:1px solid currentColor;border-radius:4px;padding:0 6px;margin-left:6px;vertical-align:3px;line-height:1.5}
+
+/* stage ladder */
+.ladder{list-style:none;margin:28px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ladder button{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:block;height:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-size:.92rem;line-height:1.45}
+.ladder button:hover{border-color:var(--moss)}
+.ladder button:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+.ladder button[aria-pressed="true"]{border-color:var(--moss);box-shadow:inset 0 0 0 1px var(--moss)}
+.ladder small{display:block;color:var(--muted);font-size:.8rem;margin-top:2px}
+.ladder b{display:block;font-family:var(--math);font-size:1.4rem;font-weight:500;color:var(--moss);line-height:1.1;margin-bottom:4px}
+@media (max-width:760px){.ladder{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.plan{margin-top:22px;padding:14px 16px;border-left:3px solid var(--moss);background:var(--panel);border-radius:0 8px 8px 0;max-width:78ch}
+.panelh{font-weight:700;font-size:.95rem}
+.planlist{margin:0;padding-left:20px;font-size:.93rem}
+.planlist li{margin:2px 0}
+.planlist b{margin-right:8px}
+
+.bench{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;margin:18px 0}
+.figure{margin:18px 0}
+.figure svg{width:100%;height:auto;display:block}
+.cap{font-size:.88rem;color:var(--muted);margin-top:8px}
+dl.terms{display:grid;grid-template-columns:max-content 1fr;gap:6px 18px;margin:12px 0 18px;max-width:78ch}
+dl.terms dt{font-weight:700}
+dl.terms dd{margin:0}
+@media (max-width:600px){dl.terms{grid-template-columns:1fr}dl.terms dd{margin-bottom:8px}}
+.tblwrap{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;font-size:.93rem;min-width:620px;width:100%}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:700;color:var(--muted);font-size:.86rem}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:1px solid color-mix(in srgb,var(--ink) 25%,transparent)}
+.sw.round{border-radius:50%}
+pre{margin:0;overflow-x:auto;font-family:var(--mono);font-size:.86rem;line-height:1.6;background:var(--soft);border-radius:8px;padding:14px 16px;tab-size:4}
+code{font-family:var(--mono);font-size:.9em}
+pre .k{color:var(--code-k);font-weight:600} pre .s{color:var(--code-s)} pre .c{color:var(--code-c);font-style:italic} pre .n{color:var(--code-n)} pre .f{color:var(--code-f)}
+.eq{font-family:var(--math);font-size:1.25rem;text-align:center;margin:14px 0;line-height:1.9;max-width:68ch}
+.eq i{font-style:italic}
+
+/* rule cards */
+.rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+@media (max-width:900px){.rules{grid-template-columns:1fr}}
+.rule{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 14px 10px;border-top:4px solid var(--c)}
+.rule h4{margin:0 0 4px;font-size:1rem;display:flex;align-items:center;gap:8px}
+.rule .when{font-size:.82rem;color:var(--muted);margin:0 0 8px}
+.rule ol{margin:0;padding:0;list-style:none;counter-reset:rl}
+.rule li{counter-increment:rl;position:relative;padding:4px 0 4px 26px;font-size:.9rem;line-height:1.5;border-top:1px dashed var(--line)}
+.rule li:first-child{border-top:0}
+.rule li::before{content:counter(rl);position:absolute;left:2px;top:5px;font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+.rule li .p{font-family:var(--mono);font-size:.85em;color:var(--moss);font-weight:700}
+
+/* sim */
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.84rem;color:var(--muted);margin:6px 0 10px}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-bottom:12px}
+.btn{font:inherit;font-size:.92rem;padding:7px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;line-height:1.3}
+.btn:hover{border-color:var(--moss)}
+.btn:focus-visible,.chip:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+.btn.primary{background:var(--moss);border-color:var(--moss);color:var(--on);font-weight:700;min-width:92px}
+.btn[disabled]{opacity:.5;cursor:default}
+.tb-grp{display:flex;align-items:center;gap:6px;font-size:.86rem;color:var(--muted)}
+.tb-grp input[type=number]{width:72px}
+.tb-sep{flex:1}
+select,input[type=number]{font:inherit;font-size:.88rem;padding:5px 8px;border-radius:7px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.chip{font:inherit;font-size:.84rem;padding:4px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--moss);border-color:var(--moss);color:var(--on)}
+.simgrid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+@media (max-width:920px){.simgrid{grid-template-columns:1fr}}
+.mapwrap{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;overflow:hidden}
+#map{display:block;width:100%;height:auto;cursor:crosshair;touch-action:manipulation;border-radius:4px}
+.mapopts{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.85rem;color:var(--muted);margin-top:8px}
+.mapopts label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.side{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.stat{line-height:1.2}
+.stat b{display:block;font-size:1.45rem;font-variant-numeric:tabular-nums;font-weight:700}
+.stat span{font-size:.78rem;color:var(--muted)}
+.stat.r b{color:var(--rabbit-ink)} .stat.f b{color:var(--fox)} .stat.g b{color:var(--grass)}
+.evs{font-size:.8rem;color:var(--muted);margin-top:10px;line-height:1.6;font-variant-numeric:tabular-nums}
+.insp h4{margin:0 0 2px;font-size:1rem}
+.insp .sub{font-size:.8rem;color:var(--muted);margin-bottom:8px}
+.insp dl{display:grid;grid-template-columns:max-content 1fr;gap:3px 12px;margin:0 0 10px;font-size:.86rem}
+.insp dt{color:var(--muted)}
+.insp dd{margin:0;font-variant-numeric:tabular-nums}
+.ebar{height:8px;border-radius:4px;background:var(--soft);overflow:hidden;margin-top:3px}
+.ebar i{display:block;height:100%;background:var(--moss)}
+.insp ol{list-style:none;margin:0;padding:0;font-size:.82rem}
+.insp ol li{padding:3px 8px;border-radius:5px;color:var(--muted)}
+.insp ol li.on{background:color-mix(in srgb,var(--moss) 16%,transparent);color:var(--ink);font-weight:700}
+.insp .dead{color:var(--alert);font-weight:700;font-size:.88rem;margin-bottom:8px}
+.insp .pick{display:flex;gap:6px;margin-top:8px}
+.insp .pick .btn{font-size:.82rem;padding:5px 10px}
+.charts{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;margin-top:16px}
+@media (max-width:760px){.charts{grid-template-columns:1fr}}
+.chartcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.chartcard h4{margin:0 0 6px;font-size:.92rem}
+canvas.chart{display:block;width:100%}
+.params{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px;align-items:start}
+@media (max-width:1000px){.params{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.params{grid-template-columns:1fr}}
+.pgroup{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;border-top:4px solid var(--c)}
+.pgroup h4{margin:0 0 8px;font-size:.98rem;display:flex;align-items:center;gap:8px}
+.prow{margin:0 0 9px}
+.prow .lab{display:flex;justify-content:space-between;gap:8px;font-size:.84rem;line-height:1.35}
+.prow .lab span:last-child{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.prow .lab em{font-style:normal;color:var(--muted);font-size:.76rem;font-weight:400}
+.prow input[type=range]{width:100%;margin:2px 0 0;accent-color:var(--moss)}
+.prow.chk label{display:flex;align-items:center;gap:8px;font-size:.86rem;cursor:pointer}
+.prow select{width:100%;margin-top:3px}
+.prow.changed .lab span:first-child{color:var(--moss);font-weight:700}
+.pfoot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;font-size:.84rem;color:var(--muted)}
+.trait{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;align-items:start;margin-top:16px}
+@media (max-width:760px){.trait{grid-template-columns:1fr}}
+
+/* Monte Carlo */
+.mcctl{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-bottom:12px}
+.prog{height:6px;background:var(--soft);border-radius:3px;overflow:hidden;flex:1;min-width:120px}
+.prog i{display:block;height:100%;width:0;background:var(--moss);transition:width .15s}
+.outbar{display:flex;height:30px;border-radius:6px;overflow:hidden;margin:6px 0 6px;background:var(--soft);font-size:.8rem;font-weight:700}
+.outbar div{display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;color:#fff;min-width:0}
+.outkey{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.84rem;color:var(--muted)}
+.mcsum{font-size:.95rem;margin:10px 0 0}
+#mcTable td:first-child{color:var(--muted)}
+
+/* lab */
+.labgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+@media (max-width:760px){.labgrid{grid-template-columns:1fr}}
+.labcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column}
+.labcard h4{margin:0 0 6px;font-size:1.02rem}
+.labcard p{font-size:.92rem;margin:0 0 10px}
+.labcard .go{margin-top:auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.labcard details{font-size:.88rem;margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+.labcard summary{cursor:pointer;color:var(--moss);font-weight:700}
+.labcard details p{font-size:.88rem;margin:6px 0 0}
+details.code{margin:12px 0}
+details.code>summary{cursor:pointer;font-weight:700;margin-bottom:8px}
+.stepgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:820px){.stepgrid{grid-template-columns:1fr}}
+.queue{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;font-size:.8rem}
+.queue span{padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-variant-numeric:tabular-nums}
+.queue span.done{color:var(--muted);background:var(--soft)}
+.queue span.cur{background:var(--moss);border-color:var(--moss);color:var(--on);font-weight:700}
+.queue span.dead{text-decoration:line-through;color:var(--muted)}
+.steplog{background:var(--soft);border-radius:8px;padding:10px 12px;height:340px;overflow-y:auto;font-size:.84rem;line-height:1.55}
+.steplog .ent{padding:6px 0;border-bottom:1px dashed var(--line)}
+.steplog .ent:first-child{animation:none}
+.steplog .hd{font-weight:700}
+.steplog .tk{font-weight:700;color:var(--moss)}
+.steplog ul{margin:2px 0 0;padding-left:18px}
+.pilebar{display:grid;grid-template-columns:5.5em minmax(40px,1fr) auto;gap:8px;align-items:center;margin:3px 0}
+.pilebar .b{height:8px;background:var(--soft);border-radius:4px;overflow:hidden}
+.pilebar .b i{display:block;height:100%;background:var(--food)}
+.pilebar span:last-child{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--muted)}
+footer.wrap{padding:48px 20px 56px;color:var(--muted);font-size:.86rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<header class="wrap hero">
+  <p class="back"><a href="https://claude.ai/artifact/LA2eEFvcoDh2P8qvxyAy5B">앞 편: 프롬프트 커피점에서 배우는 이산사건 시뮬레이션</a></p>
+  <h1>여우와 토끼와 풀로 배우는<br>에이전트 기반 모델링</h1>
+  <p class="lede">커피점 모델에서 손님은 줄에 서서 차례를 기다리는 존재였습니다. 이번에는 모든 개체가 주변을 보고 스스로 움직입니다. 풀은 자라서 씨를 퍼뜨리고, 토끼는 풀을 뜯다가 여우가 보이면 달아나고, 여우는 토끼를 쫓습니다. 개체마다 몇 줄씩 적어 준 규칙만으로, 아무도 짜 넣지 않은 개체수의 파도가 생겨나는 과정을 직접 확인합니다.</p>
+  <ol class="ladder" id="ladder"></ol>
+  <div class="plan">
+    <p class="panelh" style="margin:0 0 8px">수업 진행 예시 (3회)</p>
+    <ol class="planlist">
+      <li><b>1회차: 에이전트와 창발</b><a href="#abm">ABM이란</a>, <a href="#anatomy">코드로 본 에이전트</a>, <a href="#schelling">셸링의 분리 모델</a>, <a href="#ants">개미 길 만들기</a></li>
+      <li><b>2회차: 생태계 모델</b><a href="#model">모델과 규칙</a>, <a href="#stepper">한 마리씩 넘겨 보기</a>, 시뮬레이터 1~4단계, 개체 하나 따라가 보기, <a href="#emerge">창발</a></li>
+      <li><b>3회차: 무작위와 실험</b><a href="#random">무작위가 들어가는 곳</a>, 시뮬레이터 5~6단계, <a href="#mc">몬테카를로</a>, <a href="#lab">실험 과제</a>, <a href="#code">직접 짜 보기</a></li>
+    </ol>
+    <p class="hint" style="margin:6px 0 0"><span class="adv" style="margin-left:0">심화</span> 표시가 붙은 부분은 건너뛰어도 흐름을 따라가는 데 문제가 없습니다.</p>
+  </div>
+</header>
+
+<section class="wrap" id="abm">
+  <div class="prose">
+    <h2>에이전트 기반 모델링이란</h2>
+    <p>에이전트 기반 모델(agent-based model, ABM)은 시스템을 이루는 개체 하나하나를 프로그램 속 행위자, 즉 에이전트로 만듭니다. 에이전트마다 자기 상태와 행동 규칙을 주고, 모두를 한꺼번에 돌립니다. 전체가 어떻게 움직여야 하는지는 어디에도 적지 않습니다. 전체의 모습은 개체들이 규칙대로 움직이고 서로 부딪힌 결과로 나중에 드러납니다.</p>
+    <p>앞 편의 커피점과 비교하면 차이가 분명합니다. 커피점의 손님은 도착해서 줄을 서고, 차례가 되면 서비스를 받고 떠났습니다. 무엇을 할지는 시스템(대기열과 점원)이 정했습니다. 이번 생태계의 토끼는 매 순간 스스로 판단합니다. 배가 고픈가, 근처에 풀이 있는가, 여우가 보이는가. 같은 상황에서도 토끼마다 체질이 달라 결정이 달라집니다.</p>
+    <h3>같은 생태계를 보는 세 가지 방법</h3>
+  </div>
+  <div class="tblwrap"><table>
+    <thead><tr><th></th><th>시스템 다이내믹스</th><th>이산사건 시뮬레이션 (앞 편)</th><th>에이전트 기반 모델</th></tr></thead>
+    <tbody>
+      <tr><td><b>무엇을 다루나</b></td><td>집단 전체의 양 (토끼 수, 여우 수)</td><td>대기열, 자원, 그 사이를 흐르는 개체</td><td>개체 하나하나와 그 상호작용</td></tr>
+      <tr><td><b>모델을 적는 방식</b></td><td>"토끼가 많을수록 여우가 늘어난다"를 미분방정식으로</td><td>사건과 그 사건이 일으키는 다음 사건</td><td>"여우가 3칸 안에 보이면 도망친다" 같은 개체의 규칙</td></tr>
+      <tr><td><b>시간</b></td><td>연속</td><td>다음 사건 시각으로 건너뜀</td><td>보통 틱 단위로 한 걸음씩</td></tr>
+      <tr><td><b>개체 차이</b></td><td>없음 (평균만)</td><td>속성 정도 (메뉴, 참을성)</td><td>개체마다 다른 형질과 기억</td></tr>
+      <tr><td><b>공간</b></td><td>보통 없음 (골고루 섞였다고 가정)</td><td>보통 없음</td><td>격자, 네트워크, 연속 공간</td></tr>
+      <tr><td><b>대표 도구</b></td><td>Vensim, Stella, ODE 풀이기</td><td>SimPy, Arena</td><td>NetLogo, Mesa (Python)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="prose">
+    <h3>ABM을 이루는 것</h3>
+  </div>
+  <dl class="terms">
+    <dt>에이전트</dt><dd>스스로 행동하는 개체. 이 모델에서는 토끼와 여우. 풀은 움직이지 않으므로 칸(환경)의 상태로 다룹니다.</dd>
+    <dt>상태</dt><dd>에이전트가 지금 가진 값. 위치, 에너지(배고픔), 나이, 다음 번식까지 남은 시간.</dd>
+    <dt>규칙</dt><dd>상태와 주변을 보고 다음 행동을 정하는 방법. 대부분 "만약 ~이면 ~한다" 꼴입니다.</dd>
+    <dt>환경</dt><dd>에이전트가 사는 공간. 여기서는 풀이 자라는 격자.</dd>
+    <dt>상호작용</dt><dd>에이전트끼리, 또는 에이전트와 환경 사이의 영향. 토끼가 풀을 먹고, 여우가 토끼를 먹고, 토끼가 여우를 피합니다. 대부분 가까운 이웃끼리만 일어납니다.</dd>
+    <dt>스케줄</dt><dd>누가 언제 어떤 순서로 행동하는지에 대한 약속. 이 모델은 틱마다 모두가 한 번씩 무작위 순서로 행동합니다.</dd>
+    <dt>창발</dt><dd>개체의 규칙에는 없는데 집단에서 나타나는 현상. 개체수가 오르내리는 주기, 풀밭의 물결무늬가 그 예입니다.</dd>
+  </dl>
+  <div class="prose">
+    <h3>언제 ABM을 쓰나</h3>
+    <p>시스템 다이내믹스는 위에서 아래로 봅니다. 집단의 변화율을 식으로 먼저 적습니다. ABM은 아래에서 위로 봅니다. 개체의 행동을 적고 집단의 변화는 결과로 얻습니다. 다음 중 하나라도 해당하면 ABM이 값을 합니다.</p>
+    <p><b>개체 차이가 결과를 바꿀 때.</b> 평균적인 토끼 한 마리로는 설명이 안 되는 경우입니다. <b>공간과 이웃이 중요할 때.</b> 여우는 섬 반대편 토끼를 먹을 수 없습니다. <b>개체가 적응하거나 배울 때.</b> 세대를 거치며 형질이 바뀌는 경우입니다. <b>수가 적어 우연이 중요할 때.</b> 여우가 다섯 마리 남았다면 "평균 0.3마리"가 아니라 "운 나쁘면 0마리"가 핵심입니다.</p>
+    <p>반대로 대가도 있습니다. 규칙과 매개변수가 많아 검증이 어렵고, 계산이 오래 걸리며, 한 번 돌린 결과만으로는 아무것도 말할 수 없습니다. 이 마지막 문제는 <a href="#mc">몬테카를로</a>에서 다룹니다.</p>
+  </div>
+</section>
+
+<section class="wrap" id="anatomy">
+  <div class="prose">
+    <h2>에이전트를 코드로 보면</h2>
+    <p>ABM은 객체 지향 프로그램과 거의 그대로 대응합니다. 에이전트는 상태를 가진 객체이고, 규칙은 그 객체의 <code>step()</code> 메서드이며, 스케줄은 바깥을 도는 루프입니다. 이 페이지의 모든 모델은 아래 틀을 따릅니다.</p>
+  </div>
+  <div class="bench" style="max-width:860px">
+<pre><span class="k">class</span> Rabbit:
+    x, y, energy, age, cooldown            <span class="c"># 상태: 이 개체만의 값</span>
+
+    <span class="k">def</span> <span class="f">step</span>(self, world):                 <span class="c"># 규칙: 감지 → 판단 → 행동</span>
+        fox = world.<span class="f">nearest_fox</span>(self, radius=<span class="n">3</span>)        <span class="c"># 감지: 가까운 주변만 본다</span>
+        <span class="k">if</span> fox <span class="k">and</span> <span class="f">random</span>() &lt; <span class="n">0.75</span>:                <span class="c"># 판단: 확률이 섞인 규칙</span>
+            self.<span class="f">move_away_from</span>(fox)                 <span class="c"># 행동: 세상을 바꾼다</span>
+        <span class="k">elif</span> self.<span class="f">hungry</span>() <span class="k">and</span> world.<span class="f">grass_near</span>(self):
+            self.<span class="f">move_toward_grass</span>()
+        <span class="k">else</span>:
+            self.<span class="f">random_move</span>()
+
+world = <span class="f">World</span>()                               <span class="c"># 환경</span>
+<span class="k">for</span> tick <span class="k">in</span> <span class="f">range</span>(T):                         <span class="c"># 스케줄</span>
+    world.<span class="f">update_grass</span>()
+    <span class="k">for</span> agent <span class="k">in</span> <span class="f">shuffled</span>(world.agents):
+        agent.<span class="f">step</span>(world)
+    world.<span class="f">record_stats</span>()                    <span class="c"># 관측: 집단의 숫자는 여기서 처음 계산된다</span></pre>
+  </div>
+  <div class="prose">
+    <p>이 틀에서 세 가지를 눈여겨보세요. 첫째, 에이전트는 <b>가까운 주변만</b> 봅니다. 토끼는 섬 전체의 여우 수를 모르고 3칸 안만 압니다. 둘째, 에이전트끼리의 영향은 대부분 <b>환경을 거쳐</b> 전해집니다. 토끼가 먹은 칸은 맨땅이 되어 다른 토끼에게 영향을 줍니다. 셋째, 토끼 수나 개체수 그래프 같은 <b>집단의 숫자는 규칙 어디에도 쓰이지 않고</b> 마지막에 관측할 때만 계산됩니다.</p>
+    <h3>상태 기계로 그려 보기</h3>
+    <p>토끼가 지금 하는 일을 상태로 보면 유한 상태 기계로 그릴 수 있습니다. 화살표 옆 글이 전이 조건입니다.</p>
+  </div>
+  <div class="bench" style="max-width:860px">
+    <div class="figure" style="margin:0">
+<svg viewBox="0 0 760 320" role="img" aria-label="토끼의 상태 기계: 배회, 풀 찾기, 먹기, 도망, 죽음">
+  <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs>
+  <g font-size="13" fill="var(--ink)" text-anchor="middle">
+    <g stroke="var(--rabbit-ink)" stroke-width="2" fill="var(--panel)">
+      <rect x="30" y="132" width="130" height="48" rx="24"/>
+      <rect x="300" y="28" width="140" height="48" rx="24"/>
+      <rect x="590" y="28" width="130" height="48" rx="24"/>
+      <rect x="300" y="236" width="140" height="48" rx="24" stroke="var(--flee)"/>
+      <rect x="590" y="236" width="130" height="48" rx="24" stroke="var(--alert)" stroke-dasharray="5 4"/>
+    </g>
+    <text x="95" y="161" font-weight="700">배회</text>
+    <text x="370" y="57" font-weight="700">풀 찾기</text>
+    <text x="655" y="57" font-weight="700">먹기</text>
+    <text x="370" y="265" font-weight="700">도망</text>
+    <text x="655" y="265" font-weight="700">죽음</text>
+    <g stroke="var(--muted)" stroke-width="1.6" fill="none" marker-end="url(#ah)">
+      <path d="M140 136 C 200 70, 240 56, 296 52"/>
+      <path d="M440 52 L 586 52"/>
+      <path d="M620 78 C 560 150, 260 170, 164 158"/>
+      <path d="M110 182 C 150 250, 230 262, 296 262"/>
+      <path d="M300 246 C 230 220, 170 200, 140 184"/>
+      <path d="M440 260 L 586 260"/>
+    </g>
+    <g font-size="12" fill="var(--muted)">
+      <text x="112" y="104">배고프고 2칸 안에 풀</text>
+      <text x="513" y="44">발밑에 풀</text>
+      <text x="470" y="178">배가 찼다</text>
+      <text x="168" y="276" text-anchor="end">여우 3칸 안, 난수 &lt; 0.75</text>
+      <text x="236" y="208">여우가 멀어짐</text>
+      <text x="513" y="252">에너지 0, 수명</text>
+      <text x="513" y="300">(죽음과 도망은 어느 상태에서나 갈 수 있음)</text>
+    </g>
+  </g>
+</svg>
+    </div>
+  </div>
+  <div class="prose">
+    <p>엄밀히 말하면 이 토끼는 기억을 거의 쓰지 않습니다. 매 틱 처음부터 주변을 보고 다시 판단하는 <b>반응형 에이전트</b>이고, 상태는 그 판단의 결과를 이름 붙인 것입니다. 목표를 세우고 계획을 짜거나 경험에서 배우는 에이전트도 만들 수 있지만, 놀랍게도 반응형 규칙 몇 줄만으로도 집단 수준의 복잡한 현상이 충분히 나옵니다. 다음 두 워밍업 모델이 그 예입니다.</p>
+  </div>
+</section>
+
+<section class="wrap" id="schelling">
+  <div class="prose">
+    <h2>워밍업 1: 셸링의 분리 모델</h2>
+    <p>경제학자 토머스 셸링이 1971년에 발표한 모델입니다. 동전과 바둑판으로도 돌릴 수 있을 만큼 단순한데, 개인의 작은 선호가 집단에서 얼마나 크게 증폭되는지 보여 줘서 ABM의 출발점으로 자주 소개됩니다. 셸링은 2005년 노벨 경제학상을 받았습니다.</p>
+    <p>파랑과 노랑 두 종류의 주민이 격자 마을에 섞여 살고, 몇몇 칸은 빈집입니다. 주민에게 규칙은 하나뿐입니다.</p>
+  </div>
+  <div class="rules" style="grid-template-columns:minmax(0,1fr);max-width:760px">
+    <div class="rule" style="--c:var(--moss)">
+      <h4><span class="sw round" style="background:var(--sch-a)"></span><span class="sw round" style="background:var(--sch-b);margin-left:-4px"></span>주민</h4>
+      <p class="when">매 틱, 무작위 순서로 한 명씩</p>
+      <ol>
+        <li>둘러싼 이웃 중 나와 같은 색의 비율을 센다. 빈집은 세지 않는다.</li>
+        <li>그 비율이 내가 원하는 최소 비율(기본 <span class="p">30%</span>) 이상이면 만족하고 그대로 산다.</li>
+        <li>미만이면 불만족이고, 무작위로 고른 빈집으로 이사한다.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="prose">
+    <p>원하는 최소 비율 30%는 "이웃 열 명 중 셋만 나와 같으면 괜찮다"는 뜻입니다. 다수가 되기를 바라는 사람도, 다른 색을 피하려는 사람도 없습니다. 이 마을은 결국 얼마나 섞여 살게 될까요. 돌리기 전에 숫자 하나를 예상해 보세요.</p>
+  </div>
+  <div class="bench">
+    <div class="toolbar">
+      <button class="btn primary" id="schRun" type="button">실행</button>
+      <button class="btn" id="schStep" type="button">한 틱</button>
+      <button class="btn" id="schReset" type="button">새로 섞기</button>
+      <span class="tb-grp"><label for="schSpeed">빠르기</label><select id="schSpeed"><option value="1">1틱/초</option><option value="3" selected>3틱/초</option><option value="8">8틱/초</option><option value="30">30틱/초</option></select></span>
+    </div>
+    <div class="simgrid">
+      <div class="mapwrap"><canvas id="schMap" aria-label="셸링 분리 모델 격자"></canvas></div>
+      <div class="side">
+        <div class="card">
+          <div class="stats">
+            <div class="stat"><b id="schWantV">30%</b><span>각자 원하는 최소 비율</span></div>
+            <div class="stat g"><b id="schSimV">0%</b><span>결과: 이웃 중 같은 색 평균</span></div>
+            <div class="stat"><b id="schUnhV">0%</b><span>불만족 주민</span></div>
+            <div class="stat"><b id="schTV">0</b><span>틱 (이번 틱 이사 <span id="schMvV">0</span>명)</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="prow"><div class="lab"><label for="schWant">원하는 같은 색 이웃 최소 비율</label><span id="schWantL"></span></div><input type="range" id="schWant" min="0" max="1" step="0.05" value="0.3"></div>
+          <div class="prow"><div class="lab"><label for="schEmpty">빈집 비율 <em>바꾸면 새로 섞음</em></label><span id="schEmptyL"></span></div><input type="range" id="schEmpty" min="0.02" max="0.5" step="0.02" value="0.1"></div>
+          <div class="prow"><div class="lab"><label for="schShare">파랑 주민 비율 <em>바꾸면 새로 섞음</em></label><span id="schShareL"></span></div><input type="range" id="schShare" min="0.1" max="0.9" step="0.05" value="0.5"></div>
+          <div class="prow"><div class="lab"><label for="schNb">이웃의 범위</label></div><select id="schNb"><option value="1">둘러싼 8칸 (무어 이웃)</option><option value="0">상하좌우 4칸 (폰 노이만 이웃)</option></select></div>
+          <p class="hint" style="margin:4px 0 0">속이 빈 동그라미가 불만족 주민입니다.</p>
+        </div>
+      </div>
+    </div>
+    <div class="chartcard" style="margin-top:14px"><h4>시간에 따른 변화</h4><canvas class="chart" id="schChart" height="200"></canvas></div>
+  </div>
+  <div class="prose">
+    <h3>무엇을 봐야 하나</h3>
+    <p>기본값(30%)에서 마을은 10여 틱 만에 모두 만족한 상태로 멈춥니다. 그런데 이웃 중 같은 색의 평균은 처음 약 50%에서 약 75%까지 올라가, 뚜렷한 파랑 동네와 노랑 동네가 생깁니다. 아무도 75%를 원하지 않았습니다. 이것이 <b>개인의 동기와 집단의 결과가 다르다</b>는 ABM의 첫 교훈입니다. 집단의 모습을 보고 개인의 의도를 거꾸로 짐작하면 틀릴 수 있습니다.</p>
+    <p>원하는 비율을 바꿔 보세요. 40×40 마을, 빈집 10% 기준으로 확인한 결과는 이렇습니다. 0%면 아무도 이사하지 않아 50% 그대로입니다. 50%면 약 87%, 70%면 오래 걸려 거의 99%까지 갈라집니다. 80%로 올리면 빈집이 모자라 만족할 자리가 없어서 주민 대부분이 끝없이 이사만 다니고, 같은 색 비율은 오히려 55% 안팎에 머뭅니다. 너무 까다로운 개인들은 분리조차 이루지 못합니다.</p>
+    <p>이웃을 4칸으로 바꾸거나 빈집을 늘리면 결과가 어떻게 달라지는지도 비교해 보세요. 셸링 모델은 현실 도시를 설명하려는 것이 아니라, "약한 선호만으로도 강한 분리가 생길 수 있다"는 가능성을 보여 주는 사고 실험입니다. 이런 용도의 모델을 존재 증명(existence proof)이라고 부르기도 합니다.</p>
+  </div>
+</section>
+
+<section class="wrap" id="ants">
+  <div class="prose">
+    <h2>워밍업 2: 개미 길 만들기</h2>
+    <p>개미는 지도도 없고 대장도 없지만, 먹이까지 이어지는 길을 함께 만들어 냅니다. 비결은 페로몬입니다. 먹이를 물고 집으로 돌아가는 개미가 땅에 냄새를 남기고, 먹이를 찾는 개미는 그 냄새를 따라갑니다. 개미끼리 직접 말을 주고받지 않고 <b>환경에 흔적을 남겨 간접적으로 소통</b>하는 방식을 스티그머지(stigmergy)라고 합니다. 셸링 모델의 주민이 이웃을 직접 보았다면, 개미는 땅을 통해서만 서로에게 영향을 줍니다.</p>
+  </div>
+  <div class="rules">
+    <div class="rule" style="--c:var(--ant)">
+      <h4><span class="sw round" style="background:var(--ant)"></span>먹이를 찾는 개미</h4>
+      <p class="when">매 틱</p>
+      <ol>
+        <li>발밑에 먹이가 있으면 하나를 물고 돌아선다.</li>
+        <li>앞쪽 세 방향(왼쪽 45°, 정면, 오른쪽 45°)의 냄새를 맡는다. 집에서 멀어지는 방향의 냄새만 센다.</li>
+        <li>냄새가 기준(<span class="p">0.05</span>) 이상이면 가장 진한 쪽으로 방향을 튼다.</li>
+        <li>방향을 무작위로 조금 흔든다(최대 <span class="p">±40°</span>). 그리고 한 칸 나아간다.</li>
+      </ol>
+    </div>
+    <div class="rule" style="--c:var(--food)">
+      <h4><span class="sw round" style="background:var(--food)"></span>먹이를 문 개미</h4>
+      <p class="when">매 틱</p>
+      <ol>
+        <li>집에 닿으면 먹이를 내려놓고 아무 방향으로나 다시 나간다. 먹이가 어디 있었는지는 기억하지 않는다.</li>
+        <li>아니면 발밑에 페로몬 <span class="p">60</span>을 떨어뜨린다.</li>
+        <li>집 방향으로 조금 흔들리며 한 칸 나아간다.</li>
+      </ol>
+    </div>
+    <div class="rule" style="--c:var(--phero)">
+      <h4><span class="sw" style="background:var(--phero)"></span>땅</h4>
+      <p class="when">매 틱, 모든 칸에서</p>
+      <ol>
+        <li>확산: 칸마다 페로몬의 <span class="p">50%</span>를 둘러싼 8칸에 똑같이 나눠 준다.</li>
+        <li>증발: 남은 페로몬의 <span class="p">10%</span>가 날아간다.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="prose">
+    <p>"집에서 멀어지는 방향의 냄새만 센다"는 규칙이 없으면 개미들이 집 근처의 진한 냄새에 붙잡혀 맴돕니다. 모든 길이 집으로 모이기 때문입니다. 실제 개미는 해의 방향 같은 단서로 집 쪽과 바깥쪽을 구별하는데, 여기서는 그 능력을 이 한 줄로 대신했습니다. 이렇게 규칙 하나를 넣고 빼면서 원하는 현상이 왜 생기고 왜 안 생기는지 찾는 과정이 ABM 설계의 실제 모습입니다.</p>
+  </div>
+  <div class="bench">
+    <div class="toolbar">
+      <button class="btn primary" id="antRun" type="button">실행</button>
+      <button class="btn" id="antReset" type="button">처음부터</button>
+      <span class="tb-grp"><label for="antSpeed">빠르기</label><select id="antSpeed"><option value="15">15틱/초</option><option value="40" selected>40틱/초</option><option value="100">100틱/초</option><option value="300">300틱/초</option></select></span>
+      <label class="tb-grp" style="color:var(--ink)"><input type="checkbox" id="antPhero" checked> 페로몬 쓰기</label>
+    </div>
+    <div class="simgrid">
+      <div class="mapwrap"><canvas id="antMap" aria-label="개미 모델 지도"></canvas></div>
+      <div class="side">
+        <div class="card">
+          <div class="stats">
+            <div class="stat"><b id="antTV">0</b><span>틱</span></div>
+            <div class="stat"><b id="antHomeV">0</b><span>집에 가져온 먹이</span></div>
+          </div>
+          <div id="antPiles" style="margin-top:10px;font-size:.84rem"></div>
+        </div>
+        <div class="card">
+          <div class="prow"><div class="lab"><label for="antLayout">먹이 배치 <em>처음부터</em></label></div><select id="antLayout"><option value="three">거리가 다른 세 더미</option><option value="far">멀리 큰 더미 하나</option></select></div>
+          <div class="prow"><div class="lab"><label for="antN">개미 수 <em>처음부터</em></label><span id="antNL"></span></div><input type="range" id="antN" min="20" max="300" step="10" value="120"></div>
+          <div class="prow"><div class="lab"><label for="antEvap">증발률</label><span id="antEvapL"></span></div><input type="range" id="antEvap" min="0" max="0.3" step="0.01" value="0.1"></div>
+          <div class="prow"><div class="lab"><label for="antDiff">확산률</label><span id="antDiffL"></span></div><input type="range" id="antDiff" min="0" max="1" step="0.05" value="0.5"></div>
+          <div class="prow"><div class="lab"><label for="antWig">흔들림</label><span id="antWigL"></span></div><input type="range" id="antWig" min="0" max="90" step="5" value="40"></div>
+        </div>
+      </div>
+    </div>
+    <div class="legend" style="margin-top:10px">
+      <span><span class="sw round" style="background:var(--nest)"></span>집</span>
+      <span><span class="sw" style="background:var(--food)"></span>먹이</span>
+      <span><span class="sw" style="background:var(--phero)"></span>페로몬 (진할수록 많음)</span>
+      <span><span class="sw round" style="background:var(--ant)"></span>먹이 찾는 개미</span>
+      <span><span class="sw round" style="background:var(--food)"></span>먹이를 문 개미</span>
+    </div>
+    <div class="chartcard" style="margin-top:12px"><h4>집에 가져온 먹이 <span class="hint" style="font-weight:400">점선은 바로 전 실행</span></h4><canvas class="chart" id="antChart" height="200"></canvas></div>
+  </div>
+  <div class="prose">
+    <h3>무엇을 봐야 하나</h3>
+    <p>처음에는 개미들이 집 주변으로 흩어져 헤맵니다. 누군가 우연히 먹이를 찾아 돌아오면 가는 보라색 흔적이 생기고, 그 흔적을 밟은 개미가 먹이로 가서 다시 냄새를 보탭니다. 길이 길을 부르는 <b>양의 되먹임</b>입니다. 금세 굵은 길이 생기고 개미 대부분이 그 길 위를 오갑니다.</p>
+    <p>세 더미 배치에서는 가장 가까운 더미가 먼저 비워집니다. 어느 개미도 더미의 거리를 비교하지 않았지만, 가까운 더미의 길이 먼저 생기고 먼저 진해지기 때문에 집단이 가까운 쪽을 "고른" 것처럼 보입니다. 더미가 바닥나면 그 길은 더 이상 보충되지 않아 증발로 사라지고, 개미들은 다시 흩어져 다음 더미를 찾습니다.</p>
+    <p>페로몬을 끄고 처음부터 돌려 비교해 보세요. 씨앗 넷으로 확인한 결과, 세 더미를 모두 비우는 데 페로몬을 쓰면 약 300~350틱, 끄면 약 1100~1300틱이 걸렸습니다. 멀리 큰 더미 하나 배치에서는 차이가 더 큽니다. 페로몬을 쓰면 약 460틱에 바닥이 나고, 끄면 2500틱이 지나도 상당량이 남았습니다.</p>
+    <p>증발률을 1%로 낮춰 보면 반대 문제가 보입니다. 이미 비어 버린 더미로 가는 길이 오래 남아 개미들이 헛걸음을 하고, 다음 더미로 옮겨 가는 데 대개 더 오래 걸리고, 어떤 씨앗에서는 몇 배가 걸립니다. 증발은 집단의 <b>망각</b>입니다. 너무 빨리 잊으면 길이 생기지 않고, 너무 늦게 잊으면 낡은 정보에 갇힙니다. 이것은 개미뿐 아니라 경로 탐색 알고리즘인 개미 집단 최적화(ACO)에서도 그대로 나타나는 균형입니다.</p>
+  </div>
+</section>
+
+<section class="wrap" id="model">
+  <div class="prose">
+    <h2>모델: 격자 위의 작은 섬</h2>
+    <p>섬은 가로 64칸, 세로 42칸의 격자입니다. 칸마다 풀의 상태가 하나 있고, 동물은 한 칸에 최대 한 마리만 설 수 있습니다. 동물은 한 걸음에 상하좌우 중 한 칸으로 움직이고, 거리는 맨해튼 거리 |Δ<span class="m">x</span>| + |Δ<span class="m">y</span>|로 잽니다. 그래서 "거리 3 이내"는 원이 아니라 마름모 모양이 됩니다.</p>
+  </div>
+  <div class="bench" style="max-width:760px">
+    <div class="figure" id="manhattanFig" style="margin:0"></div>
+    <p class="cap" id="manhattanCap">여우에게서 맨해튼 거리 3 이내(색칠한 마름모)에 들어온 토끼는 여우를 알아챕니다. 칸의 숫자가 거리입니다. 칸을 누르면 토끼를 그 자리로 옮겨 볼 수 있습니다.</p>
+  </div>
+  <div class="prose">
+    <p>가장자리는 감겨 있습니다(토러스). 오른쪽 끝으로 나가면 왼쪽 끝으로 들어옵니다. 벽에 몰린 토끼가 유난히 잘 잡히는 식의 가장자리 효과를 없애려는 흔한 선택이며, 시뮬레이터에서 막힌 벽으로 바꿀 수 있습니다.</p>
+    <h3>개체와 상태</h3>
+  </div>
+  <div class="tblwrap"><table>
+    <thead><tr><th>대상</th><th>상태</th><th>태어날 때 정해지는 개인 형질</th></tr></thead>
+    <tbody>
+      <tr><td><span class="sw" style="background:var(--grass)"></span><b>풀 칸</b></td><td>맨땅, 싹, 풀 중 하나와 타이머 하나 (흙 회복까지, 다 자랄 때까지, 다음 씨 퍼뜨리기까지)</td><td>없음</td></tr>
+      <tr><td><span class="sw round" style="background:var(--rabbit);border-color:var(--rabbit-edge)"></span><b>토끼</b></td><td>위치, 에너지, 나이, 번식 대기 시간, 지금 하는 일</td><td rowspan="2">속도 배율, 버티는 시간 배율, 수명 배율. 평균이 1이고 개체 차이(CV)만큼 흩어진 가우시안 값</td></tr>
+      <tr><td><span class="sw" style="background:var(--fox)"></span><b>여우</b></td><td>위치, 에너지, 나이, 번식 대기 시간, 지금 하는 일, 쫓는 토끼</td></tr>
+    </tbody>
+  </table></div>
+  <div class="prose">
+    <p>에너지는 "앞으로 몇 틱을 굶어도 버티는가"로 읽으면 됩니다. 매 틱 자기 속도 배율만큼 줄어서, 빠른 개체는 배도 빨리 고픕니다. 0이 되면 굶어 죽습니다.</p>
+    <h3>규칙</h3>
+    <p>괄호 속 숫자는 시뮬레이터의 기본값입니다. 동물의 이동(토끼 ③~④, 여우 ③~⑤)은 한 틱에 이동 속도만큼 반복합니다. 기본값으로 토끼는 한 틱에 1칸, 여우는 2칸을 갑니다.</p>
+  </div>
+  <div class="rules">
+    <div class="rule" style="--c:var(--grass)">
+      <h4><span class="sw" style="background:var(--grass)"></span>풀 칸</h4>
+      <p class="when">매 틱, 모든 칸에서</p>
+      <ol>
+        <li>뜯긴 맨땅은 흙이 회복될 때까지(<span class="p">12</span>틱 안팎) 아무것도 자라지 않는다.</li>
+        <li>회복된 맨땅에는 매 틱 확률 <span class="p">1%</span>로 싹이 저절로 난다. 섬 어디서든 무작위로 일어난다.</li>
+        <li>싹은 <span class="p">5</span>틱 안팎이 지나면 먹을 수 있는 풀이 된다.</li>
+        <li>풀은 <span class="p">5</span>틱 안팎마다 확률 <span class="p">0.7</span>로 이웃 칸(반경 <span class="p">1</span>)에 씨를 날린다.</li>
+        <li>씨는 회복된 맨땅에 떨어졌을 때만 싹이 된다.</li>
+      </ol>
+    </div>
+    <div class="rule" style="--c:var(--rabbit-ink)">
+      <h4><span class="sw round" style="background:var(--rabbit);border-color:var(--rabbit-edge)"></span>토끼</h4>
+      <p class="when">자기 차례가 오면</p>
+      <ol>
+        <li>나이 +1, 에너지가 속도 배율만큼 준다. 에너지가 0이거나 수명이 다하면 죽는다.</li>
+        <li>거리 <span class="p">3</span> 안의 가장 가까운 여우를 찾는다.</li>
+        <li>여우가 있으면 확률 <span class="p">0.75</span>로 그 여우에게서 멀어지는 칸으로 달아난다.</li>
+        <li>아니면, 배고플 때는 거리 2 안의 가장 가까운 풀로 다가가고, 풀이 없거나 배부르면 무작위로 한 칸 간다.</li>
+        <li>배고픈데 발밑에 풀이 있으면 먹는다. 에너지 <span class="p">+15</span>, 그 칸은 맨땅이 된다.</li>
+        <li>다 자랐고(<span class="p">15</span>틱) 번식 대기(<span class="p">20</span>틱 안팎)가 끝났고 에너지가 절반 이상이면 근처 빈칸에 새끼 1~<span class="p">3</span>마리를 낳고, 에너지 절반을 새끼들에게 나눠 준다.</li>
+      </ol>
+    </div>
+    <div class="rule" style="--c:var(--fox)">
+      <h4><span class="sw" style="background:var(--fox)"></span>여우</h4>
+      <p class="when">자기 차례가 오면</p>
+      <ol>
+        <li>나이 +1, 에너지가 속도 배율만큼 준다. 에너지가 0이거나(기본 <span class="p">35</span>틱 굶으면) 수명이 다하면 죽는다.</li>
+        <li>에너지가 <span class="p">85%</span> 이상으로 배부르면 사냥하지 않고 무작위로 돌아다닌다.</li>
+        <li>바로 옆(거리 1)에 토끼가 있으면 덮친다. 확률 <span class="p">0.5</span>로 성공하면 토끼는 죽고, 여우는 그 칸으로 가며 에너지 <span class="p">+15</span>.</li>
+        <li>옆에 없으면 시야 <span class="p">2</span> 안의 가장 가까운 토끼 쪽으로 한 칸 간다.</li>
+        <li>시야에도 없으면 무작위로 한 칸 간다.</li>
+        <li>번식은 토끼와 같은 방식(성숙 <span class="p">30</span>틱, 대기 <span class="p">40</span>틱 안팎, 새끼 1~<span class="p">2</span>마리).</li>
+      </ol>
+    </div>
+  </div>
+  <div class="prose">
+    <p>규칙은 이것이 전부입니다. "토끼가 많아지면 여우가 늘어난다"나 "개체수가 주기적으로 오르내린다"는 문장은 어디에도 없습니다. 이 모델의 질문은 바로 그것입니다. 이 개체 규칙들로부터 집단 수준에서 무엇이 생겨나는가.</p>
+    <h3>시간: 틱과 행동 순서</h3>
+    <p>커피점 DES는 다음 사건이 일어나는 시각으로 시계를 건너뛰었습니다. 이 모델은 시계를 1틱씩 고르게 진행합니다(시간 진행형, time-stepped). 모든 동물이 매 순간 무언가를 판단하므로 "다음 사건"이 따로 없기 때문입니다. 한 틱은 다음 순서로 흘러갑니다.</p>
+    <p>먼저 모든 풀 칸을 갱신합니다. 다음으로 살아 있는 동물 목록을 무작위로 섞어 한 마리씩 행동시킵니다. 이번 틱에 태어난 새끼는 목록에 넣지만 행동은 다음 틱부터 합니다.</p>
+    <p>왜 섞을까요. 한 마리씩 차례로 움직이면 먼저 움직인 개체의 결과를 나중 개체가 보게 됩니다. 순서를 "여우 먼저"로 고정하면 여우는 늘 토끼가 달아나기 전의 세상을 봅니다. 매 틱 순서를 섞으면 이런 유불리가 모두에게 고르게 나뉩니다. 다른 방법으로, 모두가 같은 순간의 세상을 보고 동시에 결정한 뒤 한꺼번에 반영하는 동기 갱신도 있습니다. 대신 두 토끼가 같은 빈칸으로 가려 할 때 누가 들어갈지 따로 정해야 합니다.</p>
+  </div>
+  <div class="bench" id="stepper">
+    <h3 style="margin-top:0">한 마리씩 넘겨 보기</h3>
+    <p class="hint" style="margin:0 0 12px">12×9칸짜리 작은 섬입니다. "다음 에이전트"를 누를 때마다 차례가 된 동물 하나가 규칙을 따라 행동하고, 무엇을 보고 어떤 난수로 무엇을 정했는지 기록에 남습니다. 지도의 숫자는 동물의 번호, 동그라미는 지금 차례인 동물입니다.</p>
+    <div class="toolbar">
+      <button class="btn primary" id="stNext" type="button">다음 에이전트</button>
+      <button class="btn" id="stTick" type="button">이 틱 끝까지</button>
+      <button class="btn" id="stReset" type="button">처음부터</button>
+      <span class="tb-grp"><label for="stOrder">행동 순서</label><select id="stOrder"><option value="shuffle">매 틱 무작위로 섞기</option><option value="fox">항상 여우 먼저</option><option value="rabbit">항상 토끼 먼저</option></select></span>
+    </div>
+    <div class="stepgrid">
+      <div>
+        <div class="mapwrap"><canvas id="stMap" aria-label="한 마리씩 넘겨 보기 지도"></canvas></div>
+        <div class="queue" id="stQueue" aria-label="이번 틱 행동 순서"></div>
+      </div>
+      <div class="steplog" id="stLog" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="prose">
+    <p>몇 틱 넘기다 보면 앞 차례의 여우에게 잡아먹힌 토끼가 자기 차례에 "건너뜀"으로 처리되는 장면을 보게 됩니다. 순서를 "항상 여우 먼저"로 바꾸면 이런 일이 늘 같은 쪽에 불리하게 일어납니다. 매 틱 섞는 이유가 여기에 있습니다.</p>
+  </div>
+
+  <div class="prose" id="random">
+    <h3>무작위가 들어가는 곳</h3>
+    <p>코드에서 "확률 <span class="m">p</span>로 무언가를 한다"는 한 줄, <code>if random() &lt; p:</code>로 씁니다. <code>random()</code>은 0 이상 1 미만의 수를 고르게 뽑으므로 그 수가 <span class="m">p</span>보다 작을 확률이 정확히 <span class="m">p</span>입니다. 위의 넘겨 보기 기록에 찍히는 "난수 0.35 &lt; 도망 확률 0.75" 같은 줄이 바로 이 코드입니다.</p>
+    <p>매 틱 같은 확률로 일어나는 일을 기다리는 시간도 알아 두면 좋습니다. 확률이 <span class="m">p</span>이면 평균 1/<span class="m">p</span>틱을 기다립니다(기하분포). 회복된 맨땅에 저절로 싹이 틀 확률이 1%/틱이므로, 주변에서 씨가 날아오지 않는 외딴 칸은 평균 100틱쯤 맨땅으로 남습니다. 운이 좋으면 바로, 나쁘면 300틱 넘게 걸리기도 합니다.</p>
+    <p>같은 규칙으로 돌려도 매번 결과가 다른 이유는 아래의 무작위 요소들 때문입니다. 시뮬레이터의 "개체 차이 (CV)"는 첫 줄과 둘째 줄의 흩어짐 정도를 정합니다.</p>
+  </div>
+  <div class="tblwrap"><table>
+    <thead><tr><th>무엇</th><th>어떤 분포</th><th>예</th></tr></thead>
+    <tbody>
+      <tr><td><b>개체 차이</b> (태어날 때 한 번)</td><td>가우시안 배율 1 + CV × <span class="m">z</span>, <span class="m">z</span> ~ N(0, 1)</td><td>CV 15%면 속도 배율이 대부분 0.7~1.3 사이. 여우 평균 속도 2라면 1.4~2.6칸/틱</td></tr>
+      <tr><td><b>풀 타이머, 번식 대기</b> (매번)</td><td>가우시안, 평균 × (1 + CV × <span class="m">z</span>)</td><td>흙 회복 12틱 안팎, 토끼 번식 대기 20틱 안팎</td></tr>
+      <tr><td><b>행동의 성공 여부</b></td><td>베르누이 (확률 <span class="m">p</span>짜리 동전)</td><td>도망 0.75, 사냥 성공 0.5, 씨 맺힘 0.7, 저절로 싹 1%/틱</td></tr>
+      <tr><td><b>새끼 수</b></td><td>이산 균등</td><td>토끼는 1, 2, 3 중 하나</td></tr>
+      <tr><td><b>속도의 소수점</b></td><td>확률적 반올림</td><td>속도 1.3이면 그 틱에 30% 확률로 2칸, 70% 확률로 1칸. 길게 보면 평균 1.3칸</td></tr>
+      <tr><td><b>배회 방향, 동점 처리, 처음 배치</b></td><td>균등</td><td>상하좌우 중 하나, 같은 거리의 여우가 둘이면 아무나</td></tr>
+    </tbody>
+  </table></div>
+  <div class="prose">
+    <p>이 모든 난수는 씨앗(seed) 하나에서 차례로 뽑힙니다. 씨앗이 같으면 결과가 비트 하나까지 똑같이 재현되고, 씨앗만 바꾸면 같은 규칙의 다른 우연을 볼 수 있습니다. 개체 차이를 왜 정규분포로 주는지는 키나 몸무게처럼 작은 요인이 많이 더해져 생기는 형질이 대개 종 모양으로 퍼진다는 데서 빌려 온 단순화입니다.</p>
+  </div>
+</section>
+
+<section class="wrap" id="sim">
+  <div class="prose">
+    <h2>시뮬레이터</h2>
+    <p>위의 단계 버튼이나 아래 칩으로 모델을 한 단계씩 쌓아 올리거나, 맨 아래 값들을 직접 바꿔 보세요. 지도에서 동물을 누르면 그 개체를 따라가며 상태와 지금 따르는 규칙을 보여 줍니다.</p>
+  </div>
+  <div class="chips" id="stageChips" role="group" aria-label="단계 선택"></div>
+  <div class="legend" id="legend"></div>
+  <div class="toolbar">
+    <button class="btn primary" id="btnRun" type="button">실행</button>
+    <button class="btn" id="btnStep" type="button">한 틱</button>
+    <button class="btn" id="btnReset" type="button">처음부터</button>
+    <span class="tb-grp"><label for="speed">빠르기</label><input type="range" id="speed" min="0" max="6" step="1" value="3" style="width:110px;accent-color:var(--moss)"><span id="speedLab" style="min-width:64px;font-variant-numeric:tabular-nums"></span></span>
+    <span class="tb-sep"></span>
+    <span class="tb-grp"><label for="seed">씨앗</label><input type="number" id="seed" min="1" max="999999" value="1"><button class="btn" id="btnNewSeed" type="button" style="padding:5px 10px;font-size:.84rem">다른 씨앗</button></span>
+  </div>
+  <div class="simgrid">
+    <div>
+      <div class="mapwrap"><canvas id="map" aria-label="격자 생태계 지도. 누르면 동물 하나를 선택합니다."></canvas></div>
+      <div class="mapopts">
+        <label><input type="checkbox" id="optFear"> 토끼가 여우를 알아채는 범위</label>
+        <label><input type="checkbox" id="optActs" checked> 행동 표시 (도망 중인 토끼, 추격선)</label>
+      </div>
+    </div>
+    <div class="side">
+      <div class="card">
+        <div class="stats">
+          <div class="stat"><b id="sT">0</b><span>틱</span></div>
+          <div class="stat g"><b id="sG">0%</b><span>풀이 덮은 땅</span></div>
+          <div class="stat r"><b id="sR">0</b><span>토끼</span></div>
+          <div class="stat f"><b id="sF">0</b><span>여우</span></div>
+        </div>
+        <div class="evs" id="evs"></div>
+      </div>
+      <div class="card insp" id="insp" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="charts">
+    <div class="chartcard"><h4>개체수의 변화 <span class="hint" style="font-weight:400">최근 800틱</span></h4><canvas class="chart" id="ts" height="240"></canvas></div>
+    <div class="chartcard"><h4>토끼와 여우의 위상 그림</h4><canvas class="chart" id="phase" height="240"></canvas></div>
+  </div>
+  <div class="params" id="params"></div>
+  <div class="pfoot">
+    <button class="btn" id="btnDefaults" type="button">기본값으로</button>
+    <span>초록색 이름은 기본값에서 바꾼 값입니다. "처음부터"라고 적힌 값은 처음부터 다시 시작할 때 적용되고, 나머지는 바로 적용됩니다.</span>
+  </div>
+  <div class="trait">
+    <div class="chartcard">
+      <h4>개체 차이 들여다보기</h4>
+      <canvas class="chart" id="hist" height="210"></canvas>
+    </div>
+    <div class="card">
+      <div class="prow"><div class="lab"><span>종</span></div><select id="hSp"><option value="0">토끼</option><option value="1">여우</option></select></div>
+      <div class="prow"><div class="lab"><span>형질</span></div><select id="hTr"><option value="mS">이동 속도 배율</option><option value="mE">버티는 시간 배율</option><option value="mL">수명 배율</option></select></div>
+      <p class="hint" style="margin:6px 0 0">막대는 지금 살아 있는 개체들의 형질, 점선은 개체 차이 CV로 정한 출생 분포입니다. 굵은 선이 지금 평균입니다. 형질 유전을 켜면 새끼가 부모의 속도 배율을 거의 그대로 물려받습니다.</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="emerge">
+  <div class="prose">
+    <h2>무엇이 생겨났나: 창발</h2>
+    <p>4단계(기본 설정)를 몇 백 틱 돌려 놓고 그래프를 보세요. 규칙 어디에도 없던 현상들이 보입니다.</p>
+    <h3>개체수의 파도와 시차</h3>
+    <p>풀이 늘면 토끼가 늘고, 토끼가 늘면 조금 늦게 여우가 늘고, 여우가 늘면 토끼가 줄고, 토끼가 줄면 여우가 굶어 줄고, 그 사이 풀이 다시 번집니다. 세 곡선의 꼭대기가 풀, 토끼, 여우 순서로 조금씩 밀려 있습니다. 기본 설정에서 한 바퀴는 대략 200틱 남짓입니다.</p>
+    <h3>위상 그림의 고리</h3>
+    <p>가로축을 토끼 수, 세로축을 여우 수로 두고 점을 이어 가면 반시계 방향으로 도는 고리가 그려집니다. 토끼가 먼저 늘고(오른쪽), 여우가 뒤따라 늘고(위), 토끼가 줄고(왼쪽), 여우가 줄어(아래) 제자리 근처로 돌아옵니다. 고리가 매번 조금씩 다른 것은 무작위 때문입니다.</p>
+    <h3>공간의 무늬</h3>
+    <p>지도를 보면 풀밭이 고르게 퍼져 있지 않습니다. 토끼 떼가 지나간 자리는 갈색으로 비고, 여우가 몰려 있는 곳 주변은 토끼가 빠져나가 풀이 다시 짙어집니다. 초록이 번지는 앞쪽을 토끼가 따라가고, 그 뒤를 여우가 따라가는 물결이 생깁니다. 공간이 없는 수식 모델에는 나타날 수 없는 현상입니다.</p>
+    <h3>0은 되돌릴 수 없다</h3>
+    <p>토끼나 여우가 한 번 0이 되면 다시 생기지 않습니다. 이런 상태를 흡수 상태라고 합니다. 개체수가 바닥을 칠 때 몇 마리가 남느냐는 순전히 운입니다. 그래서 같은 설정이라도 어떤 씨앗에서는 수천 틱을 공존하고, 어떤 씨앗에서는 수백 틱 만에 여우가 사라집니다.</p>
+    <h3>수식 모델과 비교하기 <span class="adv">심화</span></h3>
+    <p>같은 생태계를 집단 수준에서 적은 고전 모델이 로트카-볼테라 방정식입니다. 토끼 수 <span class="m">R</span>, 여우 수 <span class="m">F</span>에 대해</p>
+  </div>
+  <div class="eq">d<i>R</i>/d<i>t</i> = <i>a R</i> − <i>b R F</i><br>d<i>F</i>/d<i>t</i> = <i>c b R F</i> − <i>d F</i></div>
+  <div class="prose">
+    <p><span class="m">aR</span>은 토끼의 번식, <span class="m">bRF</span>는 토끼와 여우가 마주쳐 잡아먹히는 양(둘이 골고루 섞여 있다면 마주칠 확률은 두 수의 곱에 비례), <span class="m">c</span>는 먹은 토끼가 여우 새끼로 바뀌는 비율, <span class="m">dF</span>는 여우의 사망입니다. 이 식도 반시계 고리를 그리지만, 고리는 처음 값에 따라 정해진 채 영원히 반복되고 어느 쪽도 0이 되지 않습니다.</p>
+    <p>ABM과 다른 점은 네 가지입니다. 수식은 모든 개체가 골고루 섞여 있다고 보지만 ABM의 여우는 근처 토끼만 먹습니다. 수식에서는 0.3마리가 가능하지만 ABM에서는 0 아니면 1입니다. 수식은 무작위가 없지만 ABM은 우연이 끼어듭니다. 수식에는 개체 차이가 없습니다. 공간을 없애고 개체 수를 아주 크게 하면 ABM의 평균적인 움직임이 이런 식에 가까워진다고 보는 것이 평균장 근사의 생각입니다. 거꾸로 말하면 ABM은 그 가정들을 하나씩 풀어 본 모델입니다.</p>
+  </div>
+</section>
+
+<section class="wrap" id="mc">
+  <div class="prose">
+    <h2>한 번 돌려서는 모른다: 몬테카를로</h2>
+    <p>앞 편에서 DES 결과를 씨앗만 바꿔 여러 번 돌리고(반복) 신뢰구간을 만들었습니다. ABM에서는 이 일이 훨씬 중요합니다. 커피점에서는 반복마다 평균 대기시간이 조금씩 달랐을 뿐이지만, 이 생태계에서는 결과가 질적으로 갈립니다. 어떤 씨앗에서는 공존하고 어떤 씨앗에서는 여우가 사라집니다.</p>
+    <p>"1000틱 안에 여우가 사라질 확률은 얼마인가"는 한 번 돌려서는 답할 수 없는 질문입니다. 같은 설정으로 씨앗만 바꿔 많이 돌리고 결과의 분포를 봅니다. 무작위 표본을 많이 뽑아 확률이나 분포를 어림하는 방법을 통틀어 몬테카를로 방법이라고 합니다.</p>
+    <h3>비율에도 신뢰구간이 있다</h3>
+    <p><span class="m">n</span>번 중 <span class="m">k</span>번 공존했다면 공존 비율의 추정값은 <span class="m">k</span>/<span class="m">n</span>입니다. 이 비율도 씨앗 묶음에 따라 흔들립니다. 아래 표는 비율용 95% 신뢰구간인 윌슨 구간을 함께 보여 줍니다. 예를 들어 30번 중 27번이면 추정값은 90%지만 구간은 대략 74~97%로 꽤 넓습니다. 반복을 4배로 늘리면 구간 폭이 대략 절반이 됩니다.</p>
+    <p>아래 실행은 시뮬레이터의 현재 설정을 그대로 쓰고, 시뮬레이터의 씨앗부터 1씩 늘려 가며 돌립니다. 설정 하나만 바꾸고 다시 돌리면 같은 씨앗 묶음으로 비교하게 됩니다(공통 난수). 결과는 표에 한 줄씩 쌓입니다.</p>
+  </div>
+  <div class="bench">
+    <div class="mcctl">
+      <span class="tb-grp"><label for="mcN">반복</label><select id="mcN"><option>20</option><option selected>50</option><option>100</option></select></span>
+      <span class="tb-grp"><label for="mcT">길이</label><select id="mcT"><option value="500">500틱</option><option value="1000" selected>1000틱</option><option value="2000">2000틱</option></select></span>
+      <button class="btn primary" id="mcRun" type="button">반복 실행</button>
+      <div class="prog" aria-hidden="true"><i id="mcProg"></i></div>
+      <span class="hint" id="mcStatus" style="min-width:120px">현재 시뮬레이터 설정으로 실행합니다.</span>
+    </div>
+    <div class="outbar" id="outbar"></div>
+    <div class="outkey">
+      <span><span class="sw" style="background:var(--moss)"></span>끝까지 공존</span>
+      <span><span class="sw" style="background:var(--fox)"></span>여우가 사라짐</span>
+      <span><span class="sw" style="background:var(--rabbit-ink)"></span>토끼가 사라짐</span>
+    </div>
+    <p class="mcsum" id="mcSum"></p>
+    <div class="chartcard" style="margin-top:12px;border:0;padding:0">
+      <h4>반복마다의 궤적</h4>
+      <canvas class="chart" id="fan" height="300"></canvas>
+      <p class="cap">진한 선은 같은 시각에서 반복들의 가운데 값(중앙값), 띠는 반복의 80%가 들어가는 범위(10~90번째 백분위수), 가는 선은 처음 몇 개 반복의 실제 궤적입니다. 처음에는 궤적들이 붙어 있다가 시간이 갈수록 흩어집니다.</p>
+    </div>
+    <div class="tblwrap"><table id="mcTable">
+      <thead><tr><th>#</th><th>설정 (기본값과 다른 것)</th><th>반복</th><th>공존 비율 [95% 구간]</th><th>여우 사라짐</th><th>토끼 사라짐</th><th>후반 평균 토끼 / 여우</th></tr></thead>
+      <tbody><tr><td colspan="7" class="hint">아직 실행 기록이 없습니다. 반복 실행을 눌러 보세요.</td></tr></tbody>
+    </table></div>
+    <p class="hint" style="margin:0">후반 평균은 끝까지 공존한 반복들에서, 길이의 뒤쪽 절반 동안의 평균입니다.</p>
+  </div>
+</section>
+
+<section class="wrap" id="lab">
+  <div class="prose">
+    <h2>실험 과제</h2>
+    <p>각 실험은 기본 설정에서 한 가지만 바꿉니다. 먼저 결과를 예상해서 적어 두고, 시뮬레이터로 한두 번 본 다음, 몬테카를로로 기본 설정과 비교하세요. 한 번 돌린 결과로 결론을 내리지 않는 것이 이 과제의 요점입니다.</p>
+  </div>
+  <div class="labgrid" id="labgrid"></div>
+</section>
+
+<section class="wrap" id="code">
+  <div class="prose">
+    <h2>직접 짜 보기</h2>
+    <p>같은 모델을 Python 표준 라이브러리만으로 짠 버전입니다. 화면 버전보다 조금 단순합니다. 토끼는 풀을 찾아가지 않고 무작위로 걷다가 풀을 만나면 먹고, 형질 유전과 짝 찾기는 뺐습니다. 대신 구조가 그대로 보입니다. <code>Animal</code>이 상태를 갖고, <code>Rabbit.step()</code>과 <code>Fox.step()</code>이 규칙이며, <code>World.step()</code>이 스케줄입니다.</p>
+  </div>
+  <details class="code" open>
+    <summary>eco.py</summary>
+    <pre id="pycode"></pre>
+  </details>
+  <div class="prose">
+    <p>그대로 실행하면 50틱마다 토끼, 여우, 풀 칸 수를 출력합니다. 출력을 리스트에 모아 matplotlib으로 그리면 위의 그래프와 같은 파도가 나옵니다. 화면 버전과 난수 생성기가 달라 같은 씨앗이라도 값은 다릅니다.</p>
+    <h3>라이브러리로 옮기기 <span class="adv">심화</span></h3>
+    <p>규모가 커지면 프레임워크를 씁니다. Python에서는 Mesa가 대표적이고, 교육용으로는 NetLogo가 널리 쓰입니다. 이 페이지의 모델은 NetLogo 모델 라이브러리의 늑대-양 포식(Wolf Sheep Predation)과 같은 계열이며, Mesa의 예제 모음에도 같은 계열의 모델이 있습니다. 프레임워크가 대신해 주는 것은 격자와 이웃 찾기, 스케줄(무작위 순서 활성화), 데이터 수집, 반복 실행입니다. 규칙을 적는 부분은 위 코드의 <code>step()</code>과 거의 같습니다.</p>
+  </div>
+</section>
+
+<section class="wrap" id="next">
+  <div class="prose">
+    <h2>다음 단계</h2>
+    <h3>모델을 남에게 설명하기</h3>
+    <p>ABM은 규칙이 코드 속에 흩어지기 쉬워서, 같은 모델을 다른 사람이 다시 만들기 어렵습니다. 그래서 생태학 쪽에서 ODD(Overview, Design concepts, Details)라는 표준 서술 형식이 만들어졌습니다. 목적, 개체와 상태, 스케줄을 먼저 쓰고, 창발과 상호작용과 무작위 같은 설계 개념을 정리한 다음, 세부 규칙과 초기값을 적습니다. 이 페이지의 <a href="#model">모델</a> 절이 그 순서를 느슨하게 따랐습니다.</p>
+    <h3>검증과 보정</h3>
+    <p>현실 데이터와 맞춰 볼 때는 숫자 하나보다 여러 패턴을 동시에 맞추는지를 봅니다. 주기의 길이, 포식자가 먹이보다 늦게 오르는 시차, 공간 분포 같은 것들입니다. 고전적인 실제 예로 허드슨 베이 회사의 스라소니와 눈신토끼 모피 기록이 있는데, 약 10년 주기로 두 종이 엇갈려 오르내립니다.</p>
+    <h3>민감도 분석</h3>
+    <p>매개변수가 스무 개가 넘으면 어떤 값이 결과를 크게 좌우하는지 알아야 합니다. 실험 과제에서 보듯 여우 시야는 2에서 4로만 바꿔도 결과가 뒤집히지만, 개체 차이 CV는 0에서 30%까지 바꿔도 공존 비율이 크게 달라지지 않습니다. 중요한 매개변수일수록 현실에서 정확히 재야 합니다.</p>
+    <h3>커피점으로 돌아가기</h3>
+    <p>앞 편의 손님도 에이전트로 만들 수 있습니다. 줄을 보고 들어올지 정하는 데서 그치지 않고, 기다리다 지쳐 떠나고, 친구가 서 있는 줄에 합류하고, 어제 오래 기다렸으면 오늘은 다른 카페로 가는 손님입니다. 실제로는 대기열과 자원은 DES로, 손님의 판단은 에이전트로 짜는 혼합 모델을 많이 씁니다.</p>
+  </div>
+</section>
+
+<footer class="wrap">경북대학교 컴퓨터학부 M&amp;S 학습 자료. 시뮬레이션의 모든 수치는 학습용 가정이며 실제 생태계의 값이 아닙니다.</footer>
+<script>
+'use strict';
+/* ================= engine ================= */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gaussN(r){let u=0;while(u===0)u=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*r())}
+const DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+const RABBIT=0, FOX=1;
+
+function defaultParams(){
+  return {
+    W:64,H:42, wrap:true, order:'shuffle', cv:0.15, inherit:false, mut:0.05, mate:false, mateR:3,
+    g:{init:0.15, recover:12, sproutP:1.0, grow:5, seedEvery:5, seedR:1, seedP:0.7},
+    r:{on:true, n:150, speed:1.0, starve:40, gain:15, breedEvery:20, litter:3, mature:15, life:150, fearR:3, fleeP:0.75},
+    f:{on:true, n:12, speed:2.0, starve:35, gain:15, breedEvery:40, litter:2, mature:30, life:300, sight:2, catchP:0.5, full:0.85}
+  };
+}
+
+class World{
+  constructor(P,seed){
+    this.P=P;
+    this.seed=seed>>>0;
+    this.rnd=mulberry32(this.seed||1);
+    const {W,H}=this.P; this.W=W; this.H=H; this.N=W*H;
+    this.g=new Uint8Array(this.N);      // 0 bare, 1 sprout, 2 grass
+    this.gt=new Float32Array(this.N);   // timer
+    this.cell=new Array(this.N).fill(null);
+    this.agents=[]; this.byId=new Map(); this.nextId=1; this.t=0; this.trace=null; this.queue=null;
+    this.hist={t:[],r:[],f:[],g:[]};
+    this.ev={bornR:0,bornF:0,eaten:0,starveR:0,starveF:0,oldR:0,oldF:0,seed:0,sprout:0,grazed:0};
+    const r=this.rnd, G=this.P.g;
+    for(let i=0;i<this.N;i++){
+      if(r()<G.init){this.g[i]=2;this.gt[i]=Math.floor(r()*this.draw(G.seedEvery,1))+1}
+      else{this.g[i]=0;this.gt[i]=0}
+    }
+    if(this.P.r.on) for(let k=0;k<this.P.r.n;k++) this.spawn(RABBIT,-1,-1,null);
+    if(this.P.f.on) for(let k=0;k<this.P.f.n;k++) this.spawn(FOX,-1,-1,null);
+    this.record();
+  }
+  draw(mean,min){ // gaussian variation around a mean, CV-scaled
+    const v=mean*(1+this.P.cv*gaussN(this.rnd));
+    return Math.max(min,v);
+  }
+  mult(parentM){ // personal trait multiplier drawn at birth
+    let m;
+    if(parentM!=null&&this.P.inherit) m=parentM*(1+this.P.mut*gaussN(this.rnd));
+    else m=1+this.P.cv*gaussN(this.rnd);
+    return Math.min(3,Math.max(0.25,m));
+  }
+  S(a){return a.sp===RABBIT?this.P.r:this.P.f}
+  eMax(a){return this.S(a).starve*a.mE}
+  spd(a){return this.S(a).speed*a.mS}
+  life(a){return this.S(a).life*a.mL}
+  sround(x){const f=Math.floor(x);return f+(this.rnd()<x-f?1:0)}
+  idx(x,y){return y*this.W+x}
+  norm(x,y){ // returns [x,y] or null
+    const {W,H}=this;
+    if(this.P.wrap){return [(x%W+W)%W,(y%H+H)%H]}
+    if(x<0||y<0||x>=W||y>=H) return null; return [x,y];
+  }
+  dist(ax,ay,bx,by){
+    let dx=Math.abs(ax-bx), dy=Math.abs(ay-by);
+    if(this.P.wrap){dx=Math.min(dx,this.W-dx);dy=Math.min(dy,this.H-dy)}
+    return dx+dy;
+  }
+  spawn(sp,x,y,parent){
+    const S=sp===RABBIT?this.P.r:this.P.f;
+    if(x<0){ // random empty cell
+      let tries=0;
+      do{x=Math.floor(this.rnd()*this.W);y=Math.floor(this.rnd()*this.H);tries++}while(this.cell[this.idx(x,y)]&&tries<500);
+      if(this.cell[this.idx(x,y)]) return null;
+    }
+    const a={id:this.nextId++,sp,x,y,alive:true,
+      mE:this.mult(null), mS:this.mult(parent?parent.mS:null), mL:this.mult(null),
+      age:0, cd:0, act:'wander', born:this.t, kids:0, meals:0, cause:null, gen:parent?parent.gen+1:0, parent:parent?parent.id:0};
+    if(parent){a.e=0} else {a.age=Math.floor(this.rnd()*S.mature*2); a.e=this.eMax(a)*(0.5+0.5*this.rnd()); a.cd=Math.floor(this.rnd()*S.breedEvery)}
+    this.cell[this.idx(x,y)]=a; this.agents.push(a); this.byId.set(a.id,a);
+    return a;
+  }
+  kill(a,cause){
+    if(!a.alive) return; a.alive=false; a.cause=cause; a.died=this.t;
+    const i=this.idx(a.x,a.y); if(this.cell[i]===a) this.cell[i]=null; this.byId.delete(a.id);
+    if(cause==='eaten') this.ev.eaten++;
+    else if(cause==='starve') a.sp?this.ev.starveF++:this.ev.starveR++;
+    else a.sp?this.ev.oldF++:this.ev.oldR++;
+  }
+  moveTo(a,x,y){
+    this.cell[this.idx(a.x,a.y)]=null; a.x=x; a.y=y; this.cell[this.idx(x,y)]=a;
+  }
+  /* list of empty neighbor cells (4-neighbourhood) */
+  freeNbrs(x,y){
+    const out=[];
+    for(let k=0;k<4;k++){const d=DIRS[k];const xx=this.wx(x+d[0]),yy=this.wy(y+d[1]); if(xx>=0&&yy>=0&&this.cell[yy*this.W+xx]===null) out.push([xx,yy])}
+    return out;
+  }
+  /* wrapped / bounded coordinate helpers (no allocation) */
+  wx(x){const W=this.W;if(x<0)return this.P.wrap?x+W:-1;if(x>=W)return this.P.wrap?x-W:-1;return x}
+  wy(y){const H=this.H;if(y<0)return this.P.wrap?y+H:-1;if(y>=H)return this.P.wrap?y-H:-1;return y}
+  /* nearest agent of species within Manhattan radius R (diamond scan) */
+  nearest(x,y,R,sp,pred){
+    let best=null,bd=1e9,cnt=0;
+    for(let dy=-R;dy<=R;dy++){
+      const yy=this.wy(y+dy); if(yy<0) continue;
+      const rw=R-Math.abs(dy), row=yy*this.W;
+      for(let dx=-rw;dx<=rw;dx++){
+        if(!dx&&!dy) continue;
+        const xx=this.wx(x+dx); if(xx<0) continue;
+        const b=this.cell[row+xx];
+        if(b!==null&&b.sp===sp&&b.alive&&(!pred||pred(b))){
+          const d=Math.abs(dx)+Math.abs(dy);
+          if(d<bd){bd=d;best=b;cnt=1}
+          else if(d===bd){cnt++; if(this.rnd()<1/cnt) best=b}
+        }
+      }
+    }
+    return best?{a:best,d:bd}:null;
+  }
+  nearestGrass(x,y,R){
+    let bx=-1,by=-1,bd=1e9,cnt=0;
+    for(let dy=-R;dy<=R;dy++){
+      const yy=this.wy(y+dy); if(yy<0) continue;
+      const rw=R-Math.abs(dy), row=yy*this.W;
+      for(let dx=-rw;dx<=rw;dx++){
+        if(!dx&&!dy) continue;
+        const xx=this.wx(x+dx); if(xx<0) continue;
+        const i=row+xx;
+        if(this.g[i]===2&&this.cell[i]===null){
+          const d=Math.abs(dx)+Math.abs(dy);
+          if(d<bd){bd=d;bx=xx;by=yy;cnt=1} else if(d===bd){cnt++; if(this.rnd()<1/cnt){bx=xx;by=yy}}
+        }
+      }
+    }
+    return bx<0?null:[bx,by];
+  }
+  stepToward(a,tx,ty,away){
+    const opts=this.freeNbrs(a.x,a.y); if(!opts.length) return false;
+    const d0=this.dist(a.x,a.y,tx,ty);
+    let best=[],bv=away?-1e9:1e9;
+    for(const p of opts){
+      const d=this.dist(p[0],p[1],tx,ty);
+      if(away?d>bv:d<bv){bv=d;best=[p]} else if(d===bv) best.push(p);
+    }
+    if(away?bv<=d0:bv>=d0) { // cannot improve: when fleeing, sidestep anyway if equal
+      if(!(away&&bv===d0)) return false;
+    }
+    const p=best[Math.floor(this.rnd()*best.length)];
+    this.moveTo(a,p[0],p[1]); return true;
+  }
+  randomStep(a){
+    const d=DIRS[Math.floor(this.rnd()*4)];
+    const xx=this.wx(a.x+d[0]),yy=this.wy(a.y+d[1]);
+    if(xx>=0&&yy>=0&&this.cell[yy*this.W+xx]===null) this.moveTo(a,xx,yy);
+  }
+  tryBreed(a){
+    const S=a.sp===RABBIT?this.P.r:this.P.f;
+    if(a.age<S.mature||a.cd>0||a.e<0.5*this.eMax(a)) return;
+    if(this.P.mate){
+      const m=this.nearest(a.x,a.y,this.P.mateR,a.sp,b=>b.age>=S.mature);
+      if(!m) return;
+    }
+    const want=1+Math.floor(this.rnd()*S.litter);
+    // free cells within Manhattan 2
+    const spots=[];
+    for(let dy=-2;dy<=2;dy++){const rw=2-Math.abs(dy);for(let dx=-rw;dx<=rw;dx++){
+      if(!dx&&!dy)continue; const p=this.norm(a.x+dx,a.y+dy); if(p&&!this.cell[this.idx(p[0],p[1])]) spots.push(p)}}
+    if(!spots.length) return;
+    const k=Math.min(want,spots.length);
+    const share=a.e*0.5; a.e-=share;
+    for(let j=0;j<k;j++){
+      const s=Math.floor(this.rnd()*spots.length); const p=spots.splice(s,1)[0];
+      const c=this.spawn(a.sp,p[0],p[1],a);
+      c.e=Math.min(this.eMax(c),share/k); c.cd=Math.round(this.draw(S.breedEvery,1)*0.5);
+      this.born.push(c);
+    }
+    this.L(`새끼 ${k}마리를 낳고 에너지 절반을 나눠 준다`);
+    a.kids+=k; a.bred=this.t; a.cd=Math.round(this.draw(S.breedEvery,1));
+    if(a.sp===RABBIT) this.ev.bornR+=k; else this.ev.bornF+=k;
+  }
+  actRabbit(a){
+    const S=this.P.r;
+    a.age++; const em=this.eMax(a); a.e=Math.min(a.e,em)-a.mS; if(a.cd>0)a.cd--;
+    if(a.e<=0){this.L('에너지가 0이 되어 굶어 죽는다');this.kill(a,'starve');return}
+    if(a.age>=this.life(a)){this.L('수명이 다해 죽는다');this.kill(a,'old');return}
+    const steps=this.sround(this.spd(a));
+    const fox=S.fearR>0?this.nearest(a.x,a.y,S.fearR,FOX):null;
+    a.threat=fox?fox.a.id:0;
+    const x0=a.x,y0=a.y;
+    if(this.trace){this.L(`에너지 ${(a.e+a.mS).toFixed(1)} → ${a.e.toFixed(1)}`); this.L(fox?`거리 ${S.fearR} 안의 가장 가까운 여우: #${fox.a.id}, 거리 ${fox.d}`:`거리 ${S.fearR} 안에 여우 없음`)}
+    let u=1;
+    if(fox){u=this.rnd(); this.L(`난수 ${u.toFixed(2)} ${u<S.fleeP?'<':'≥'} 도망 확률 ${S.fleeP} → ${u<S.fleeP?'달아난다':'달아나지 않는다'}`)}
+    if(fox&&u<S.fleeP){
+      a.act='flee';
+      for(let s=0;s<steps;s++) if(!this.stepToward(a,fox.a.x,fox.a.y,true)) break;
+    }else{
+      a.act='wander';
+      const hungry=a.e<em-S.gain*0.5;
+      for(let s=0;s<steps;s++){
+        const here=this.idx(a.x,a.y);
+        if(hungry&&this.g[here]===2) break;
+        if(hungry){
+          const tg=this.nearestGrass(a.x,a.y,2);
+          if(tg){a.act='forage'; if(!this.stepToward(a,tg[0],tg[1],false)) this.randomStep(a); continue}
+        }
+        this.randomStep(a);
+      }
+    }
+    if(this.trace){
+      if(a.act==='forage') this.L('배고프다: 2칸 안의 가장 가까운 풀 쪽으로');
+      else if(a.act==='wander'){const hg=a.e<em-S.gain*0.5; this.L(!hg?'배부르다: 무작위로':this.g[this.idx(a.x,a.y)]===2?'배고프고 발밑에 풀이 있다: 움직이지 않는다':'배고프지만 2칸 안에 풀이 없다: 무작위로')}
+      this.L(x0===a.x&&y0===a.y?`제자리 (${a.x},${a.y})`:`이동 (${x0},${y0}) → (${a.x},${a.y}), 걸음 수 ${steps}`);
+    }
+    const i=this.idx(a.x,a.y);
+    if(this.g[i]===2&&a.e<em-S.gain*0.5){
+      this.g[i]=0; this.gt[i]=Math.round(this.draw(this.P.g.recover,1));
+      a.e=Math.min(em,a.e+S.gain); a.meals++; this.ev.grazed++;
+      if(a.act!=='flee') a.act='eat';
+      this.L(`발밑의 풀을 먹는다: 에너지 +${S.gain}, 이 칸은 맨땅`);
+    }
+    this.tryBreed(a);
+  }
+  actFox(a){
+    const S=this.P.f;
+    a.age++; const em=this.eMax(a); a.e=Math.min(a.e,em)-a.mS; if(a.cd>0)a.cd--;
+    if(a.e<=0){this.L('에너지가 0이 되어 굶어 죽는다');this.kill(a,'starve');return}
+    if(a.age>=this.life(a)){this.L('수명이 다해 죽는다');this.kill(a,'old');return}
+    const steps=this.sround(this.spd(a));
+    const hungry=a.e<em*S.full;
+    a.act=hungry?'wander':'full'; a.target=0;
+    const x0=a.x,y0=a.y;
+    if(this.trace){this.L(`에너지 ${(a.e+a.mS).toFixed(1)} → ${a.e.toFixed(1)}`); if(!hungry)this.L(`배부르다 (최대의 ${Math.round(S.full*100)}% 이상): 사냥하지 않는다`)}
+    let logged=false;
+    for(let s=0;s<steps;s++){
+      if(hungry){
+        const adj=this.nearest(a.x,a.y,1,RABBIT);
+        if(adj){
+          a.act='hunt'; a.target=adj.a.id;
+          const u=this.rnd();
+          this.L(`바로 옆에 토끼 #${adj.a.id}: 난수 ${u.toFixed(2)} ${u<S.catchP?'<':'≥'} 성공 확률 ${S.catchP} → ${u<S.catchP?'잡았다':'놓쳤다'}`);
+          if(u<S.catchP){
+            const r=adj.a, rx=r.x, ry=r.y;
+            this.kill(r,'eaten'); this.moveTo(a,rx,ry);
+            a.e=Math.min(em,a.e+S.gain); a.meals++; a.act='eat';
+            break;
+          }
+          continue;
+        }
+        const tg=this.nearest(a.x,a.y,S.sight,RABBIT);
+        if(tg){a.act='chase'; a.target=tg.a.id; if(!logged){this.L(`시야 ${S.sight} 안의 토끼 #${tg.a.id}(거리 ${tg.d}) 쪽으로`);logged=true} if(!this.stepToward(a,tg.a.x,tg.a.y,false)) this.randomStep(a); continue}
+      }
+      this.randomStep(a);
+    }
+    if(this.trace){ if(a.act==='wander'&&hungry)this.L(`시야 ${S.sight} 안에 토끼 없음: 무작위로`); this.L(x0===a.x&&y0===a.y?`제자리 (${a.x},${a.y})`:`이동 (${x0},${y0}) → (${a.x},${a.y}), 걸음 수 ${steps}`); }
+    this.tryBreed(a);
+  }
+  updateGrass(){
+    const G=this.P.g, r=this.rnd, N=this.N, g=this.g, gt=this.gt;
+    const sp=G.sproutP/100;
+    const newS=[];
+    for(let i=0;i<N;i++){
+      const s=g[i];
+      if(s===0){
+        if(gt[i]>0){gt[i]--}
+        else if(r()<sp){g[i]=1;gt[i]=this.draw(G.grow,1);this.ev.sprout++}
+      }else if(s===1){
+        if(--gt[i]<=0){g[i]=2;gt[i]=this.draw(G.seedEvery,1)}
+      }else{
+        if(--gt[i]<=0){
+          gt[i]=this.draw(G.seedEvery,1);
+          if(r()<G.seedP){
+            const R=G.seedR; let dx,dy;
+            do{dx=Math.floor(r()*(2*R+1))-R;dy=Math.floor(r()*(2*R+1))-R}while((dx===0&&dy===0)||Math.abs(dx)+Math.abs(dy)>R);
+            const x=i%this.W, y=(i/this.W)|0, p=this.norm(x+dx,y+dy);
+            if(p){const j=this.idx(p[0],p[1]); if(g[j]===0&&gt[j]<=0) newS.push(j)}
+          }
+        }
+      }
+    }
+    for(const j of newS){ if(g[j]===0){g[j]=1;gt[j]=this.draw(G.grow,1);this.ev.seed++} }
+  }
+  beginTick(){
+    this.t++;
+    this.updateGrass();
+    this.born=[];
+    let list=this.agents;
+    const ord=this.P.order;
+    if(ord==='shuffle'){
+      list=list.slice();
+      for(let i=list.length-1;i>0;i--){const j=Math.floor(this.rnd()*(i+1));const t=list[i];list[i]=list[j];list[j]=t}
+    }else if(ord==='fox'){list=list.filter(a=>a.sp===FOX).concat(list.filter(a=>a.sp===RABBIT))}
+    else if(ord==='rabbit'){list=list.filter(a=>a.sp===RABBIT).concat(list.filter(a=>a.sp===FOX))}
+    else list=list.slice();
+    this.queue=list; this.qi=0;
+  }
+  actNext(){
+    if(this.qi>=this.queue.length) return null;
+    const a=this.queue[this.qi++];
+    if(!a.alive){a._skip=true;return a}
+    a._skip=false;
+    if(a.sp===RABBIT) this.actRabbit(a); else this.actFox(a);
+    return a;
+  }
+  endTick(){this.agents=this.agents.filter(a=>a.alive);this.queue=null;this.record()}
+  step(){this.beginTick();while(this.actNext());this.endTick()}
+  L(m){if(this.trace)this.trace.push(m)}
+  counts(){let r=0,f=0;for(const a of this.agents){if(a.sp===RABBIT)r++;else f++}let g=0;for(let i=0;i<this.N;i++)if(this.g[i]===2)g++;return{r,f,g}}
+  record(){const c=this.counts();this.nR=c.r;this.nF=c.f;this.nG=c.g;if(this.extF==null&&this.P.f.on&&this.P.f.n>0&&c.f===0)this.extF=this.t;if(this.extR==null&&this.P.r.on&&this.P.r.n>0&&c.r===0)this.extR=this.t;const h=this.hist;h.t.push(this.t);h.r.push(c.r);h.f.push(c.f);h.g.push(c.g)}
+}
+
+/* ================= warm-up engines ================= */
+class Schelling{
+  constructor(P,seed){
+    this.P=P; this.rnd=mulberry32(seed||1); const n=P.size; this.W=n; this.H=n; this.N=n*n;
+    this.g=new Uint8Array(this.N); this.t=0; this.hist={sim:[],unh:[]}; this.moves=0;
+    const r=this.rnd;
+    for(let i=0;i<this.N;i++){ if(r()<P.empty) this.g[i]=0; else this.g[i]=r()<P.share?1:2 }
+    this.measure();
+  }
+  nb(i){ // returns [same, other]
+    const W=this.W,H=this.H,x=i%W,y=(i/W)|0,c=this.g[i]; let s=0,o=0;
+    const moore=this.P.moore;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+      if(!dx&&!dy)continue; if(!moore&&dx&&dy)continue;
+      const xx=(x+dx+W)%W, yy=(y+dy+H)%H, v=this.g[yy*W+xx];
+      if(v===c)s++; else if(v)o++;
+    }
+    return [s,o];
+  }
+  happy(i){const [s,o]=this.nb(i); return s+o===0 || s/(s+o)>=this.P.want-1e-9}
+  measure(){
+    let tot=0,cnt=0,unh=0,ag=0;
+    for(let i=0;i<this.N;i++){ if(!this.g[i])continue; ag++;
+      const [s,o]=this.nb(i); if(s+o){tot+=s/(s+o);cnt++}
+      if(!(s+o===0||s/(s+o)>=this.P.want-1e-9))unh++; }
+    this.sim=cnt?tot/cnt:0; this.unh=ag?unh/ag:0; this.hist.sim.push(this.sim); this.hist.unh.push(this.unh);
+  }
+  step(){
+    this.t++; const r=this.rnd;
+    const list=[]; for(let i=0;i<this.N;i++) if(this.g[i]) list.push(i);
+    for(let k=list.length-1;k>0;k--){const j=Math.floor(r()*(k+1));const t=list[k];list[k]=list[j];list[j]=t}
+    const empt=[]; for(let i=0;i<this.N;i++) if(!this.g[i]) empt.push(i);
+    let mv=0;
+    for(const i of list){
+      if(!this.g[i]||this.happy(i)) continue;
+      if(!empt.length) break;
+      const e=Math.floor(r()*empt.length), j=empt[e];
+      this.g[j]=this.g[i]; this.g[i]=0; empt[e]=i; mv++;
+    }
+    this.moves=mv; this.measure();
+  }
+}
+
+class AntWorld{
+  constructor(P,seed){
+    this.P=P; this.rnd=mulberry32(seed||1); const W=P.W,H=P.H; this.W=W; this.H=H; this.N=W*H;
+    this.chem=new Float32Array(this.N); this.tmp=new Float32Array(this.N);
+    this.food=new Uint8Array(this.N); this.pile=new Int8Array(this.N).fill(-1);
+    this.nx=W/2; this.ny=H/2; this.nestR=3; this.t=0; this.home=0;
+    this.piles=P.layout==='far'?[{x:W/2+32,y:H/2+14,r:4,amt:6}]:[{x:W/2+16,y:H/2-3,r:4},{x:W/2-20,y:H/2-17,r:4},{x:W/2-24,y:H/2+18,r:4}];
+    this.piles.forEach((p,k)=>{p.total=0;
+      for(let y=0;y<H;y++)for(let x=0;x<W;x++){if((x+.5-p.x)**2+(y+.5-p.y)**2<=p.r*p.r){const i=y*W+x,am=p.amt||2;this.food[i]=am;this.pile[i]=k;p.total+=am}}
+      p.left=p.total; p.done=null;});
+    this.ants=[]; const r=this.rnd;
+    for(let k=0;k<P.n;k++) this.ants.push({x:this.nx+(r()-.5),y:this.ny+(r()-.5),h:r()*Math.PI*2,carry:false});
+    this.hist={t:[0],left:this.piles.map(p=>[p.left]),home:[0]};
+  }
+  ci(x,y){const xi=Math.floor(x),yi=Math.floor(y); if(xi<0||yi<0||xi>=this.W||yi>=this.H)return -1; return yi*this.W+xi}
+  sniff(a,ang){
+    const x=a.x+1.6*Math.cos(a.h+ang), y=a.y+1.6*Math.sin(a.h+ang), i=this.ci(x,y); if(i<0)return -1;
+    if(this.P.outward&&Math.hypot(x-this.nx,y-this.ny)<Math.hypot(a.x-this.nx,a.y-this.ny)-0.3) return -1; // 집 쪽 냄새는 무시
+    return this.chem[i];
+  }
+  step(){
+    this.t++; const P=this.P, r=this.rnd, W=this.W, H=this.H, wig=P.wiggle*Math.PI/180;
+    for(const a of this.ants){
+      const i=this.ci(a.x,a.y);
+      if(!a.carry){
+        if(i>=0&&this.food[i]>0){this.food[i]--;a.carry=true;a.steps=0;a.pile=this.pile[i];const p=this.piles[a.pile];p.left--; if(p.left===0)p.done=this.t; a.h+=Math.PI; a.state='pick'}
+        else{
+          a.state='search';
+          if(P.follow){
+            const l=this.sniff(a,-Math.PI/4), c=this.sniff(a,0), rr=this.sniff(a,Math.PI/4), m=Math.max(l,c,rr);
+            if(m>=P.thr&&Math.hypot(a.x-this.nx,a.y-this.ny)>=P.ignoreR){
+              a.state='follow';
+              const here=i>=0?this.chem[i]:0;
+              if(P.uphill&&m<here*0.9) a.h+=Math.PI;               // 앞쪽 냄새가 더 약하면 돌아선다
+              else if(rr===m&&rr>c)a.h+=Math.PI/4; else if(l===m&&l>c)a.h-=Math.PI/4;
+            }
+          }
+          a.h+=(r()*2-1)*wig;
+        }
+      }else{
+        const d=Math.hypot(a.x-this.nx,a.y-this.ny);
+        if(d<this.nestR){a.carry=false;this.home++;a.h=r()*Math.PI*2;a.state='drop'}
+        else{
+          a.state='home';
+          if(P.drop&&i>=0) this.chem[i]+=P.dropAmt*Math.pow(P.fade,a.steps); a.steps++;
+          a.h=Math.atan2(this.ny-a.y,this.nx-a.x)+(r()*2-1)*wig*0.5;
+        }
+      }
+      let nx=a.x+Math.cos(a.h), ny=a.y+Math.sin(a.h);
+      if(nx<0||ny<0||nx>=W||ny>=H){a.h+=Math.PI; nx=Math.min(W-0.01,Math.max(0,a.x+Math.cos(a.h))); ny=Math.min(H-0.01,Math.max(0,a.y+Math.sin(a.h)))}
+      a.x=nx; a.y=ny;
+    }
+    // diffuse (share D of each cell equally with 8 neighbours) + evaporate
+    const D=P.diff, E=P.evap, c=this.chem, t=this.tmp; t.fill(0);
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      const i=y*W+x, v=c[i]; if(v<1e-4){t[i]+=v;continue}
+      const share=v*D/8; let given=0;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+        if(!dx&&!dy)continue; const xx=x+dx,yy=y+dy; if(xx<0||yy<0||xx>=W||yy>=H)continue;
+        t[yy*W+xx]+=share; given+=share;
+      }
+      t[i]+=v-given;
+    }
+    for(let i=0;i<this.N;i++) c[i]=t[i]*(1-E);
+    this.hist.t.push(this.t); this.piles.forEach((p,k)=>this.hist.left[k].push(p.left)); this.hist.home.push(this.home);
+  }
+}
+
+
+/* ================= UI ================= */
+const $=id=>document.getElementById(id);
+const DEF=defaultParams();
+let PAR=defaultParams();
+let world=null, seed=1, running=false, sel=null, inView=true, stageIdx=3;
+const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function deep(a,b){for(const k in b){if(b[k]&&typeof b[k]==='object')deep(a[k],b[k]);else a[k]=b[k]}return a}
+
+/* ---------- colors ---------- */
+const C={};
+function hexRGB(h){h=h.trim();if(h[0]==='#'){if(h.length===4)h='#'+h[1]+h[1]+h[2]+h[2]+h[3]+h[3];return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}return[128,128,128]}
+function refreshColors(){
+  const cs=getComputedStyle(document.documentElement);
+  for(const k of ['ink','muted','line','soft','panel','moss','grass','sprout','soil','soil-dk','rabbit','rabbit-edge','rabbit-ink','flee','fox','fox-dk','fear','alert','sch-a','sch-b','phero','food','nest','ant']){
+    C[k]=cs.getPropertyValue('--'+k).trim();
+  }
+  C.rgb={grass:hexRGB(C.grass),sprout:hexRGB(C.sprout),soil:hexRGB(C.soil),soilDk:hexRGB(C['soil-dk'])};
+}
+function rgba(hex,a){const c=hexRGB(hex);return `rgba(${c[0]},${c[1]},${c[2]},${a})`}
+
+/* ---------- parameter spec ---------- */
+const pct=v=>Math.round(v*100)+'%';
+const f2=v=>(+v).toFixed(2);
+const SPEC=[
+ {g:'env',title:'환경',color:'var(--moss)',rows:[
+  {k:'size',type:'select',label:'섬 크기',opts:[['40x28','작게 40×28'],['64x42','보통 64×42'],['96x64','크게 96×64']],reset:true},
+  {k:'wrap',type:'select',label:'가장자리',opts:[['1','감김 (토러스)'],['0','막힌 벽']]},
+  {k:'cv',label:'개체 차이 CV',min:0,max:0.4,step:0.05,fmt:pct},
+  {k:'inherit',type:'check',label:'형질 유전 (속도 배율)'},
+  {k:'mate',type:'check',label:'짝이 근처에 있어야 번식'},
+  {k:'mateR',label:'짝 찾는 거리',min:1,max:8,step:1,unit:'칸'},
+  {k:'order',type:'select',label:'행동 순서',opts:[['shuffle','매 틱 무작위로 섞기'],['fox','항상 여우 먼저'],['rabbit','항상 토끼 먼저']]},
+ ]},
+ {g:'g',title:'풀',color:'var(--grass)',sw:'grass',rows:[
+  {k:'init',label:'처음 풀 비율',min:0,max:1,step:0.05,fmt:pct,reset:true},
+  {k:'recover',label:'뜯긴 뒤 흙 회복 시간',min:0,max:60,step:1,unit:'틱'},
+  {k:'sproutP',label:'저절로 싹틀 확률',min:0,max:3,step:0.05,fmt:v=>(+v).toFixed(2)+'%/틱'},
+  {k:'grow',label:'싹이 풀이 되는 시간',min:1,max:30,step:1,unit:'틱'},
+  {k:'seedEvery',label:'씨 퍼뜨리는 주기',min:1,max:30,step:1,unit:'틱'},
+  {k:'seedP',label:'씨 맺힐 확률',min:0,max:1,step:0.05,fmt:f2},
+  {k:'seedR',label:'씨 날아가는 거리',min:1,max:4,step:1,unit:'칸'},
+ ]},
+ {g:'r',title:'토끼',color:'var(--rabbit-ink)',sw:'rabbit',rows:[
+  {k:'on',type:'check',label:'토끼 넣기',reset:true},
+  {k:'n',label:'처음 수',min:0,max:600,step:10,unit:'마리',reset:true},
+  {k:'speed',label:'이동 속도',min:0.25,max:3,step:0.05,unit:'칸/틱',fmt:f2},
+  {k:'starve',label:'굶어도 버티는 시간',min:5,max:120,step:1,unit:'틱'},
+  {k:'gain',label:'풀 한 칸의 에너지',min:1,max:40,step:1,unit:'틱'},
+  {k:'breedEvery',label:'번식 간격',min:2,max:80,step:1,unit:'틱'},
+  {k:'litter',label:'한 배 최대 새끼 수',min:1,max:6,step:1,unit:'마리'},
+  {k:'mature',label:'다 자라는 나이',min:1,max:80,step:1,unit:'틱'},
+  {k:'life',label:'평균 수명',min:20,max:600,step:10,unit:'틱'},
+  {k:'fearR',label:'여우를 알아채는 거리',min:0,max:6,step:1,unit:'칸'},
+  {k:'fleeP',label:'도망칠 확률',min:0,max:1,step:0.05,fmt:f2},
+ ]},
+ {g:'f',title:'여우',color:'var(--fox)',sw:'fox',rows:[
+  {k:'on',type:'check',label:'여우 넣기',reset:true},
+  {k:'n',label:'처음 수',min:0,max:200,step:2,unit:'마리',reset:true},
+  {k:'speed',label:'이동 속도',min:0.25,max:4,step:0.05,unit:'칸/틱',fmt:f2},
+  {k:'starve',label:'굶어도 버티는 시간',min:5,max:150,step:1,unit:'틱'},
+  {k:'gain',label:'토끼 한 마리의 에너지',min:1,max:60,step:1,unit:'틱'},
+  {k:'breedEvery',label:'번식 간격',min:2,max:150,step:1,unit:'틱'},
+  {k:'litter',label:'한 배 최대 새끼 수',min:1,max:5,step:1,unit:'마리'},
+  {k:'mature',label:'다 자라는 나이',min:1,max:150,step:1,unit:'틱'},
+  {k:'life',label:'평균 수명',min:20,max:800,step:10,unit:'틱'},
+  {k:'sight',label:'사냥 시야',min:0,max:8,step:1,unit:'칸'},
+  {k:'catchP',label:'사냥 성공 확률',min:0,max:1,step:0.05,fmt:f2},
+  {k:'full',label:'배부름 기준 (에너지)',min:0.3,max:1,step:0.05,fmt:pct},
+ ]},
+];
+function getV(P,g,k){
+  if(g==='env'){if(k==='size')return P.W+'x'+P.H; if(k==='wrap')return P.wrap?'1':'0'; return P[k]}
+  return P[g][k];
+}
+function setV(P,g,k,v){
+  if(g==='env'){
+    if(k==='size'){const [w,h]=v.split('x').map(Number);P.W=w;P.H=h;return}
+    if(k==='wrap'){P.wrap=v==='1';return}
+    P[k]=v;return;
+  }
+  P[g][k]=v;
+}
+function fmtRow(r,v){
+  if(r.type==='check')return v?'켬':'끔';
+  if(r.type==='select'){const o=r.opts.find(o=>o[0]===String(v));return o?o[1]:v}
+  if(r.fmt)return r.fmt(v);
+  return v+(r.unit?' '+r.unit:'');
+}
+const ctl={};
+function buildParams(){
+  const box=$('params'); box.innerHTML='';
+  for(const G of SPEC){
+    const d=document.createElement('div'); d.className='pgroup'; d.style.setProperty('--c',G.color);
+    const sw=G.sw==='rabbit'?'<span class="sw round" style="background:var(--rabbit);border-color:var(--rabbit-edge)"></span>':G.sw?`<span class="sw" style="background:var(--${G.sw})"></span>`:'';
+    d.innerHTML=`<h4>${sw}${G.title}</h4>`;
+    for(const r of G.rows){
+      const id=`p_${G.g}_${r.k}`, row=document.createElement('div');
+      row.className='prow'+(r.type==='check'?' chk':'');
+      const note=r.reset?' <em>처음부터</em>':'';
+      if(r.type==='check'){
+        row.innerHTML=`<label><input type="checkbox" id="${id}"><span>${r.label}${note}</span></label>`;
+      }else if(r.type==='select'){
+        row.innerHTML=`<div class="lab"><label for="${id}">${r.label}${note}</label></div><select id="${id}">${r.opts.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('')}</select>`;
+      }else{
+        row.innerHTML=`<div class="lab"><label for="${id}">${r.label}${note}</label><span id="${id}_v"></span></div><input type="range" id="${id}" min="${r.min}" max="${r.max}" step="${r.step}">`;
+      }
+      d.appendChild(row);
+      const el=row.querySelector('#'+id);
+      ctl[id]={el,row,r,g:G.g};
+      const ev=r.type==='range'||!r.type?'input':'change';
+      el.addEventListener(ev,()=>{
+        let v=r.type==='check'?el.checked:r.type==='select'?el.value:+el.value;
+        setV(PAR,G.g,r.k,v); syncParam(id);
+        if(r.reset) markPending(); 
+        markStage(-1);
+        if(!running) drawAll();
+      });
+    }
+    box.appendChild(d);
+  }
+}
+function syncParam(id){
+  const c=ctl[id], v=getV(PAR,c.g,c.r.k), dv=getV(DEF,c.g,c.r.k);
+  if(c.r.type==='check')c.el.checked=!!v; else c.el.value=v;
+  const lab=$(id+'_v'); if(lab)lab.textContent=fmtRow(c.r,v);
+  c.row.classList.toggle('changed',String(v)!==String(dv));
+}
+function syncAll(){for(const id in ctl)syncParam(id)}
+let pending=false;
+function markPending(){pending=true;$('btnReset').textContent='처음부터 (설정 바뀜)'}
+function diffSummary(P){
+  const out=[];
+  for(const G of SPEC)for(const r of G.rows){
+    const v=getV(P,G.g,r.k),dv=getV(DEF,G.g,r.k);
+    if(String(v)!==String(dv))out.push(`${G.g==='env'?'':G.title+' '}${r.label} ${fmtRow(r,v)}`);
+  }
+  return out.length?out.join(', '):'기본 설정';
+}
+
+/* ---------- stages ---------- */
+const STAGES=[
+ {title:'풀만',desc:'아무 데서나 싹이 트고 이웃으로 번진다',o:{r:{on:false},f:{on:false},g:{init:0,sproutP:0.05}}},
+ {title:'풀과 토끼',desc:'먹이의 양이 토끼 수의 상한을 정한다',o:{f:{on:false}}},
+ {title:'여우 등장',desc:'토끼는 여우를 아랑곳하지 않는다',o:{r:{fleeP:0}}},
+ {title:'도망치는 토끼',desc:'기본 설정. 세 종이 함께 출렁인다',o:{}},
+ {title:'형질 유전',desc:'새끼가 부모의 속도를 물려받는다',o:{inherit:true}},
+ {title:'작은 섬',desc:'같은 규칙, 더 좁은 땅',o:{W:40,H:28}},
+];
+function buildStages(){
+  const lad=$('ladder'), chips=$('stageChips');
+  STAGES.forEach((s,i)=>{
+    const li=document.createElement('li');
+    li.innerHTML=`<button type="button" data-i="${i}"><b>${i+1}</b>${s.title}<small>${s.desc}</small></button>`;
+    lad.appendChild(li);
+    li.querySelector('button').addEventListener('click',()=>{applyPreset(s.o,i);document.getElementById('sim').scrollIntoView({behavior:reduceMotion?'auto':'smooth'});if(!reduceMotion)setRun(true)});
+    const c=document.createElement('button'); c.type='button'; c.className='chip'; c.dataset.i=i; c.textContent=`${i+1} ${s.title}`;
+    c.addEventListener('click',()=>{applyPreset(s.o,i);if(!reduceMotion)setRun(true)});
+    chips.appendChild(c);
+  });
+}
+function markStage(i){
+  stageIdx=i;
+  document.querySelectorAll('#ladder button,#stageChips .chip').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.i===i)));
+}
+function applyPreset(o,i){
+  PAR=deep(defaultParams(),clone(o));
+  syncAll(); markStage(i==null?-1:i); resetWorld();
+}
+
+/* ---------- world control ---------- */
+function resetWorld(){
+  seed=Math.max(1,Math.floor(+$('seed').value||1));
+  world=new World(PAR,seed); sel=null; pending=false; $('btnReset').textContent='처음부터';
+  sizeMap(); drawAll(); renderInsp(true);
+}
+function setRun(on){
+  running=on; $('btnRun').textContent=on?'일시정지':'실행';
+  if(on){last=performance.now();acc=0;}
+}
+const SPEEDS=[[3,'3틱/초'],[8,'8틱/초'],[20,'20틱/초'],[45,'45틱/초'],[100,'100틱/초'],[240,'240틱/초'],[600,'최대한']];
+let last=0, acc=0, frame=0;
+function loop(now){
+  requestAnimationFrame(loop);
+  if(!running||!inView){last=now;return}
+  const dt=Math.min(0.1,(now-last)/1000); last=now;
+  const tps=SPEEDS[+$('speed').value][0];
+  acc+=dt*tps;
+  let n=Math.floor(acc); acc-=n;
+  const t0=performance.now();
+  while(n-->0){
+    world.step();
+    if(allGone()){setRun(false);break}
+    if(performance.now()-t0>24){acc=0;break}
+  }
+  frame++;
+  drawMap(); drawStats();
+  if(frame%3===0){drawTS();drawPhase()}
+  if(frame%8===0){renderInsp();drawHist()}
+}
+function allGone(){
+  const animalsStarted=(world.P.r.on&&world.P.r.n>0)||(world.P.f.on&&world.P.f.n>0);
+  return animalsStarted&&world.nR===0&&world.nF===0;
+}
+
+/* ---------- map ---------- */
+const map=$('map'), mctx=map.getContext('2d');
+const off=document.createElement('canvas'); let offCtx=null, img=null, cp=10, dpr=1;
+function sizeMap(){
+  const W=world.W,H=world.H, avail=Math.max(200,map.parentElement.clientWidth-16);
+  cp=Math.max(3,Math.min(18,avail/W));
+  const cw=Math.floor(cp*W), ch=Math.floor(cp*H);
+  map.style.width=cw+'px'; map.style.height=ch+'px'; map.style.margin='0 auto';
+  dpr=window.devicePixelRatio||1; map.width=Math.round(cw*dpr); map.height=Math.round(ch*dpr);
+  mctx.setTransform(dpr,0,0,dpr,0,0);
+  off.width=W; off.height=H; offCtx=off.getContext('2d'); img=offCtx.createImageData(W,H);
+}
+function diamond(ctx,x,y,R,fill){
+  const W=world.W,H=world.H;
+  for(let dy=-R;dy<=R;dy++){const rw=R-Math.abs(dy);for(let dx=-rw;dx<=rw;dx++){
+    let xx=x+dx,yy=y+dy;
+    if(world.P.wrap){xx=(xx+W)%W;yy=(yy+H)%H}else if(xx<0||yy<0||xx>=W||yy>=H)continue;
+    ctx.fillRect(xx*cp,yy*cp,cp,cp);
+  }}
+}
+function drawMap(){
+  const W=world.W,H=world.H,g=world.g,gt=world.gt,d=img.data,R=C.rgb;
+  for(let i=0;i<W*H;i++){
+    const s=g[i], c=s===2?R.grass:s===1?R.sprout:(gt[i]>0?R.soilDk:R.soil), j=i*4;
+    d[j]=c[0];d[j+1]=c[1];d[j+2]=c[2];d[j+3]=255;
+  }
+  offCtx.putImageData(img,0,0);
+  mctx.imageSmoothingEnabled=false;
+  mctx.drawImage(off,0,0,W*cp,H*cp);
+  const acts=$('optActs').checked;
+  if($('optFear').checked&&world.P.r.fearR>0){
+    mctx.fillStyle=rgba(C.fear,0.16);
+    for(const a of world.agents) if(a.sp===FOX) diamond(mctx,a.x,a.y,world.P.r.fearR);
+  }
+  if(sel&&sel.alive){
+    const R2=sel.sp===RABBIT?world.P.r.fearR:world.P.f.sight;
+    mctx.fillStyle=rgba(C.ink,0.13); diamond(mctx,sel.x,sel.y,R2);
+  }
+  const lw=Math.max(0.6,cp*0.09);
+  if(acts){
+    mctx.strokeStyle=rgba(C.fox,0.75); mctx.lineWidth=Math.max(1,cp*0.12);
+    mctx.beginPath();
+    for(const a of world.agents){
+      if(a.sp!==FOX||(a.act!=='chase'&&a.act!=='hunt'))continue;
+      const t=world.byId.get(a.target); if(!t)continue;
+      if(Math.abs(t.x-a.x)>W/2||Math.abs(t.y-a.y)>H/2)continue;
+      mctx.moveTo((a.x+.5)*cp,(a.y+.5)*cp); mctx.lineTo((t.x+.5)*cp,(t.y+.5)*cp);
+    }
+    mctx.stroke();
+  }
+  // rabbits
+  const rr=cp*0.36;
+  mctx.lineWidth=lw; mctx.strokeStyle=C['rabbit-edge'];
+  for(const flee of [false,true]){
+    mctx.fillStyle=flee?C.flee:C.rabbit; mctx.beginPath();
+    for(const a of world.agents){
+      if(a.sp!==RABBIT)continue;
+      if((acts&&a.act==='flee')!==flee)continue;
+      const cx=(a.x+.5)*cp, cy=(a.y+.5)*cp;
+      mctx.moveTo(cx+rr,cy); mctx.arc(cx,cy,rr,0,Math.PI*2);
+    }
+    mctx.fill(); mctx.stroke();
+  }
+  // foxes
+  const fr=cp*0.5;
+  mctx.fillStyle=C.fox; mctx.beginPath();
+  for(const a of world.agents){
+    if(a.sp!==FOX)continue;
+    const cx=(a.x+.5)*cp, cy=(a.y+.5)*cp;
+    mctx.moveTo(cx,cy-fr); mctx.lineTo(cx+fr*0.85,cy+fr*0.7); mctx.lineTo(cx-fr*0.85,cy+fr*0.7); mctx.closePath();
+  }
+  mctx.fill(); mctx.stroke();
+  if(sel&&sel.alive){
+    mctx.strokeStyle=C.ink; mctx.lineWidth=2;
+    mctx.beginPath(); mctx.arc((sel.x+.5)*cp,(sel.y+.5)*cp,Math.max(5,cp*0.95),0,Math.PI*2); mctx.stroke();
+    const oid=sel.sp===RABBIT?sel.threat:sel.target, o=oid?world.byId.get(oid):null;
+    if(o&&Math.abs(o.x-sel.x)<=W/2&&Math.abs(o.y-sel.y)<=H/2){
+      mctx.setLineDash([4,3]); mctx.beginPath(); mctx.moveTo((sel.x+.5)*cp,(sel.y+.5)*cp); mctx.lineTo((o.x+.5)*cp,(o.y+.5)*cp); mctx.stroke(); mctx.setLineDash([]);
+    }
+  }
+}
+map.addEventListener('click',e=>{
+  const r=map.getBoundingClientRect(); const x=(e.clientX-r.left)/cp-0.5, y=(e.clientY-r.top)/cp-0.5;
+  let best=null,bd=2.5*2.5;
+  for(const a of world.agents){const d=(a.x-x)**2+(a.y-y)**2; if(d<bd){bd=d;best=a}}
+  sel=best; renderInsp(true); if(!running)drawMap();
+});
+
+/* ---------- stats & inspector ---------- */
+function drawStats(){
+  $('sT').textContent=world.t; $('sR').textContent=world.nR; $('sF').textContent=world.nF;
+  $('sG').textContent=Math.round(100*world.nG/world.N)+'%';
+  const e=world.ev; let s=`토끼: 태어남 ${e.bornR}, 잡아먹힘 ${e.eaten}, 굶어 죽음 ${e.starveR}, 늙어 죽음 ${e.oldR}<br>여우: 태어남 ${e.bornF}, 굶어 죽음 ${e.starveF}, 늙어 죽음 ${e.oldF}`;
+  if(world.extF!=null)s+=`<br><b style="color:var(--fox)">여우가 ${world.extF}틱에 사라졌습니다.</b>`;
+  if(world.extR!=null)s+=`<br><b style="color:var(--alert)">토끼가 ${world.extR}틱에 사라졌습니다.</b>`;
+  $('evs').innerHTML=s;
+}
+const ACT={
+  flee:a=>`여우 #${a.threat}에게서 달아나는 중`, forage:()=>'배고파서 가까운 풀로 가는 중', eat:a=>a.sp===RABBIT?'발밑의 풀을 먹음':'토끼를 잡아먹음',
+  wander:()=>'무작위로 돌아다니는 중', chase:a=>`토끼 #${a.target}을 쫓는 중`, hunt:a=>`토끼 #${a.target}을 덮쳤지만 놓침`, full:()=>'배불러서 사냥하지 않고 돌아다니는 중'
+};
+const RULES={
+  0:[['die','에너지 0 또는 수명이면 죽기'],['flee','여우가 보이면 확률적으로 달아나기'],['forage','배고프면 가까운 풀로'],['wander','아니면 무작위 한 칸'],['eat','배고프고 발밑에 풀이면 먹기'],['breed','조건이 맞으면 새끼 낳기']],
+  1:[['die','에너지 0 또는 수명이면 죽기'],['full','배부르면 무작위로 돌아다니기'],['hunt','옆의 토끼 덮치기 (확률적)'],['chase','시야 안의 토끼 쫓기'],['wander','아니면 무작위 한 칸'],['breed','조건이 맞으면 새끼 낳기']]
+};
+function renderInsp(force){
+  const box=$('insp');
+  if(!box.dataset.built){
+    box.innerHTML='<div id="inspBody"></div><div class="pick"><button class="btn" type="button" id="pickR">토끼 고르기</button><button class="btn" type="button" id="pickF">여우 고르기</button><button class="btn" type="button" id="pickX">해제</button></div>';
+    box.dataset.built='1';
+    const pick=sp=>{const L=world.agents.filter(a=>a.sp===sp); sel=L.length?L[Math.floor(Math.random()*L.length)]:null; renderInsp(true); if(!running)drawMap()};
+    $('pickR').onclick=()=>pick(RABBIT); $('pickF').onclick=()=>pick(FOX); $('pickX').onclick=()=>{sel=null;renderInsp(true);if(!running)drawMap()};
+  }
+  const b=$('inspBody');
+  if(!sel){b.innerHTML='<h4>개체 하나 따라가기</h4><p class="hint" style="margin:0 0 4px">지도에서 동물을 누르거나 아래 버튼을 쓰세요. 그 개체의 상태와 이번 틱에 따른 규칙이 여기에 나타납니다.</p>';return}
+  const a=sel, isR=a.sp===RABBIT, S=isR?world.P.r:world.P.f, name=isR?'토끼':'여우';
+  const em=world.eMax(a), life=world.life(a), spd=world.spd(a);
+  let h=`<h4>${name} #${a.id}</h4><div class="sub">${a.gen}세대, ${a.born}틱에 ${a.gen?'태어남':'처음부터 있었음'}</div>`;
+  if(!a.alive){
+    const why={eaten:'여우에게 잡아먹힘',starve:'굶어 죽음',old:'늙어 죽음'}[a.cause]||'';
+    h+=`<div class="dead">${a.died}틱에 ${why}</div>`;
+  }
+  const ePct=Math.max(0,Math.min(100,100*a.e/em));
+  const breed=a.age<S.mature?`아직 어림 (${Math.ceil(S.mature-a.age)}틱 뒤 성숙)`:a.cd>0?`${Math.ceil(a.cd)}틱 남음`:a.e<0.5*em?'에너지 부족':'가능';
+  h+=`<dl>
+    <dt>나이</dt><dd>${a.age} / ${Math.round(life)}틱</dd>
+    <dt>에너지</dt><dd>${Math.max(0,a.e).toFixed(1)} / ${em.toFixed(1)}<div class="ebar"><i style="width:${ePct}%"></i></div></dd>
+    <dt>번식</dt><dd>${breed}</dd>
+    <dt>이동 속도</dt><dd>${spd.toFixed(2)}칸/틱 (배율 ${a.mS.toFixed(2)})</dd>
+    <dt>새끼, 식사</dt><dd>${a.kids}마리, ${a.meals}번</dd>
+  </dl>`;
+  if(a.alive){
+    h+=`<p style="font-size:.88rem;margin:0 0 6px"><b>지금:</b> ${(ACT[a.act]||ACT.wander)(a)}${a.bred===world.t?', 그리고 새끼를 낳음':''}</p>`;
+    const on=new Set([a.act==='eat'&&!isR?'hunt':a.act]); if(a.bred===world.t)on.add('breed');
+    h+='<ol>'+RULES[a.sp].map(r=>`<li class="${on.has(r[0])?'on':''}">${r[1]}</li>`).join('')+'</ol>';
+  }
+  b.innerHTML=h;
+}
+
+/* ---------- charts ---------- */
+function setupCanvas(cv){
+  const w=cv.clientWidth, h=+cv.getAttribute('height'), d=window.devicePixelRatio||1;
+  if(!cv.dataset.h){cv.dataset.h=h;cv.style.height=h+'px'}
+  const H=+cv.dataset.h;
+  if(cv.width!==Math.round(w*d)||cv.height!==Math.round(H*d)){cv.width=Math.round(w*d);cv.height=Math.round(H*d)}
+  const ctx=cv.getContext('2d'); ctx.setTransform(d,0,0,d,0,0); ctx.clearRect(0,0,w,H);
+  ctx.font='12px '+getComputedStyle(document.body).fontFamily; return {ctx,w,h:H};
+}
+function niceMax(v){if(v<=5)return 5;const p=Math.pow(10,Math.floor(Math.log10(v)));const m=v/p;return (m<=1?1:m<=2?2:m<=5?5:10)*p}
+function axes(ctx,L,T,Wd,Hd,ymax,xlab0,xlab1,rightLab){
+  ctx.strokeStyle=C.line; ctx.lineWidth=1; ctx.fillStyle=C.muted; ctx.textAlign='right'; ctx.textBaseline='middle';
+  for(let k=0;k<=4;k++){const y=T+Hd-k*Hd/4; ctx.beginPath(); ctx.moveTo(L,y+.5); ctx.lineTo(L+Wd,y+.5); ctx.stroke(); {const v=ymax*k/4;ctx.fillText(Number.isInteger(v)?v:v.toFixed(1),L-6,y)} if(rightLab){ctx.textAlign='left';ctx.fillText(rightLab(k),L+Wd+6,y);ctx.textAlign='right'}}
+  ctx.textAlign='left'; ctx.textBaseline='top'; ctx.fillText(xlab0,L,T+Hd+6); ctx.textAlign='right'; ctx.fillText(xlab1,L+Wd,T+Hd+6);
+}
+const WIN=800;
+function drawTS(){
+  const {ctx,w,h}=setupCanvas($('ts')); const H=world.hist, n=H.t.length;
+  const i0=Math.max(0,n-WIN-1), L=40, R=w-44, T=22, B=h-24, Wd=R-L, Hd=B-T;
+  let mx=5; for(let i=i0;i<n;i++){if(H.r[i]>mx)mx=H.r[i];if(H.f[i]>mx)mx=H.f[i]}
+  const ymax=niceMax(mx), t0=H.t[i0], X=t=>L+Wd*(t-t0)/WIN, Y=v=>B-Hd*v/ymax, YG=v=>B-Hd*v/world.N;
+  axes(ctx,L,T,Wd,Hd,ymax,t0+'틱',(t0+WIN)+'틱',k=>k*25+'%');
+  ctx.fillStyle=rgba(C.grass,0.22); ctx.beginPath(); ctx.moveTo(X(H.t[i0]),B);
+  for(let i=i0;i<n;i++)ctx.lineTo(X(H.t[i]),YG(H.g[i])); ctx.lineTo(X(H.t[n-1]),B); ctx.fill();
+  for(const [key,col] of [['r',C['rabbit-ink']],['f',C.fox]]){
+    ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath();
+    for(let i=i0;i<n;i++){const x=X(H.t[i]),y=Y(H[key][i]); i===i0?ctx.moveTo(x,y):ctx.lineTo(x,y)} ctx.stroke();
+  }
+  ctx.textBaseline='middle'; ctx.textAlign='left'; let lx=L;
+  for(const [lab,col,box] of [['토끼',C['rabbit-ink']],['여우',C.fox],['풀 (오른쪽 축)',C.grass,1]]){
+    if(box){ctx.fillStyle=rgba(col,0.35);ctx.fillRect(lx,6,14,10)}else{ctx.fillStyle=col;ctx.fillRect(lx,10,14,3)}
+    ctx.fillStyle=C.muted; ctx.fillText(lab,lx+19,11); lx+=ctx.measureText(lab).width+34;
+  }
+}
+function drawPhase(){
+  const {ctx,w,h}=setupCanvas($('phase')); const H=world.hist, n=H.t.length, i0=Math.max(0,n-WIN-1);
+  const L=54,R=w-12,T=12,B=h-30,Wd=R-L,Hd=B-T;
+  let mr=5,mf=5; for(let i=i0;i<n;i++){if(H.r[i]>mr)mr=H.r[i];if(H.f[i]>mf)mf=H.f[i]}
+  const xm=niceMax(mr), ym=niceMax(mf), X=v=>L+Wd*v/xm, Y=v=>B-Hd*v/ym;
+  axes(ctx,L,T,Wd,Hd,ym,'0',String(xm));
+  ctx.fillStyle=C.muted; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('토끼 수',L+Wd/2,B+14);
+  ctx.save(); ctx.translate(10,T+Hd/2); ctx.rotate(-Math.PI/2); ctx.textBaseline='middle'; ctx.fillText('여우 수',0,0); ctx.restore();
+  const seg=40;
+  for(let s=i0;s<n-1;s+=seg){
+    const e=Math.min(n-1,s+seg), age=(n-1-e)/WIN;
+    ctx.strokeStyle=rgba(C.moss,Math.max(0.08,0.9*(1-age))); ctx.lineWidth=1.6; ctx.beginPath();
+    for(let i=s;i<=e;i++){const x=X(H.r[i]),y=Y(H.f[i]); i===s?ctx.moveTo(x,y):ctx.lineTo(x,y)} ctx.stroke();
+  }
+  ctx.fillStyle=C.ink; ctx.beginPath(); ctx.arc(X(H.r[n-1]),Y(H.f[n-1]),4,0,Math.PI*2); ctx.fill();
+}
+function drawHist(){
+  const {ctx,w,h}=setupCanvas($('hist')); const sp=+$('hSp').value, tr=$('hTr').value;
+  const vals=world.agents.filter(a=>a.sp===sp).map(a=>a[tr]);
+  const L=40,R=w-12,T=26,B=h-30,Wd=R-L,Hd=B-T, lo=0, hi=2.4, nb=48, bw=(hi-lo)/nb;
+  const bins=new Array(nb).fill(0); for(const v of vals){const k=Math.min(nb-1,Math.max(0,Math.floor((v-lo)/bw)));bins[k]++}
+  const cv=world.P.cv, N=vals.length;
+  const pdf=x=>cv>0?Math.exp(-0.5*((x-1)/cv)**2)/(cv*Math.sqrt(2*Math.PI)):0;
+  let ym=Math.max(1,...bins); if(cv>0)ym=Math.max(ym,N*bw*pdf(1));
+  ym=niceMax(ym);
+  const X=v=>L+Wd*(v-lo)/(hi-lo), Y=v=>B-Hd*v/ym;
+  axes(ctx,L,T,Wd,Hd,ym,'0','2.4');
+  ctx.fillStyle=C.muted; ctx.textAlign='center'; ctx.textBaseline='top';
+  for(const t of [0.5,1,1.5,2])ctx.fillText(t,X(t),B+6);
+  ctx.fillText('배율 (1 = 평균)',L+Wd/2,B+16);
+  const col=sp===RABBIT?C['rabbit-ink']:C.fox;
+  ctx.fillStyle=rgba(col,0.55);
+  bins.forEach((c,k)=>{if(c)ctx.fillRect(X(lo+k*bw)+0.5,Y(c),Wd/nb-1,B-Y(c))});
+  if(cv>0&&N){ctx.strokeStyle=C.ink;ctx.setLineDash([4,3]);ctx.lineWidth=1.2;ctx.beginPath();for(let i=0;i<=120;i++){const x=lo+(hi-lo)*i/120,y=Y(N*bw*pdf(x));i?ctx.lineTo(X(x),y):ctx.moveTo(X(x),y)}ctx.stroke();ctx.setLineDash([])}
+  if(N){const m=vals.reduce((a,b)=>a+b,0)/N; ctx.strokeStyle=col; ctx.lineWidth=2.5; ctx.beginPath(); ctx.moveTo(X(m),T); ctx.lineTo(X(m),B); ctx.stroke();
+    ctx.fillStyle=C.ink; ctx.textAlign='left'; ctx.textBaseline='top'; ctx.fillText(`평균 배율 ${m.toFixed(2)}, ${N}마리`,L,4);}
+  else{ctx.fillStyle=C.muted;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('살아 있는 개체가 없습니다.',L,4)}
+}
+function drawAll(){drawMap();drawStats();drawTS();drawPhase();drawHist()}
+
+/* ---------- legend ---------- */
+$('legend').innerHTML=[
+  ['var(--soil-dk)','뜯긴 뒤 회복 중인 땅'],['var(--soil)','맨땅'],['var(--sprout)','싹'],['var(--grass)','풀'],
+].map(([c,t])=>`<span><span class="sw" style="background:${c}"></span>${t}</span>`).join('')+
+ '<span><span class="sw round" style="background:var(--rabbit);border-color:var(--rabbit-edge)"></span>토끼</span>'+
+ '<span><span class="sw round" style="background:var(--flee);border-color:var(--rabbit-edge)"></span>도망 중인 토끼</span>'+
+ '<span><svg width="13" height="12" viewBox="0 0 13 12" style="vertical-align:-1px;margin-right:6px"><path d="M6.5 1 L12 11 L1 11Z" fill="var(--fox)" stroke="var(--rabbit-edge)"/></svg>여우</span>';
+
+/* ---------- Monte Carlo ---------- */
+let mcJob=null, mcQueue=[], mcRows=0;
+function wilson(k,n,z=1.96){if(!n)return[0,0];const p=k/n,d=1+z*z/n,c=(p+z*z/(2*n))/d,m=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n))/d;return[Math.max(0,c-m),Math.min(1,c+m)]}
+function mcStart(P,label){
+  if(mcJob)return;
+  const hasR=P.r.on&&P.r.n>0, hasF=P.f.on&&P.f.n>0;
+  if(!hasR&&!hasF){$('mcStatus').textContent='동물이 없는 설정이라 비교할 결과가 없습니다.';return}
+  mcJob={P:clone(P),label:label||diffSummary(P),N:+$('mcN').value,T:+$('mcT').value,s0:seed,i:0,w:null,runs:[],hasR,hasF,dt:5};
+  $('mcRun').textContent='중지'; mcChunk();
+}
+function mcStop(){mcJob=null;mcQueue=[];$('mcRun').textContent='반복 실행';$('mcStatus').textContent='중지했습니다.'}
+function mcChunk(){
+  const J=mcJob; if(!J)return;
+  const t0=performance.now();
+  while(performance.now()-t0<28){
+    if(!J.w){J.w=new World(J.P,J.s0+J.i);J.cur={r:[J.w.nR],f:[J.w.nF]}}
+    const w=J.w;
+    w.step();
+    if(w.t%J.dt===0){J.cur.r.push(w.nR);J.cur.f.push(w.nF)}
+    const done=w.t>=J.T||(w.nR===0&&w.nF===0);
+    if(done){
+      const len=J.T/J.dt+1; while(J.cur.r.length<len){J.cur.r.push(0);J.cur.f.push(0)}
+      let out='co'; if(J.hasR&&w.nR===0)out='r'; else if(J.hasF&&w.nF===0)out='f';
+      const h0=Math.floor(J.T/2), hr=w.hist.r.slice(h0), hf=w.hist.f.slice(h0);
+      J.runs.push({out,r:J.cur.r,f:J.cur.f,mr:hr.reduce((a,b)=>a+b,0)/Math.max(1,hr.length),mf:hf.reduce((a,b)=>a+b,0)/Math.max(1,hf.length)});
+      J.w=null; J.i++;
+      mcUpdate(false);
+      if(J.i>=J.N){mcFinish();return}
+    }
+  }
+  $('mcProg').style.width=(100*(J.i+(J.w?J.w.t/J.T:0))/J.N)+'%';
+  setTimeout(mcChunk,0);
+}
+function mcUpdate(final){
+  const J=mcJob, n=J.runs.length, k={co:0,f:0,r:0}; J.runs.forEach(r=>k[r.out]++);
+  const bar=$('outbar');
+  bar.innerHTML=[['co','var(--moss)'],['f','var(--fox)'],['r','var(--rabbit-ink)']].map(([o,c])=>k[o]?`<div style="width:${100*k[o]/n}%;background:${c}">${Math.round(100*k[o]/n)}%</div>`:'').join('');
+  const [lo,hi]=wilson(k.co,n);
+  $('mcSum').innerHTML=`${n}번 중 <b>${k.co}번 공존</b> (${Math.round(100*k.co/n)}%, 95% 구간 ${Math.round(100*lo)}~${Math.round(100*hi)}%). 여우가 사라짐 ${k.f}번, 토끼가 사라짐 ${k.r}번.`;
+  $('mcStatus').textContent=`${n} / ${J.N}회 완료`;
+  $('mcProg').style.width=(100*n/J.N)+'%';
+  drawFan(J);
+}
+function mcFinish(){
+  const J=mcJob, n=J.runs.length, k={co:0,f:0,r:0}; J.runs.forEach(r=>k[r.out]++);
+  const [lo,hi]=wilson(k.co,n), sv=J.runs.filter(r=>r.out==='co');
+  const m=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):'-';
+  const tb=$('mcTable').querySelector('tbody'); if(!mcRows)tb.innerHTML='';
+  mcRows++;
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td>${mcRows}</td><td>${J.label}<br><span class="hint">씨앗 ${J.s0}~${J.s0+J.N-1}, ${J.T}틱</span></td><td class="num">${n}</td><td class="num"><b>${Math.round(100*k.co/n)}%</b> [${Math.round(100*lo)}~${Math.round(100*hi)}%]</td><td class="num">${k.f}</td><td class="num">${k.r}</td><td class="num">${m(sv.map(r=>r.mr))} / ${m(sv.map(r=>r.mf))}</td>`;
+  tb.appendChild(tr);
+  mcJob=null; $('mcRun').textContent='반복 실행'; $('mcStatus').textContent=`${n}회 완료. 설정을 바꿔 다시 돌리면 표에 추가됩니다.`;
+  if(mcQueue.length){const q=mcQueue.shift();mcStart(q.P,q.label)}
+}
+function pctl(arr,p){const a=arr.slice().sort((x,y)=>x-y);const i=(a.length-1)*p,f=Math.floor(i);return a[f]+(a[Math.min(a.length-1,f+1)]-a[f])*(i-f)}
+function drawFan(J){
+  const {ctx,w,h}=setupCanvas($('fan'));
+  if(!J||!J.runs.length){ctx.fillStyle=C.muted;ctx.textBaseline='middle';ctx.fillText('반복 실행을 누르면 여기에 그려집니다.',12,h/2);return}
+  const len=J.runs[0].r.length, L=44, R=w-12, Wd=R-L, gap=26, Hp=(h-gap-46)/2;
+  const panels=[['r','토끼',C['rabbit-ink'],12],['f','여우',C.fox,12+Hp+gap]];
+  for(const [key,lab,col,T] of panels){
+    const B=T+Hp; let mx=5;
+    const q=[];for(let j=0;j<len;j++){const v=J.runs.map(r=>r[key][j]);q.push([pctl(v,.1),pctl(v,.5),pctl(v,.9)]);mx=Math.max(mx,q[j][2])}
+    J.runs.slice(0,6).forEach(r=>{for(const v of r[key])if(v>mx)mx=v});
+    const ym=niceMax(mx), X=j=>L+Wd*j/(len-1), Y=v=>B-Hp*v/ym;
+    ctx.strokeStyle=C.line; ctx.fillStyle=C.muted; ctx.lineWidth=1; ctx.textAlign='right'; ctx.textBaseline='middle';
+    for(let k=0;k<=2;k++){const y=B-k*Hp/2;ctx.beginPath();ctx.moveTo(L,y+.5);ctx.lineTo(R,y+.5);ctx.stroke();ctx.fillText(Math.round(ym*k/2),L-6,y)}
+    ctx.textAlign='left'; ctx.textBaseline='bottom'; ctx.font='bold 12px '+getComputedStyle(document.body).fontFamily; ctx.fillStyle=col; ctx.fillText(lab,L+4,B-Hp/2-2); ctx.font='12px '+getComputedStyle(document.body).fontFamily;
+    ctx.fillStyle=rgba(col,0.2); ctx.beginPath(); for(let j=0;j<len;j++)ctx.lineTo(X(j),Y(q[j][2])); for(let j=len-1;j>=0;j--)ctx.lineTo(X(j),Y(q[j][0])); ctx.fill();
+    ctx.lineWidth=1; ctx.strokeStyle=rgba(col,0.45);
+    J.runs.slice(0,6).forEach(r=>{ctx.beginPath();r[key].forEach((v,j)=>j?ctx.lineTo(X(j),Y(v)):ctx.moveTo(X(j),Y(v)));ctx.stroke()});
+    ctx.lineWidth=2.4; ctx.strokeStyle=col; ctx.beginPath(); q.forEach((v,j)=>j?ctx.lineTo(X(j),Y(v[1])):ctx.moveTo(X(j),Y(v[1]))); ctx.stroke();
+  }
+  ctx.fillStyle=C.muted; ctx.textBaseline='top'; ctx.textAlign='left'; ctx.fillText('0틱',L,h-28); ctx.textAlign='right'; ctx.fillText(J.T+'틱',R,h-28);
+  ctx.textAlign='center'; ctx.fillText(`반복 ${J.runs.length}회`,L+Wd/2,h-28);
+}
+$('mcRun').addEventListener('click',()=>{if(mcJob)mcStop();else mcStart(PAR)});
+
+/* ---------- lab ---------- */
+const LABS=[
+ {t:'토끼가 도망치지 않는다면',d:'토끼의 도망칠 확률을 0으로 둡니다(3단계). 토끼에게 불리할까요, 여우에게 불리할까요?',o:{r:{fleeP:0}},mc:true,
+  res:'씨앗 1~50, 1000틱으로 돌리면 기본 설정은 50번 중 43번(86%), 도망을 끄면 34번(68%) 공존합니다. 늘어난 실패는 대부분 여우가 사라진 경우입니다. 토끼가 피하지 않으면 여우가 토끼를 한꺼번에 줄여 버리고, 그 뒤 스스로 굶습니다. 두 구간이 조금 겹치므로 100회로 다시 확인해 보세요.'},
+ {t:'눈이 더 밝은 여우',d:'여우의 사냥 시야를 2칸에서 4칸으로 넓힙니다. 사냥을 더 잘하는 여우는 더 번성할까요?',o:{f:{sight:4}},mc:true,
+  res:'공존이 사라집니다. 50번 중 0번 공존했고, 48번은 토끼가 먼저 사라졌습니다. 대개 100여 틱 만에 여우가 늘어 토끼를 거의 다 먹고, 그 뒤 여우도 굶어 사라집니다. 너무 유능한 포식자는 먹이를 바닥내 스스로를 무너뜨립니다.'},
+ {t:'토끼만큼 느린 여우',d:'여우의 이동 속도를 2에서 1로 낮춥니다. 여우가 토끼를 못 잡아 굶어 사라질까요?',o:{f:{speed:1}},mc:true,
+  res:'예상과 반대로 50번 모두 공존했고, 끝까지 공존한 반복의 후반 평균 여우 수는 약 57마리에서 88마리로 오히려 늘었습니다. 출렁임도 작아집니다. 느린 여우는 토끼를 한꺼번에 먹어 치우지 못하므로 토끼가 바닥나지 않고, 그래서 여우도 굶지 않습니다. 개체에게 좋은 것이 집단에게도 좋다는 직관이 틀릴 수 있다는 예입니다.'},
+ {t:'작은 섬',d:'섬을 40×28로 줄입니다. 규칙과 밀도는 그대로이고 땅만 좁습니다.',o:{W:40,H:28},mc:true,
+  res:'50번 중 6번(12%)만 공존합니다. 개체 수가 적으면 바닥을 칠 때 0이 될 확률이 커지고, 좁은 땅에서는 한쪽에서 사라져도 다른 쪽에서 버티다 다시 퍼지는 일이 드뭅니다. 반대로 96×64로 넓히면 거의 항상 공존합니다.'},
+ {t:'개체 차이를 없앤다면',d:'개체 차이 CV를 0으로 두면 모든 토끼와 여우가 똑같은 체질로 태어납니다. 30%로도 바꿔 비교해 보세요.',o:{cv:0},mc:true,
+  res:'50회 기준으로 CV 0%는 44번, 15%(기본)는 43번, 30%는 46번 공존해 차이가 구간 안에 들어갑니다. 모든 무작위 요소가 결과를 좌우하지는 않습니다. 이 모델에서는 개체 차이보다 누가 누구를 언제 만나느냐는 우연과 공간이 더 중요합니다.'},
+ {t:'여우가 없으면 토끼는 느려진다',d:'형질 유전을 켜고 여우를 뺀 채 돌리면서 아래 개체 차이 그림에서 토끼의 이동 속도 배율을 보세요. 그다음 여우를 넣고(5단계) 비교합니다.',o:{inherit:true,f:{on:false}},mc:false,
+  res:'여우가 없으면 평균 속도 배율이 300틱쯤 0.85, 1500틱쯤 0.4 안팎까지 내려갑니다. 빠를수록 배가 빨리 고프므로 느린 토끼가 더 오래 살고 더 많이 낳기 때문입니다. 여우가 있으면 배율이 대체로 1 근처나 그 위에 머뭅니다. 아무도 "느려져라"라고 코딩하지 않았는데 생존과 번식의 차이만으로 집단의 형질이 바뀝니다. 자연선택입니다.'},
+];
+function buildLab(){
+  const g=$('labgrid');
+  LABS.forEach((L,i)=>{
+    const d=document.createElement('div'); d.className='labcard';
+    d.innerHTML=`<h4>${L.t}</h4><p>${L.d}</p><div class="go"><button class="btn" type="button" data-a="sim">시뮬레이터에서 보기</button>${L.mc?'<button class="btn" type="button" data-a="mc">기본 설정과 몬테카를로 비교</button>':''}</div><details><summary>확인해 본 결과</summary><p>${L.res}</p></details>`;
+    d.querySelector('[data-a=sim]').onclick=()=>{applyPreset(L.o);$('sim').scrollIntoView({behavior:reduceMotion?'auto':'smooth'});if(!reduceMotion)setRun(true)};
+    const mb=d.querySelector('[data-a=mc]');
+    if(mb)mb.onclick=()=>{
+      if(mcJob)return;
+      applyPreset(L.o); setRun(false);
+      const P=deep(defaultParams(),clone(L.o));
+      mcQueue=[{P,label:diffSummary(P)}];
+      $('mc').scrollIntoView({behavior:reduceMotion?'auto':'smooth'});
+      mcStart(defaultParams(),'기본 설정');
+    };
+    g.appendChild(d);
+  });
+}
+
+/* ---------- manhattan figure ---------- */
+function buildManhattan(){
+  const GW=15,GH=9,s=34,fx=7,fy=4,R=3; let rx=10,ry=5;
+  const box=$('manhattanFig');
+  function render(){
+    let o=`<svg viewBox="0 0 ${GW*s+2} ${GH*s+2}" role="img" aria-label="맨해튼 거리 그림">`;
+    for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+      const d=Math.abs(x-fx)+Math.abs(y-fy), inR=d<=R&&d>0;
+      o+=`<rect x="${x*s+1}" y="${y*s+1}" width="${s}" height="${s}" fill="${inR?'color-mix(in srgb, var(--fear) 22%, var(--panel))':'var(--panel)'}" stroke="var(--line)" data-x="${x}" data-y="${y}" style="cursor:pointer"/>`;
+      if(d>0&&!(x===rx&&y===ry))o+=`<text x="${x*s+1+s/2}" y="${y*s+1+s/2}" text-anchor="middle" dominant-baseline="central" font-size="12" fill="var(--muted)" pointer-events="none">${d}</text>`;
+    }
+    const cx=fx*s+1+s/2, cy=fy*s+1+s/2, r=s*0.42;
+    o+=`<path d="M${cx} ${cy-r} L${cx+r*0.85} ${cy+r*0.7} L${cx-r*0.85} ${cy+r*0.7}Z" fill="var(--fox)" stroke="var(--rabbit-edge)" pointer-events="none"/>`;
+    const d=Math.abs(rx-fx)+Math.abs(ry-fy), seen=d<=R;
+    o+=`<circle cx="${rx*s+1+s/2}" cy="${ry*s+1+s/2}" r="${s*0.32}" fill="${seen?'var(--flee)':'var(--rabbit)'}" stroke="var(--rabbit-edge)" stroke-width="1.5" pointer-events="none"/>`;
+    o+='</svg>'; box.innerHTML=o;
+    $('manhattanCap').innerHTML=`여우(삼각형)에게서 맨해튼 거리 3 이내(색칠한 마름모)에 들어온 토끼는 여우를 알아챕니다. 칸의 숫자가 거리입니다. 칸을 눌러 토끼를 옮겨 보세요. 지금 토끼까지의 거리는 |${rx}−${fx}| + |${ry}−${fy}| = <b>${d}</b>, ${d===0?'같은 칸':seen?'<b>알아챔</b>':'못 알아챔'}.`;
+  }
+  box.addEventListener('click',e=>{const t=e.target.closest('rect');if(!t)return;const x=+t.dataset.x,y=+t.dataset.y;if(x===fx&&y===fy)return;rx=x;ry=y;render()});
+  render();
+}
+
+/* ---------- python code ---------- */
+const PY=`import random
+
+W, H = 64, 42
+BARE, SPROUT, GRASS = 0, 1, 2
+DIRS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+
+P = dict(cv=0.15,
+         recover=12, sprout_p=0.01, grow=5, seed_every=5, seed_p=0.7,
+         r_speed=1.0, r_starve=40, r_gain=15, r_breed=20, r_litter=3, r_mature=15, fear=3, flee_p=0.75,
+         f_speed=2.0, f_starve=35, f_gain=15, f_breed=40, f_litter=2, f_mature=30, sight=2, catch_p=0.5)
+
+def gauss(mean):                       # 평균 근처에서 개체마다 조금씩 다른 값
+    return max(1, random.gauss(mean, mean * P['cv']))
+
+def sround(x):                         # 속도 1.5 → 50% 확률로 2칸, 아니면 1칸
+    f = int(x)
+    return f + (1 if random.random() < x - f else 0)
+
+def wrap(x, y):
+    return x % W, y % H
+
+def dist(a, b):                        # 맨해튼 거리 (토러스)
+    dx = abs(a[0] - b[0]); dy = abs(a[1] - b[1])
+    return min(dx, W - dx) + min(dy, H - dy)
+
+class Animal:
+    def __init__(self, world, kind, pos, energy):
+        self.w, self.kind, self.pos = world, kind, pos
+        k = 'r_' if kind == 'rabbit' else 'f_'
+        self.k = k
+        self.e_max = gauss(P[k + 'starve'])        # 굶어도 버티는 시간 (개체 차이)
+        self.speed = P[k + 'speed'] * max(0.25, random.gauss(1, P['cv']))
+        self.e, self.age, self.cd, self.alive = energy, 0, 0, True
+
+    def free_nbrs(self):
+        out = []
+        for dx, dy in DIRS:
+            p = wrap(self.pos[0] + dx, self.pos[1] + dy)
+            if p not in self.w.occ:
+                out.append(p)
+        return out
+
+    def move(self, p):
+        del self.w.occ[self.pos]
+        self.pos = p
+        self.w.occ[p] = self
+
+    def step_toward(self, target, away=False):
+        opts = self.free_nbrs()
+        if not opts:
+            return
+        key = lambda p: dist(p, target)
+        best = max(opts, key=key) if away else min(opts, key=key)
+        self.move(best)
+
+    def random_step(self):
+        opts = self.free_nbrs()
+        if opts:
+            self.move(random.choice(opts))
+
+    def nearest(self, kind, radius):            # 반경 안(맨해튼)에서 가장 가까운 상대
+        x, y = self.pos
+        found = []
+        for dy in range(-radius, radius + 1):
+            r = radius - abs(dy)
+            for dx in range(-r, r + 1):
+                a = self.w.occ.get(wrap(x + dx, y + dy))
+                if a is not None and a is not self and a.kind == kind:
+                    found.append((abs(dx) + abs(dy), random.random(), a))
+        return min(found)[2] if found else None
+
+    def breed(self):
+        k = self.k
+        if self.age < P[k + 'mature'] or self.cd > 0 or self.e < 0.5 * self.e_max:
+            return
+        spots = self.free_nbrs()
+        n = min(random.randint(1, P[k + 'litter']), len(spots))
+        if n == 0:
+            return
+        share = self.e / 2
+        self.e -= share
+        for p in random.sample(spots, n):
+            self.w.add(type(self)(self.w, self.kind, p, share / n))
+        self.cd = round(gauss(P[k + 'breed']))
+
+    def die(self):
+        self.alive = False
+        self.w.occ.pop(self.pos, None)
+
+class Rabbit(Animal):
+    def step(self):
+        self.age += 1; self.e -= 1; self.cd -= 1
+        if self.e <= 0:
+            return self.die()
+        fox = self.nearest('fox', P['fear'])
+        for _ in range(sround(self.speed)):
+            if fox and random.random() < P['flee_p']:
+                self.step_toward(fox.pos, away=True)          # 도망
+            elif self.w.grass[self.pos] != GRASS:
+                self.random_step()                            # 풀 찾아 배회
+        if self.w.grass[self.pos] == GRASS and self.e < self.e_max - P['r_gain'] / 2:
+            self.w.eat_grass(self.pos)
+            self.e = min(self.e_max, self.e + P['r_gain'])
+        self.breed()
+
+class Fox(Animal):
+    def step(self):
+        self.age += 1; self.e -= 1; self.cd -= 1
+        if self.e <= 0:
+            return self.die()
+        for _ in range(sround(self.speed)):
+            prey = self.nearest('rabbit', 1)
+            if prey and random.random() < P['catch_p']:      # 사냥 시도
+                prey.die(); self.move(prey.pos)
+                self.e = min(self.e_max, self.e + P['f_gain'])
+                break
+            target = self.nearest('rabbit', P['sight'])
+            if target:
+                self.step_toward(target.pos)                  # 추격
+            else:
+                self.random_step()                            # 배회
+        self.breed()
+
+class World:
+    def __init__(self, n_rabbit=150, n_fox=12, seed=1):
+        random.seed(seed)
+        cells = [(x, y) for x in range(W) for y in range(H)]
+        self.grass = {c: GRASS if random.random() < 0.15 else BARE for c in cells}
+        self.timer = {c: 0 for c in cells}
+        self.occ, self.animals, self.newborn = {}, [], []
+        for kind, n, cls in (('rabbit', n_rabbit, Rabbit), ('fox', n_fox, Fox)):
+            for c in random.sample([c for c in cells if c not in self.occ], n):
+                a = cls(self, kind, c, 0)
+                a.e = a.e_max * random.uniform(0.5, 1)
+                self.occ[c] = a; self.animals.append(a)
+
+    def add(self, a):                                         # 새끼는 다음 틱부터 행동
+        self.occ[a.pos] = a
+        self.newborn.append(a)
+
+    def eat_grass(self, c):
+        self.grass[c] = BARE
+        self.timer[c] = round(gauss(P['recover']))          # 흙이 회복될 때까지 싹이 안 남
+
+    def update_grass(self):
+        seeds = []
+        for c, s in self.grass.items():
+            self.timer[c] -= 1
+            if s == BARE and self.timer[c] <= 0 and random.random() < P['sprout_p']:
+                self.grass[c], self.timer[c] = SPROUT, gauss(P['grow'])
+            elif s == SPROUT and self.timer[c] <= 0:
+                self.grass[c], self.timer[c] = GRASS, gauss(P['seed_every'])
+            elif s == GRASS and self.timer[c] <= 0:
+                self.timer[c] = gauss(P['seed_every'])
+                if random.random() < P['seed_p']:
+                    dx, dy = random.choice(DIRS)
+                    seeds.append(wrap(c[0] + dx, c[1] + dy))
+        for c in seeds:                                       # 씨는 회복된 맨땅에만 뿌리내림
+            if self.grass[c] == BARE and self.timer[c] <= 0:
+                self.grass[c], self.timer[c] = SPROUT, gauss(P['grow'])
+
+    def step(self):
+        self.update_grass()
+        random.shuffle(self.animals)                          # 매 틱 무작위 순서
+        for a in self.animals:
+            if a.alive:
+                a.step()
+        self.animals = [a for a in self.animals if a.alive] + self.newborn
+        self.newborn = []
+
+    def count(self):
+        r = sum(a.kind == 'rabbit' for a in self.animals)
+        return r, len(self.animals) - r, sum(s == GRASS for s in self.grass.values())
+
+world = World(seed=7)
+for t in range(1, 601):
+    world.step()
+    if t % 50 == 0:
+        print(t, *world.count())
+`;
+function hlPy(src){
+  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const KW=new Set('def class return if elif else for in while import from as and or not is None True False lambda break continue pass'.split(' '));
+  return src.split('\n').map(line=>{
+    let out='',i=0;
+    while(i<line.length){
+      const ch=line[i];
+      if(ch==='#'){out+=`<span class="c">${esc(line.slice(i))}</span>`;break}
+      if(ch==="'"||ch==='"'){let j=i+1;while(j<line.length&&line[j]!==ch)j++;out+=`<span class="s">${esc(line.slice(i,j+1))}</span>`;i=j+1;continue}
+      const m=/^[A-Za-z_][A-Za-z_0-9]*/.exec(line.slice(i));
+      if(m){const w=m[0];const nx=line[i+w.length];out+=KW.has(w)?`<span class="k">${w}</span>`:(nx==='('?`<span class="f">${w}</span>`:w);i+=w.length;continue}
+      const n=/^\d+(\.\d+)?/.exec(line.slice(i));
+      if(n&&!/[A-Za-z_]/.test(line[i-1]||'')){out+=`<span class="n">${n[0]}</span>`;i+=n[0].length;continue}
+      out+=esc(ch);i++;
+    }
+    return out;
+  }).join('\n');
+}
+
+/* ---------- wiring ---------- */
+function init(){
+  refreshColors();
+  buildStages(); buildParams(); buildLab(); buildManhattan();
+  $('pycode').innerHTML=hlPy(PY);
+  syncAll(); markStage(3);
+  const sp=$('speed'), sl=()=>{$('speedLab').textContent=SPEEDS[+sp.value][1]}; sp.addEventListener('input',sl); sl();
+  $('btnRun').onclick=()=>setRun(!running);
+  $('btnStep').onclick=()=>{setRun(false);world.step();drawAll();renderInsp()};
+  $('btnReset').onclick=()=>{resetWorld()};
+  $('btnNewSeed').onclick=()=>{$('seed').value=1+Math.floor(Math.random()*99999);resetWorld()};
+  $('seed').addEventListener('change',resetWorld);
+  $('btnDefaults').onclick=()=>applyPreset({},3);
+  for(const id of ['optFear','optActs'])$(id).addEventListener('change',()=>{if(!running)drawMap()});
+  for(const id of ['hSp','hTr'])$(id).addEventListener('change',drawHist);
+  resetWorld(); drawFan(null);
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{refreshColors();drawAll();if(mcJob)drawFan(mcJob)});
+  new MutationObserver(()=>{refreshColors();drawAll()}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  let rt=0; window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{sizeMap();drawAll()},120)});
+  if('IntersectionObserver' in window){new IntersectionObserver(es=>{inView=es[0].isIntersecting},{rootMargin:'100px'}).observe($('sim'))}
+  requestAnimationFrame(loop);
+  if(!reduceMotion)setRun(true);
+}
+
+/* ================= warm-up & stepper UI ================= */
+function visTrack(el){const o={on:true}; if('IntersectionObserver' in window){new IntersectionObserver(es=>{o.on=es[0].isIntersecting},{rootMargin:'80px'}).observe(el)} return o}
+function fitCanvas(cv,W,H,maxCell){
+  const avail=Math.max(160,cv.parentElement.clientWidth-16), cp=Math.max(2,Math.min(maxCell,avail/W));
+  const cw=Math.floor(cp*W), ch=Math.floor(cp*H), d=window.devicePixelRatio||1;
+  cv.style.width=cw+'px'; cv.style.height=ch+'px'; cv.style.margin='0 auto'; cv.style.display='block';
+  cv.width=Math.round(cw*d); cv.height=Math.round(ch*d);
+  const ctx=cv.getContext('2d'); ctx.setTransform(d,0,0,d,0,0); return {ctx,cp};
+}
+function simpleLine(cv,series,opts){
+  const {ctx,w,h}=setupCanvas(cv); const L=44,R=w-12,T=22,B=h-24,Wd=R-L,Hd=B-T;
+  let n=0,mx=opts.ymax||0; for(const s of series){if(s.data.length>n)n=s.data.length; if(!opts.ymax)for(const v of s.data)if(v>mx)mx=v}
+  const ym=opts.ymax||niceMax(Math.max(5,mx)), xn=Math.max(opts.xmin||10,n-1), X=i=>L+Wd*i/xn, Y=v=>B-Hd*v/ym;
+  axes(ctx,L,T,Wd,Hd,ym,'0',xn+'틱');
+  if(opts.pct){ctx.clearRect(0,T-8,L-2,Hd+16);ctx.fillStyle=C.muted;ctx.textAlign='right';ctx.textBaseline='middle';for(let k=0;k<=4;k++)ctx.fillText(k*25+'%',L-6,B-k*Hd/4)}
+  if(opts.hline!=null){ctx.strokeStyle=C.muted;ctx.setLineDash([3,4]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(L,Y(opts.hline));ctx.lineTo(R,Y(opts.hline));ctx.stroke();ctx.setLineDash([])}
+  for(const s of series){if(!s.data.length)continue;ctx.strokeStyle=s.col;ctx.lineWidth=s.w||2;ctx.setLineDash(s.dash||[]);ctx.beginPath();s.data.forEach((v,i)=>i?ctx.lineTo(X(i),Y(v)):ctx.moveTo(X(i),Y(v)));ctx.stroke();ctx.setLineDash([])}
+  ctx.textBaseline='middle';ctx.textAlign='left';let lx=L;
+  for(const s of series){if(!s.lab)continue;ctx.strokeStyle=s.col;ctx.lineWidth=2;ctx.setLineDash(s.dash||[]);ctx.beginPath();ctx.moveTo(lx,11);ctx.lineTo(lx+16,11);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.muted;ctx.fillText(s.lab,lx+21,11);lx+=ctx.measureText(s.lab).width+38}
+}
+
+/* ---------- Schelling ---------- */
+const SCH={P:{size:40,empty:0.1,share:0.5,want:0.3,moore:true},w:null,run:false,acc:0,seed:1,cp:10,ctx:null};
+function schReset(newSeed){if(newSeed)SCH.seed++;SCH.w=new Schelling(SCH.P,SCH.seed);const f=fitCanvas($('schMap'),SCH.P.size,SCH.P.size,13);SCH.ctx=f.ctx;SCH.cp=f.cp;schDraw()}
+function schDraw(){
+  const w=SCH.w,ctx=SCH.ctx,cp=SCH.cp,n=w.W;
+  ctx.fillStyle=C.soft; ctx.fillRect(0,0,n*cp,n*cp);
+  const r=cp*0.4, lw=Math.max(1.2,cp*0.16);
+  for(const [v,col] of [[1,C['sch-a']],[2,C['sch-b']]]){
+    const full=new Path2D(), ring=new Path2D();
+    for(let i=0;i<w.N;i++){if(w.g[i]!==v)continue;const x=(i%n+.5)*cp,y=(((i/n)|0)+.5)*cp;
+      (w.happy(i)?full:ring).moveTo(x+r,y); (w.happy(i)?full:ring).arc(x,y,r,0,Math.PI*2)}
+    ctx.fillStyle=col; ctx.fill(full); ctx.strokeStyle=col; ctx.lineWidth=lw; ctx.stroke(ring);
+  }
+  $('schWantV').textContent=Math.round(SCH.P.want*100)+'%';
+  $('schSimV').textContent=Math.round(w.sim*100)+'%';
+  $('schUnhV').textContent=Math.round(w.unh*100)+'%';
+  $('schTV').textContent=w.t; $('schMvV').textContent=w.moves;
+  simpleLine($('schChart'),[{data:w.hist.sim.map(v=>v*100),col:C.moss,lab:'이웃 중 같은 색 평균'},{data:w.hist.unh.map(v=>v*100),col:C.alert,lab:'불만족 주민'}],{ymax:100,pct:true,hline:SCH.P.want*100,xmin:20});
+}
+function schInit(){
+  const vis=visTrack($('schelling'));
+  const lab=()=>{$('schWantL').textContent=Math.round(SCH.P.want*100)+'%';$('schEmptyL').textContent=Math.round(SCH.P.empty*100)+'%';$('schShareL').textContent=Math.round(SCH.P.share*100)+'%'};
+  $('schWant').oninput=e=>{SCH.P.want=+e.target.value;SCH.w.hist.sim.pop();SCH.w.hist.unh.pop();SCH.w.measure();lab();schDraw()};
+  $('schEmpty').oninput=e=>{SCH.P.empty=+e.target.value;lab();schReset()};
+  $('schShare').oninput=e=>{SCH.P.share=+e.target.value;lab();schReset()};
+  $('schNb').onchange=e=>{SCH.P.moore=e.target.value==='1';SCH.w.hist.sim.pop();SCH.w.hist.unh.pop();SCH.w.measure();schDraw()};
+  const setRun=on=>{SCH.run=on;$('schRun').textContent=on?'일시정지':'실행'};
+  $('schRun').onclick=()=>setRun(!SCH.run);
+  $('schStep').onclick=()=>{setRun(false);SCH.w.step();schDraw()};
+  $('schReset').onclick=()=>{setRun(false);schReset(true)};
+  lab(); schReset();
+  let last=performance.now();
+  (function loop(now){requestAnimationFrame(loop);const dt=Math.min(0.2,(now-last)/1000);last=now;
+    if(!SCH.run||!vis.on)return; SCH.acc+=dt*(+$('schSpeed').value);
+    let k=Math.floor(SCH.acc);SCH.acc-=k; if(!k)return;
+    while(k-->0)SCH.w.step(); schDraw();
+    if(SCH.w.unh===0)setRun(false);
+  })(last);
+  window.addEventListener('resize',()=>{const f=fitCanvas($('schMap'),SCH.P.size,SCH.P.size,13);SCH.ctx=f.ctx;SCH.cp=f.cp;schDraw()});
+}
+
+/* ---------- Ants ---------- */
+const ANT={P:{W:90,H:66,n:120,wiggle:40,follow:true,drop:true,dropAmt:60,diff:0.5,evap:0.1,thr:0.05,fade:1,uphill:false,ignoreR:0,outward:true,layout:'three'},
+  w:null,run:false,acc:0,seed:1,prev:null,prevLab:'',cp:7,ctx:null,off:document.createElement('canvas'),img:null};
+const PILE_NAMES={three:['가까운 더미','중간 더미','먼 더미'],far:['먼 큰 더미']};
+function antReset(){
+  if(ANT.w&&ANT.w.t>20){ANT.prev=ANT.w.hist.home.slice();ANT.prevLab=`전 실행 (페로몬 ${ANT.wPhero?'켬':'끔'})`}
+  ANT.seed=1+((ANT.seed)%4); ANT.w=new AntWorld(ANT.P,ANT.seed); ANT.wPhero=ANT.P.follow;
+  const f=fitCanvas($('antMap'),ANT.P.W,ANT.P.H,9); ANT.ctx=f.ctx; ANT.cp=f.cp;
+  ANT.off.width=ANT.P.W; ANT.off.height=ANT.P.H; ANT.img=ANT.off.getContext('2d').createImageData(ANT.P.W,ANT.P.H);
+  antDraw();
+}
+function antDraw(){
+  const w=ANT.w,W=w.W,H=w.H,d=ANT.img.data,cp=ANT.cp,ctx=ANT.ctx;
+  const g=hexRGB(C.soil), ph=hexRGB(C.phero), fd=hexRGB(C.food), lmax=Math.log1p(40);
+  for(let i=0;i<w.N;i++){
+    let c=g; const j=i*4;
+    if(w.food[i]){const a=0.55+0.45*Math.min(1,w.food[i]/2);d[j]=g[0]+(fd[0]-g[0])*a;d[j+1]=g[1]+(fd[1]-g[1])*a;d[j+2]=g[2]+(fd[2]-g[2])*a}
+    else{const a=Math.min(1,Math.log1p(w.chem[i])/lmax)*0.9;d[j]=c[0]+(ph[0]-c[0])*a;d[j+1]=c[1]+(ph[1]-c[1])*a;d[j+2]=c[2]+(ph[2]-c[2])*a}
+    d[j+3]=255;
+  }
+  ANT.off.getContext('2d').putImageData(ANT.img,0,0);
+  ctx.imageSmoothingEnabled=false; ctx.drawImage(ANT.off,0,0,W*cp,H*cp);
+  ctx.fillStyle=C.nest; ctx.beginPath(); ctx.arc(w.nx*cp,w.ny*cp,w.nestR*cp,0,Math.PI*2); ctx.fill();
+  const r=Math.max(1.3,cp*0.38);
+  for(const carry of [false,true]){
+    ctx.fillStyle=carry?C.food:C.ant; ctx.beginPath();
+    for(const a of w.ants){if(a.carry!==carry)continue;ctx.moveTo(a.x*cp+r,a.y*cp);ctx.arc(a.x*cp,a.y*cp,r,0,Math.PI*2)}
+    ctx.fill(); if(carry){ctx.strokeStyle=C.ant;ctx.lineWidth=0.8;ctx.stroke()}
+  }
+  $('antTV').textContent=w.t; $('antHomeV').textContent=w.home;
+  const names=PILE_NAMES[ANT.P.layout];
+  $('antPiles').innerHTML=w.piles.map((p,k)=>`<div class="pilebar"><span>${names[k]}</span><span class="b"><i style="width:${100*p.left/p.total}%"></i></span><span>${p.done?`${p.done}틱에 바닥`:`${p.left}/${p.total}`}</span></div>`).join('');
+  const s=[{data:w.hist.home,col:C.food,lab:`이번 실행 (페로몬 ${ANT.wPhero?'켬':'끔'})`}];
+  if(ANT.prev)s.unshift({data:ANT.prev,col:C.muted,dash:[5,4],w:1.5,lab:ANT.prevLab});
+  simpleLine($('antChart'),s,{xmin:400});
+}
+function antInit(){
+  const vis=visTrack($('ants'));
+  const lab=()=>{$('antNL').textContent=ANT.P.n+'마리';$('antEvapL').textContent=Math.round(ANT.P.evap*100)+'%/틱';$('antDiffL').textContent=Math.round(ANT.P.diff*100)+'%';$('antWigL').textContent='±'+ANT.P.wiggle+'°'};
+  const setRun=on=>{ANT.run=on;$('antRun').textContent=on?'일시정지':'실행'};
+  $('antRun').onclick=()=>setRun(!ANT.run);
+  $('antReset').onclick=()=>{antReset();if(!reduceMotion)setRun(true)};
+  $('antPhero').onchange=e=>{ANT.P.follow=ANT.P.drop=e.target.checked;antReset();if(!reduceMotion)setRun(true)};
+  $('antLayout').onchange=e=>{ANT.P.layout=e.target.value;ANT.prev=null;ANT.w=null;antReset()};
+  $('antN').oninput=e=>{ANT.P.n=+e.target.value;lab()}; $('antN').onchange=()=>antReset();
+  $('antEvap').oninput=e=>{ANT.P.evap=+e.target.value;lab()};
+  $('antDiff').oninput=e=>{ANT.P.diff=+e.target.value;lab()};
+  $('antWig').oninput=e=>{ANT.P.wiggle=+e.target.value;lab()};
+  lab(); antReset();
+  let last=performance.now(), fr=0;
+  (function loop(now){requestAnimationFrame(loop);const dt=Math.min(0.1,(now-last)/1000);last=now;
+    if(!ANT.run||!vis.on)return; ANT.acc+=dt*(+$('antSpeed').value);
+    let k=Math.floor(ANT.acc);ANT.acc-=k; const t0=performance.now();
+    while(k-->0){ANT.w.step(); if(performance.now()-t0>24){ANT.acc=0;break}}
+    antDraw();
+    if(ANT.w.piles.every(p=>p.left===0)&&ANT.w.ants.every(a=>!a.carry))setRun(false);
+  })(last);
+  window.addEventListener('resize',()=>{const f=fitCanvas($('antMap'),ANT.P.W,ANT.P.H,9);ANT.ctx=f.ctx;ANT.cp=f.cp;antDraw()});
+  if(!reduceMotion){ new IntersectionObserver((es,o)=>{if(es[0].isIntersecting){setRun(true);o.disconnect()}},{threshold:0.3}).observe($('antMap')) }
+}
+
+/* ---------- agent stepper ---------- */
+const STP={P:null,w:null,seed:3,cur:null,cp:30,ctx:null,n:0};
+function stReset(){
+  STP.P=deep(defaultParams(),{W:12,H:9,r:{n:8},f:{n:2},g:{init:0.5}}); STP.P.order=$('stOrder').value;
+  STP.w=new World(STP.P,STP.seed); STP.w.trace=[]; STP.cur=null; STP.n=0;
+  $('stLog').innerHTML='<div class="ent hint">아직 기록이 없습니다. "다음 에이전트"를 눌러 시작하세요.</div>';
+  const f=fitCanvas($('stMap'),12,9,44); STP.ctx=f.ctx; STP.cp=f.cp; stDraw();
+}
+function stLog(html){const L=$('stLog'); if(!STP.n++)L.innerHTML=''; const d=document.createElement('div'); d.className='ent'; d.innerHTML=html; L.prepend(d)}
+function stNext(){
+  const w=STP.w;
+  if(!w.agents.length&&!w.queue){stLog('<span class="hint">동물이 모두 사라졌습니다. 처음부터 다시 시작하세요.</span>');return}
+  if(!w.queue){
+    w.beginTick();
+    const ord=w.queue.map(a=>`${a.sp?'여우':'토끼'} #${a.id}`).join(', ');
+    stLog(`<div class="tk">틱 ${w.t} 시작</div>풀 칸을 모두 갱신하고, 행동 순서를 정했습니다: ${ord}`);
+  }
+  const a=w.actNext();
+  if(a){
+    STP.cur=a; const nm=`${a.sp?'여우':'토끼'} #${a.id}`;
+    if(a._skip) stLog(`<div class="hd">${w.qi}번째: ${nm}</div>이번 틱에 앞 차례의 여우에게 잡아먹혀 건너뜁니다.`);
+    else stLog(`<div class="hd">${w.qi}번째: ${nm}</div><ul>${w.trace.splice(0).map(s=>`<li>${s}</li>`).join('')}</ul>`);
+    w.trace.length=0;
+    if(w.qi>=w.queue.length){w.endTick();STP.cur=null;stLog(`<div class="tk">틱 ${w.t} 끝</div>토끼 ${w.nR}마리, 여우 ${w.nF}마리. 이번 틱에 태어난 새끼는 다음 틱부터 움직입니다.`)}
+  }
+  stDraw();
+}
+function stDraw(){
+  const w=STP.w, ctx=STP.ctx, cp=STP.cp, R=C.rgb;
+  for(let i=0;i<w.N;i++){const s=w.g[i],c=s===2?R.grass:s===1?R.sprout:(w.gt[i]>0?R.soilDk:R.soil);ctx.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;ctx.fillRect((i%w.W)*cp,((i/w.W)|0)*cp,cp,cp)}
+  ctx.strokeStyle=rgba(C.ink,0.08); ctx.lineWidth=1;
+  for(let x=0;x<=w.W;x++){ctx.beginPath();ctx.moveTo(x*cp+.5,0);ctx.lineTo(x*cp+.5,w.H*cp);ctx.stroke()}
+  for(let y=0;y<=w.H;y++){ctx.beginPath();ctx.moveTo(0,y*cp+.5);ctx.lineTo(w.W*cp,y*cp+.5);ctx.stroke()}
+  ctx.font=`700 ${Math.max(9,cp*0.36)}px `+getComputedStyle(document.body).fontFamily; ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(const a of w.agents){
+    if(!a.alive)continue; const cx=(a.x+.5)*cp, cy=(a.y+.5)*cp;
+    ctx.lineWidth=1.2; ctx.strokeStyle=C['rabbit-edge'];
+    if(a.sp===RABBIT){ctx.fillStyle=a.act==='flee'?C.flee:C.rabbit;ctx.beginPath();ctx.arc(cx,cy,cp*0.4,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#2A251F'}
+    else{const r=cp*0.5;ctx.fillStyle=C.fox;ctx.beginPath();ctx.moveTo(cx,cy-r);ctx.lineTo(cx+r*0.88,cy+r*0.72);ctx.lineTo(cx-r*0.88,cy+r*0.72);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#FFFFFF'}
+    ctx.fillText(a.id,cx,a.sp===RABBIT?cy:cy+cp*0.12);
+  }
+  const c=STP.cur;
+  if(c&&c.alive){ctx.strokeStyle=C.ink;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc((c.x+.5)*cp,(c.y+.5)*cp,cp*0.62,0,Math.PI*2);ctx.stroke()}
+  const q=$('stQueue');
+  if(!w.queue){q.innerHTML='<span class="hint" style="border:0;background:none;padding:0">다음 틱의 순서는 틱이 시작할 때 정해집니다.</span>';return}
+  q.innerHTML=w.queue.map((a,i)=>{const cur=i===w.qi-1, done=i<w.qi-1; let cls=cur?'cur':done?'done':''; if(!a.alive&&(done||cur||a._skip!==false))cls+=' dead'; if(!a.alive&&!done&&!cur)cls='dead'; return `<span class="${cls}">${a.sp?'여우':'토끼'} #${a.id}</span>`}).join('');
+}
+function stInit(){
+  $('stNext').onclick=stNext;
+  $('stTick').onclick=()=>{const t=STP.w.t;if(!STP.w.queue)stNext();let g=0;while(STP.w.queue&&g++<200)stNext()};
+  $('stReset').onclick=stReset;
+  $('stOrder').onchange=()=>{STP.P.order=$('stOrder').value};
+  stReset();
+  window.addEventListener('resize',()=>{const f=fitCanvas($('stMap'),12,9,44);STP.ctx=f.ctx;STP.cp=f.cp;stDraw()});
+}
+
+init(); schInit(); antInit(); stInit();
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{refreshColors();schDraw();antDraw();stDraw()});
+</script>
+</body>
+</html>
