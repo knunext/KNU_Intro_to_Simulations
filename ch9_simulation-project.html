@@ -1,0 +1,1258 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>프로젝트: 내 주변 시스템 모델링</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F8; --panel:#FFFFFF; --ink:#17202E; --muted:#5A6577; --line:#D5DBE3; --soft:#E8ECF1;
+  --acc:#7A5230; --c1:#3557C9; --c2:#C27C00; --c3:#0E7C6B; --miss:#C8372D;
+  --t1:#2E62D0; --t2:#C2410C; --t3:#0E8A6B; --t4:#8B3FD9; --t5:#B91C5C;
+  --k-kw:#8A3FA8; --k-fn:#2457C5; --k-str:#2E7D32; --k-num:#B5560F; --k-com:#7A8494; --k-bi:#0F7C86;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --math:"STIX Two Text","Times New Roman",Times,serif;
+  --code:"D2Coding","Consolas","SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+    --acc:#D7A97C; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+    --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+    --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+  --acc:#D7A97C; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+  --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+  --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+  color-scheme:dark;
+}
+:root{box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 16px); scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+body{margin:0; background:var(--bg); color:var(--ink); font:400 17px/1.75 var(--sans); -webkit-font-smoothing:antialiased; word-break:keep-all; overflow-wrap:break-word}
+a{color:var(--acc)}
+.wrap{max-width:980px; margin:0 auto; padding:40px 24px 48px}
+.prose{max-width:42em}
+p{margin:0 0 1em}
+code{font-family:var(--code); font-size:.9em; background:var(--soft); padding:1px 5px; border-radius:4px}
+
+/* 머리말 */
+.back{font-size:15px; margin:0 0 36px}
+.back a{color:var(--muted)}
+.series{margin:0 0 10px; color:var(--muted); font-size:15px}
+h1{margin:0; font-weight:700; font-size:clamp(34px,6vw,54px); line-height:1.12; letter-spacing:-0.02em}
+h1 .n{font-family:var(--math); font-weight:500; color:var(--acc); margin-right:.2em}
+.lead{margin:18px 0 0; color:var(--muted); max-width:38em; font-size:18px}
+.goals{display:grid; grid-template-columns:1.4fr 1fr; gap:24px; margin:32px 0 0}
+.goals > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px}
+.goals h2{font-size:15px; margin:0 0 6px}
+.goals ul{margin:0; padding-left:1.1em; font-size:15px; line-height:1.65}
+.goals .pre a{display:inline-block; margin:2px 6px 2px 0; font-size:14px; text-decoration:none; padding:2px 9px; border-radius:5px; background:var(--soft); color:var(--ink)}
+.goals .pre a:hover{background:var(--acc); color:var(--panel)}
+.goals .pre p{font-size:14.5px; color:var(--muted); margin:6px 0 0}
+.toc{margin:28px 0 0; display:grid; grid-template-columns:repeat(4,1fr); gap:0 24px; border-top:2px solid var(--ink); padding-top:16px}
+.toc h2{font-size:15px; margin:0 0 6px}
+.toc h2 a{color:var(--ink); text-decoration:none}
+.toc ol{list-style:none; margin:0; padding:0; font-size:14px; line-height:1.65}
+.toc ol a{color:var(--muted); text-decoration:none}
+.toc a:hover{color:var(--acc); text-decoration:underline}
+
+/* 장, 절 */
+.chap{margin-top:88px}
+.chap > h2{display:flex; align-items:baseline; gap:16px; font-size:clamp(28px,4.4vw,38px); line-height:1.2; margin:0 0 12px; letter-spacing:-0.01em}
+.chap > h2 .n{font:500 1.5em/1 var(--math); color:var(--acc)}
+.chap > .intro{color:var(--muted); font-size:18px; max-width:40em; margin-bottom:8px}
+h3{font-size:22px; line-height:1.35; margin:56px 0 12px}
+h3 .n{font:500 1em var(--math); color:var(--acc); margin-right:10px}
+h4{font-size:17px; margin:24px 0 6px}
+.m{font-family:var(--math); font-style:italic; font-size:1.08em; white-space:nowrap}
+.mr{font-family:var(--math); font-size:1.08em; white-space:nowrap}
+.note{max-width:42em; margin:20px 0; padding:14px 18px; border-radius:8px; background:var(--soft); font-size:15.5px; line-height:1.7}
+.note > :last-child{margin-bottom:0}
+.link-note{max-width:42em; margin:20px 0; padding:12px 18px 12px 16px; border-left:3px solid var(--acc); background:var(--panel); border-radius:0 8px 8px 0; font-size:15.5px}
+.link-note > :last-child{margin-bottom:0}
+.link-note .k{font-weight:700; color:var(--acc); margin-right:6px}
+dl.terms{display:grid; grid-template-columns:auto 1fr; gap:6px 18px; max-width:42em; margin:0; font-size:15.5px}
+dl.terms dt{font-weight:700}
+dl.terms dd{margin:0; color:var(--muted)}
+.cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:20px 0}
+.cards.two{grid-template-columns:1fr 1fr}
+.cards > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; font-size:15.5px}
+.cards h4{margin:0 0 6px}
+.cards p{margin:0}
+ol.steps{list-style:none; margin:20px 0; padding:0; counter-reset:s; max-width:44em}
+ol.steps > li{counter-increment:s; position:relative; padding:0 0 14px 44px}
+ol.steps > li::before{content:counter(s); position:absolute; left:0; top:-2px; width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font:500 17px/1 var(--math); background:var(--acc); color:var(--panel)}
+ol.steps > li b{display:block}
+
+/* 사례 연구 머리 */
+.case{margin:56px 0 0; padding-top:18px; border-top:1px solid var(--line)}
+.case h3{margin-top:0}
+.lvl{display:inline-block; font-size:13px; font-weight:500; padding:1px 8px; border-radius:4px; margin-left:8px; vertical-align:3px; background:var(--soft); color:var(--muted)}
+.lvl.real{background:var(--acc); color:var(--panel)}
+
+/* 수식 탐색기 */
+.eqx{margin:28px 0; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px 16px}
+.eqx > .cap{margin:0 0 4px; font-size:14px; color:var(--muted)}
+.eq-big{font-family:var(--math); font-size:clamp(24px,3.6vw,36px); line-height:1.6; padding:12px 0 14px; overflow-x:auto; white-space:nowrap; text-align:center}
+.eq-big .t{--tc:var(--ink); border-bottom:3px solid var(--tc); padding:0 3px; border-radius:4px; cursor:pointer; transition:background .15s}
+.eq-big .t:hover, .eqx[data-on] .eq-big .t.on{background:color-mix(in srgb, var(--tc) 22%, transparent)}
+.eqx[data-on] .eq-big .t:not(.on){opacity:.4}
+.eq-big .op{color:var(--muted); padding:0 .12em}
+.eq-big sub, .eq-big sup{font-size:.6em}
+.eq-big .frac{display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; line-height:1.15; margin:0 .1em}
+.eq-big .frac > span:first-child{border-bottom:2px solid currentColor; padding:0 .15em .05em}
+.eq-big .frac > span:last-child{padding:.08em .15em 0}
+.t[data-c="1"]{--tc:var(--t1)} .t[data-c="2"]{--tc:var(--t2)} .t[data-c="3"]{--tc:var(--t3)} .t[data-c="4"]{--tc:var(--t4)} .t[data-c="5"]{--tc:var(--t5)}
+.eq-terms{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; margin:4px 0 0}
+.eq-terms button{
+  --tc:var(--ink); text-align:left; font:400 14px/1.5 var(--sans); color:var(--ink); background:var(--bg);
+  border:1px solid var(--line); border-left:4px solid var(--tc); border-radius:6px; padding:8px 10px; cursor:pointer;
+}
+.eq-terms button b{display:block; font-family:var(--math); font-size:17px; font-weight:500; color:var(--tc)}
+.eq-terms button[aria-pressed="true"]{background:color-mix(in srgb, var(--tc) 14%, var(--panel)); border-color:var(--tc)}
+.eq-terms button:focus-visible{outline:2px solid var(--tc); outline-offset:2px}
+.eq-detail{margin:12px 0 0; padding:12px 14px; border-radius:8px; background:var(--soft); font-size:15px; min-height:3em}
+.eq-detail:empty{display:none}
+.eq-live{margin-top:14px; padding-top:12px; border-top:1px dashed var(--line)}
+.eq-live .sub{font-size:14px; color:var(--muted); margin:0 0 6px}
+.eqx canvas{display:block; width:100%; height:auto; margin-top:8px}
+.hat{position:relative; display:inline-block}
+.hat::after{content:"ˆ"; position:absolute; left:50%; top:-.42em; transform:translateX(-45%); font-style:normal}
+.lim{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; line-height:1; margin:0 .08em; font-size:1.3em}
+.lim small{font-size:.34em; line-height:1.15}
+.eq-num{font-family:var(--math); font-size:22px; text-align:center; margin:10px 0 2px; overflow-x:auto; white-space:nowrap}
+.eq-num .t{border-bottom:2px solid var(--tc); padding:0 2px}
+
+/* 위젯 */
+.widget{margin:24px 0 28px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px 14px}
+.widget > h4{margin:0 0 2px; font-size:16px}
+.widget > .sub{margin:0 0 12px; color:var(--muted); font-size:14.5px}
+.widget canvas{display:block; width:100%; height:auto; touch-action:manipulation}
+.ctrl, .eq-live .ctrl{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin-top:12px; font-size:14px}
+.ctrl button, .seg button{font:500 14px/1 var(--sans); color:var(--ink); background:var(--soft); border:1px solid var(--line); border-radius:7px; padding:8px 12px; cursor:pointer}
+.ctrl button:hover, .seg button:hover{border-color:var(--acc)}
+.ctrl button.primary{background:var(--acc); border-color:var(--acc); color:var(--panel)}
+.ctrl button:disabled{opacity:.5; cursor:default}
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+.seg{display:inline-flex; flex-wrap:wrap; gap:4px}
+.seg button[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--panel)}
+.ctrl label{display:inline-flex; align-items:center; gap:8px; color:var(--muted)}
+.ctrl label b, .ctrl label output{color:var(--ink); font-weight:500; min-width:2.8em; font-variant-numeric:tabular-nums}
+.ctrl input[type=range]{width:150px; accent-color:var(--acc)}
+.ctrl input[type=checkbox]{accent-color:var(--acc); width:16px; height:16px}
+.ctrl select{font:400 14px var(--sans); color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px 8px}
+textarea.data{width:100%; min-height:90px; font:400 13.5px/1.5 var(--code); color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px; resize:vertical}
+.readout{margin:12px 0 0; font-size:14.5px; line-height:1.6; color:var(--muted); font-variant-numeric:tabular-nums}
+.readout b{color:var(--ink); font-weight:500}
+.readout .good{color:var(--c3); font-weight:500}
+.readout .bad{color:var(--miss); font-weight:500}
+.split{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+
+/* 표 */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:15px; line-height:1.55}
+th,td{padding:9px 12px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line)}
+thead th{font-weight:700; color:var(--muted); font-size:14px}
+tbody tr:last-child th, tbody tr:last-child td{border-bottom:0}
+table.num td{font-variant-numeric:tabular-nums}
+.tbl{background:var(--panel); border:1px solid var(--line); border-radius:10px; margin:20px 0; max-width:46em}
+
+/* 연습 문제 */
+.ex{max-width:44em; margin:16px 0}
+.ex details{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 16px; margin:0 0 8px}
+.ex summary{cursor:pointer; font-weight:500}
+.ex summary::marker{color:var(--acc)}
+.ex details > div{margin-top:8px; color:var(--muted); font-size:15.5px}
+.ex details > div > :last-child{margin-bottom:0}
+
+/* 코드 */
+pre.code{margin:20px 0; padding:16px 18px; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow-x:auto; font:400 14px/1.65 var(--code); tab-size:4; max-width:46em}
+pre.code code{background:none; padding:0; font-size:1em}
+pre.code .kw{color:var(--k-kw); font-weight:500}
+pre.code .fn{color:var(--k-fn)}
+pre.code .bi{color:var(--k-bi)}
+pre.code .str{color:var(--k-str)}
+pre.code .num{color:var(--k-num)}
+pre.code .com{color:var(--k-com); font-style:italic}
+.code-cap{font-size:14px; color:var(--muted); margin:-12px 0 20px}
+
+/* 이전 / 다음 */
+.pager{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:72px}
+.pager a{display:block; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; text-decoration:none; color:var(--ink)}
+.pager a:hover{border-color:var(--acc)}
+.pager span{display:block; font-size:13.5px; color:var(--muted)}
+.pager b{font-size:17px}
+.pager .next{text-align:right}
+footer{margin-top:40px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:14px}
+footer a{color:inherit}
+
+@media (max-width:760px){
+  .wrap{padding:28px 18px 40px}
+  .toc{grid-template-columns:1fr 1fr; gap:14px}
+  .goals, .cards, .cards.two, .split, .pager{grid-template-columns:1fr}
+  .widget, .eqx{padding:14px 12px 12px; margin-left:-6px; margin-right:-6px}
+  .ctrl input[type=range]{width:120px}
+}
+</style>
+</head>
+<body>
+<style>
+/* 9편 전용 */
+.topics{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; align-items:start}
+.topics details{background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px 14px; font-size:15px}
+.topics details[open]{border-color:var(--acc); background:var(--panel)}
+.topics summary{cursor:pointer; font-weight:700; list-style:none}
+.topics summary::-webkit-details-marker{display:none}
+.topics summary::before{content:"+"; display:inline-block; width:1.1em; color:var(--acc); font-weight:500}
+.topics details[open] summary::before{content:"−"}
+.topics .tags{display:block; margin:2px 0 0 1.1em; font-weight:400; font-size:13px; color:var(--muted)}
+.topics .q{margin:10px 0 8px; font-weight:500}
+.topics dl{display:grid; grid-template-columns:auto 1fr; gap:3px 12px; margin:0; font-size:14.5px}
+.topics dt{color:var(--muted); white-space:nowrap}
+.topics dd{margin:0}
+.gantt{--lab:10.5em; margin-top:14px; font-size:14px}
+.gantt .head, .gantt .row{display:grid; grid-template-columns:var(--lab) 1fr; align-items:center}
+.gantt .head .weeks{display:grid; color:var(--muted); font-size:12.5px; text-align:center}
+.gantt .row{min-height:34px; cursor:pointer; border-radius:6px}
+.gantt .row:hover, .gantt .row[aria-expanded="true"]{background:var(--soft)}
+.gantt .row:focus-visible{outline:2px solid var(--acc); outline-offset:1px}
+.gantt .name{padding:0 8px; font-weight:500}
+.gantt .name small{color:var(--muted); font-weight:400; margin-right:6px; font-family:var(--math); font-size:15px}
+.gantt .track{position:relative; height:34px}
+.gantt .bar{position:absolute; top:9px; height:16px; border-radius:4px; background:color-mix(in srgb, var(--acc) 55%, transparent)}
+.gantt .row[aria-expanded="true"] .bar{background:var(--acc)}
+.gantt .gbody{position:relative; margin-top:20px}
+.gantt .ms{position:absolute; top:-4px; bottom:0; width:0; border-left:2px dashed var(--ink); opacity:.55; pointer-events:none}
+.gantt .ms span{position:absolute; top:-18px; left:4px; font-size:12px; white-space:nowrap; color:var(--ink)}
+.gantt .grid{position:absolute; top:0; bottom:0; left:var(--lab); right:0; display:grid; pointer-events:none}
+.gantt .grid i{border-left:1px solid var(--soft)}
+.gantt .wk{padding:0 8px; color:var(--muted); font-size:12.5px}
+.ms-legend{margin:8px 0 0; font-size:13px; color:var(--muted)}
+.gdetail{margin-top:12px; padding:12px 16px; border-radius:8px; background:var(--soft); font-size:15px}
+.gdetail:empty{display:none}
+.gdetail dl{display:grid; grid-template-columns:auto 1fr; gap:4px 14px; margin:6px 0 0}
+.gdetail dt{color:var(--muted); white-space:nowrap}
+.gdetail dd{margin:0}
+.progress{height:8px; border-radius:4px; background:var(--soft); overflow:hidden; margin-top:6px}
+.progress span{display:block; height:100%; width:0; background:var(--acc); transition:width .2s}
+.checks{display:grid; grid-template-columns:1fr 1fr; gap:4px 24px; margin-top:12px}
+.checks h5{grid-column:1 / -1; margin:12px 0 2px; font-size:14px; color:var(--acc)}
+.checks label{display:flex; gap:10px; align-items:flex-start; font-size:15px; line-height:1.5; padding:4px 0; cursor:pointer}
+.checks input{accent-color:var(--acc); width:17px; height:17px; margin-top:3px; flex:none}
+.checks input:checked + span{color:var(--muted); text-decoration:line-through; text-decoration-color:var(--line)}
+@media (max-width:760px){
+  .topics, .checks{grid-template-columns:1fr}
+  .gantt{--lab:7.5em}
+  .gantt .ms span{display:none}
+  .gantt .gbody{margin-top:6px}
+  .gantt .name{font-size:13px}
+}
+</style>
+<div class="wrap">
+<p class="back"><a href="index.html">모델링과 시뮬레이션 목차</a></p>
+<header>
+  <p class="series">모델링과 시뮬레이션, 9편</p>
+  <h1><span class="n">9</span>프로젝트: 내 주변 시스템 모델링</h1>
+  <p class="lead">지금까지는 모델이 주어졌습니다. 이번에는 질문부터 직접 정합니다. 캠퍼스의 시스템 하나를 골라 0편 1.5절의 일곱 단계를 처음부터 끝까지 밟으며, 4~8편에서 배운 도구를 실제로 잰 데이터 위에서 써 봅니다. 이 편은 그 과정의 안내서이자, 혼자서 작은 시뮬레이션 연구를 시작할 때 옆에 두는 체크리스트입니다.</p>
+  <div class="goals">
+    <div>
+      <h2>이 편을 마치면</h2>
+      <ul>
+        <li>결정이 걸려 있고, 잴 수 있고, 한 학기에 끝나는 크기의 질문을 만들 수 있습니다.</li>
+        <li>코드를 짜기 전에 어림 공식으로 혼잡도와 대기의 크기를 짐작할 수 있습니다.</li>
+        <li>필요한 관측 수와 반복 횟수를 계산해 데이터 수집과 실험을 계획할 수 있습니다.</li>
+        <li>보정과 타당성 확인을 분리하고, 결론을 신뢰구간과 적용 조건과 함께 보고할 수 있습니다.</li>
+      </ul>
+    </div>
+    <div class="pre">
+      <h2>먼저 보면 좋은 것</h2>
+      <a href="simulation-101.html#s1-5">0편 1.5 연구 과정</a><a href="input-modeling.html">4편 입력 모델링</a><a href="output-analysis.html">5편 출력 분석</a><a href="verification-optimization.html">8편 검증과 타당성</a>
+      <p>새 이론은 거의 없습니다. 앞의 편들을 하나의 흐름으로 묶어, 실제 문제에 적용하는 순서를 익히는 편입니다.</p>
+    </div>
+  </div>
+  <nav class="toc" aria-label="목차">
+    <div><h2><a href="#ch1">1. 왜 프로젝트인가</a></h2><ol><li><a href="#s1-1">따라 하기에서 직접 하기로</a></li><li><a href="#s1-2">모델이 현실을 만날 때</a></li><li><a href="#s1-3">주제 고르기</a></li></ol></div>
+    <div><h2><a href="#ch2">2. 프로젝트의 뼈대</a></h2><ol><li><a href="#s2-1">일곱 단계를 일정으로</a></li><li><a href="#s2-2">좋은 질문의 구조</a></li><li><a href="#s2-3">경계와 상세 수준</a></li><li><a href="#s2-4">코드 전에 어림 계산</a></li><li><a href="#s2-5">데이터 수집 계획</a></li><li><a href="#s2-6">실험 계획과 보고</a></li><li><a href="#s2-7">점검 목록과 평가 기준</a></li></ol></div>
+    <div><h2><a href="#ch3">3. 예제와 사례 연구</a></h2><ol><li><a href="#s3-1">학과 복합기</a></li><li><a href="#s3-2">셔틀버스 정류장</a></li><li><a href="#s3-3">학생식당 점심</a></li></ol></div>
+    <div><h2><a href="#ch4">4. 연결과 정리</a></h2><ol><li><a href="#s4-1">시리즈 전체 지도</a></li><li><a href="#s4-2">자주 하는 실수</a></li><li><a href="#s4-3">연구를 시작하려면</a></li><li><a href="#s4-4">연습 문제</a></li></ol></div>
+  </nav>
+</header>
+
+<!-- ===================== 1 ===================== -->
+<section class="chap" id="ch1">
+  <h2><span class="n">1</span>왜 프로젝트인가</h2>
+  <p class="intro">시뮬레이션 실력은 코드가 아니라, 무엇을 모델에 넣고 무엇을 뺄지 정하는 판단에서 드러납니다. 그 판단은 직접 해 봐야만 늡니다.</p>
+
+  <h3 id="s1-1"><span class="n">1.1</span>따라 하기에서 직접 하기로</h3>
+  <div class="prose">
+    <p>1~8편에서 커피점 모델은 늘 준비되어 있었습니다. 메뉴 다섯 가지, 바리스타 수, 도착률 곡선까지 누군가 정해 두었고, 우리는 그 위에서 실험만 했습니다. 실제 연구에서는 이 모든 것을 스스로 정해야 합니다. 특히 아래 세 가지는 교재가 대신해 줄 수 없습니다.</p>
+  </div>
+  <div class="cards">
+    <div><h4>무엇을 물을까</h4><p>“식당이 붐빈다”는 질문이 아닙니다. 어떤 결정을 돕고 싶은지, 무엇으로 좋고 나쁨을 잴지 정해야 모델의 범위가 정해집니다(2.2절).</p></div>
+    <div><h4>어디까지 넣을까</h4><p>식권 발매기, 배식구, 수저통, 식탁 중 어디까지를 모델에 넣을지 정하는 일입니다. 너무 넓으면 끝나지 않고, 너무 좁으면 정작 병목을 놓칩니다(2.3절).</p></div>
+    <div><h4>숫자는 어디서 올까</h4><p>도착 간격과 처리 시간은 직접 재야 합니다. 몇 개를 재야 하는지, 어느 시간대에 재야 하는지도 계획해야 합니다(2.5절, 4편).</p></div>
+  </div>
+
+  <h3 id="s1-2"><span class="n">1.2</span>모델이 현실을 만날 때</h3>
+  <div class="prose">
+    <p>시뮬레이션에서 잘 맞던 모델이 현실에서 빗나가는 현상을 7편에서는 sim2real 격차라고 불렀습니다. 대기 시스템에서도 똑같은 일이 일어납니다. 3.3절의 학생식당 사례를 미리 요약하면 이렇습니다.</p>
+    <p>한 학생이 손님이 한 명씩 무작위로 온다고 가정하고 평소 날 20일의 실측 대기에 맞춰 배식 시간을 조정했습니다. 그래프는 꽤 잘 맞았습니다. 그런데 손님이 25% 많은 시험 기간을 예측해 보니, 모델은 점심 피크 대기를 실측의 두 배 넘게 부풀렸습니다. 원인은 학생들이 친구와 무리 지어 온다는 사실을 모델이 빠뜨렸고, 그 빈자리를 배식 시간을 실제보다 길게 잡는 것으로 메웠기 때문입니다. 모수가 구조의 오류를 숨긴 것입니다. 이것을 잡아내는 방법이 보정에 쓰지 않은 데이터로 하는 타당성 확인(8편)이며, 이 편에서 직접 해 봅니다.</p>
+  </div>
+
+  <h3 id="s1-3"><span class="n">1.3</span>주제 고르기</h3>
+  <div class="prose"><p>좋은 주제는 세 조건을 만족합니다. 결정이 걸려 있고(누군가 이 결과로 무엇을 바꿀 수 있고), 직접 잴 수 있으며(한두 주 안에 데이터를 모을 수 있고), 한 학기 크기입니다. 아래는 캠퍼스에서 해 볼 만한 후보들입니다. 방법과 난이도로 걸러 보세요.</p></div>
+  <div class="widget" id="w-topics">
+    <h4>주제 탐색기</h4>
+    <p class="sub">각 주제를 누르면 질문 예, 잴 것, 볼 것, 참고할 편이 펼쳐집니다.</p>
+    <div class="ctrl" style="margin-top:0">
+      <span style="color:var(--muted)">방법</span>
+      <div class="seg" data-fm><button type="button" aria-pressed="true" data-v="all">전체</button><button type="button" aria-pressed="false" data-v="DES">DES</button><button type="button" aria-pressed="false" data-v="ABM">ABM</button><button type="button" aria-pressed="false" data-v="SD">SD</button><button type="button" aria-pressed="false" data-v="연속">연속</button></div>
+      <span style="color:var(--muted)">난이도</span>
+      <div class="seg" data-fl><button type="button" aria-pressed="true" data-v="all">전체</button><button type="button" aria-pressed="false" data-v="쉬움">쉬움</button><button type="button" aria-pressed="false" data-v="중간">중간</button><button type="button" aria-pressed="false" data-v="실전">실전</button></div>
+    </div>
+    <div class="topics" data-list></div>
+    <p class="readout" data-out></p>
+  </div>
+</section>
+
+<!-- ===================== 2 ===================== -->
+<section class="chap" id="ch2">
+  <h2><span class="n">2</span>프로젝트의 뼈대</h2>
+  <p class="intro">일곱 단계를 실제 일정과 산출물로 바꾸고, 각 단계에서 꼭 해야 할 계산과 점검을 정리합니다.</p>
+
+  <h3 id="s2-1"><span class="n">2.1</span>일곱 단계를 일정으로</h3>
+  <div class="prose"><p>0편 1.5절의 일곱 단계는 차례로 끝나는 계단이 아니라 겹치며 진행됩니다. 데이터를 모으는 동안 코드를 짜기 시작하고, 검증에서 문제가 나오면 개념 모델로 돌아갑니다. 프로젝트 기간을 바꿔 보고, 단계를 눌러 할 일과 산출물을 확인하세요.</p></div>
+  <div class="widget" id="w-plan">
+    <h4>프로젝트 일정표</h4>
+    <p class="sub">막대는 각 단계가 진행되는 기간, 세로선은 점검 시점입니다.</p>
+    <div class="ctrl" style="margin-top:0"><label>프로젝트 기간 <input type="range" min="6" max="14" step="1" value="8" data-weeks> <b></b></label></div>
+    <div class="gantt" data-gantt></div>
+    <div class="gdetail" data-detail></div>
+  </div>
+
+  <h3 id="s2-2"><span class="n">2.2</span>좋은 질문의 구조</h3>
+  <div class="prose"><p>좋은 질문은 문장 하나에 다섯 부분을 모두 담습니다. 각 부분을 눌러 왜 필요한지 확인하세요. 이 문장이 정해지면 모델에 넣을 것(결정 변수와 조건), 측정할 것(지표), 실험의 끝(기준)이 저절로 정해집니다.</p></div>
+  <figure class="eqx" id="eq-q">
+    <p class="cap">질문의 다섯 부분</p>
+    <div class="eq-big" style="font-family:var(--sans); font-size:clamp(15px,2.3vw,21px); line-height:2.3; white-space:normal">
+      <span class="t" data-t="dec" data-c="1">배식구 수를</span>
+      <span class="t" data-t="alt" data-c="2">3개에서 4개로 늘리면</span>,
+      <span class="t" data-t="cond" data-c="4">시험 기간 점심 피크(12:00~12:30)에</span>
+      <span class="t" data-t="kpi" data-c="3">학생 1인당 평균 대기가</span>
+      <span class="t" data-t="crit" data-c="5">2분 아래로 내려가는가?</span>
+    </div>
+    <div class="eq-terms">
+      <button type="button" data-t="dec"><b>결정 변수</b>무엇을 바꿀 수 있는가</button>
+      <button type="button" data-t="alt"><b>대안</b>무엇과 무엇을 비교하는가</button>
+      <button type="button" data-t="cond"><b>조건</b>언제, 어떤 상황에서</button>
+      <button type="button" data-t="kpi"><b>성과 지표</b>무엇으로 좋고 나쁨을 재는가</button>
+      <button type="button" data-t="crit"><b>판단 기준</b>얼마면 충분한가</button>
+    </div>
+    <template data-t="dec">누군가 실제로 바꿀 수 있는 것이어야 합니다. 배식구 수, 배차 간격, 좌석 이용 시간 제한, 키오스크 대수 같은 것입니다. “학생들이 덜 몰리면”처럼 아무도 통제할 수 없는 것은 결정 변수가 아니라 조건입니다.</template>
+    <template data-t="alt">비교 대상이 둘 이상이어야 결론이 납니다. 현재 상태(기준안)를 꼭 포함하세요. 대안이 많으면 5편의 요인 설계로 묶습니다.</template>
+    <template data-t="cond">같은 시스템도 시간대와 시기에 따라 전혀 다르게 행동합니다. 조건을 좁힐수록 측정이 쉬워지고 결론이 분명해집니다. 결론은 이 조건 안에서만 유효합니다.</template>
+    <template data-t="kpi">평균 대기, 95번째 백분위 대기, 포기한 비율, 가동률처럼 숫자로 잴 수 있어야 합니다. 평균만 보면 가끔 생기는 아주 긴 대기를 놓치므로, 평균과 꼬리 지표를 함께 보는 것이 좋습니다.</template>
+    <template data-t="crit">미리 정해 두지 않으면 결과를 보고 나서 기준을 고르게 됩니다. 기준은 결정권자(식당 운영자)와 함께 정하는 것이 가장 좋습니다. 8편의 “실용 기준”과 같은 역할입니다.</template>
+    <div class="eq-detail"></div>
+  </figure>
+  <div class="scroll tbl">
+    <table>
+      <thead><tr><th>약한 질문</th><th>무엇이 빠졌나</th><th>다듬은 질문</th></tr></thead>
+      <tbody>
+        <tr><td>도서관 좌석이 부족한가?</td><td>결정, 지표, 기준</td><td>시험 기간 오후에 좌석 이용 시간을 4시간에서 3시간으로 줄이면, 빈자리를 기다리다 돌아가는 학생 비율이 10% 아래로 떨어지는가?</td></tr>
+        <tr><td>셔틀버스를 시뮬레이션해 보자.</td><td>질문 전체</td><td>9시 수업 전(8:20~8:55) 배차 간격을 10분에서 8분으로 줄이면, 정원이 차서 한 번 이상 못 타는 학생이 5% 아래가 되는가?</td></tr>
+        <tr><td>엘리베이터가 느리다.</td><td>대안, 조건</td><td>수업 시작 10분 전, 짝수층 전용 운행을 도입하면 1층 대기 시간의 95번째 백분위가 2분 아래로 줄어드는가?</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="s2-3"><span class="n">2.3</span>경계와 상세 수준</h3>
+  <div class="prose">
+    <p>질문이 정해지면 시스템의 <strong>경계</strong>를 긋습니다. 1편에서 리틀의 법칙을 적용할 경계를 고른 것과 같은 일입니다. 경계 밖은 입력(도착 과정)으로만 남기고, 경계 안만 자세히 모델링합니다.</p>
+    <p>상세 수준은 <strong>가장 단순한 모델로 시작해 하나씩 더하는 것</strong>이 원칙입니다. 2편에서 커피점을 여덟 단계로 키운 것과 같은 방식입니다. 각 단계에서 결과가 얼마나 바뀌는지 보면, 어떤 요소가 질문에 중요한지가 드러납니다. 결과를 거의 바꾸지 않는 요소는 빼도 됩니다.</p>
+  </div>
+  <div class="cards">
+    <div><h4>넣어야 할 것</h4><p>결정 변수가 직접 바꾸는 부분, 병목이 될 만한 자원, 지표를 계산하는 데 필요한 사건.</p></div>
+    <div><h4>빼도 되는 것</h4><p>결과를 거의 바꾸지 않는 세부. 예를 들어 배식 대기가 질문이라면 식탁에서 먹는 시간은 빼도 됩니다. 단, 식탁이 꽉 차 배식 줄이 막힌다면 넣어야 합니다.</p></div>
+    <div><h4>가정으로 적어 둘 것</h4><p>뺀 것과 단순화한 것은 모두 “가정” 목록으로 보고서에 남깁니다. 결론의 한계가 곧 이 목록입니다.</p></div>
+  </div>
+
+  <h3 id="s2-4"><span class="n">2.4</span>코드 전에 어림 계산</h3>
+  <div class="prose"><p>시뮬레이션을 짜기 전에 손으로 규모를 어림합니다. 두 가지 이유가 있습니다. 첫째, 이용률 ρ가 1을 넘는지 미리 알 수 있습니다. 넘으면 줄이 끝없이 늘어나므로 질문 자체를 다시 봐야 합니다. 둘째, 나중에 시뮬레이션 결과가 이 어림값과 크게 다르면 그 이유를 설명할 수 있어야 합니다. 설명하지 못하면 버그일 가능성이 높습니다(8편의 검증). 1편의 공식들을 여러 서버와 일반 분포로 넓힌 근사식을 씁니다.</p></div>
+  <figure class="eqx" id="eq-env">
+    <p class="cap">혼잡도와 평균 대기의 어림 공식 (앨런-커닌 근사)</p>
+    <div class="eq-big">
+      <i>ρ</i><span class="op"> = </span><span class="frac"><span><span class="t" data-t="lam" data-c="4"><i>λ</i></span> · <span class="t" data-t="es" data-c="3"><i>E</i>[<i>S</i>]</span></span><span><span class="t" data-t="c" data-c="5"><i>c</i></span></span></span>
+      <span style="display:inline-block; width:1.4em"></span>
+      <i>W</i><sub>q</sub><span class="op"> ≈ </span>
+      <span class="t" data-t="var" data-c="1"><span class="frac"><span><i>c</i><sub>a</sub><sup>2</sup> + <i>c</i><sub>s</sub><sup>2</sup></span><span>2</span></span></span><span class="op">·</span>
+      <span class="t" data-t="cong" data-c="2"><span class="frac"><span><i>ρ</i><sup>√(2(<i>c</i>+1)) − 1</sup></span><span><i>c</i>(1 − <i>ρ</i>)</span></span></span><span class="op">·</span>
+      <span class="t" data-t="es" data-c="3"><i>E</i>[<i>S</i>]</span>
+    </div>
+    <div class="eq-terms">
+      <button type="button" data-t="lam"><b>λ</b>도착률</button>
+      <button type="button" data-t="es"><b>E[S]</b>평균 처리 시간</button>
+      <button type="button" data-t="c"><b>c</b>서버 수</button>
+      <button type="button" data-t="var"><b>(c<sub>a</sub>² + c<sub>s</sub>²)/2</b>변동성 항</button>
+      <button type="button" data-t="cong"><b>ρ의 항</b>혼잡 항</button>
+    </div>
+    <template data-t="lam">단위 시간당 도착 수입니다. 처리 시간과 단위를 맞추세요(분당이면 분당). 시간대마다 다르면 가장 붐비는 시간대의 값으로 따로 계산합니다(4편 2.7절).</template>
+    <template data-t="es">한 명을 처리하는 평균 시간입니다. 4편의 방법으로 데이터에서 추정합니다. 대기 시간 전체가 이 값에 비례해 커지므로, 이 항은 대기의 “단위”를 정합니다.</template>
+    <template data-t="c">같은 줄을 공유하는 서버 수입니다. 2편에서 본 것처럼, 종류가 다른 서버는 서로 다른 줄로 따로 계산해야 합니다.</template>
+    <template data-t="var">c<sub>a</sub>와 c<sub>s</sub>는 도착 간격과 처리 시간의 변동계수(표준편차 ÷ 평균)입니다. 포아송 도착이면 c<sub>a</sub><sup>2</sup> = 1, 일정한 처리면 c<sub>s</sub><sup>2</sup> = 0입니다. 0편 2.4절의 “평균은 같아도 기다림은 다르다”가 바로 이 항입니다. 둘 다 지수분포면 1이 되어 M/M/c와 거의 같아집니다.</template>
+    <template data-t="cong">ρ가 1에 가까워지면 분모의 (1 − ρ)가 0으로 가면서 대기가 폭발합니다. 1편의 M/M/1 곡선이 그 모습입니다. 서버가 많을수록 분자의 지수가 커져 같은 ρ에서도 대기가 줄어듭니다(서버를 합치는 효과). c = 1이면 정확히 P-K 공식과 같습니다.</template>
+    <div class="eq-detail"></div>
+    <div class="eq-live">
+      <p class="sub">값을 바꿔 보세요. 기본값은 3.1절의 학과 복합기(시간당 25명, 평균 출력 2분, 변동계수 0.8)입니다.</p>
+      <div class="ctrl">
+        <label>λ (명/시간) <input type="range" min="5" max="120" step="1" value="25" data-var="lamh"> <b></b></label>
+        <label><span>E[S] (분)</span> <input type="range" min="0.2" max="6" step="0.1" value="2" data-var="es" data-fmt="1"> <b></b></label>
+        <label>c <input type="range" min="1" max="6" step="1" value="1" data-var="c"> <b></b></label>
+        <label><span>c<sub>a</sub><sup>2</sup> (도착)</span> <input type="range" min="0" max="3" step="0.1" value="1" data-var="ca2" data-fmt="1"> <b></b></label>
+        <label><span>c<sub>s</sub><sup>2</sup> (처리)</span> <input type="range" min="0" max="3" step="0.02" value="0.64" data-var="cs2" data-fmt="2"> <b></b></label>
+      </div>
+      <p class="eq-num" data-o="num"></p>
+      <p class="readout" data-o="msg"></p>
+    </div>
+  </figure>
+  <div class="note"><p><strong>어림 공식은 정상 상태의 값입니다.</strong> 시스템이 아주 오래 같은 조건으로 돌아갈 때의 평균이라는 뜻입니다. 2시간짜리 시험 전날 저녁이나 30분짜리 점심 피크처럼 텅 빈 상태에서 시작하는 짧은 구간에서는, 줄이 다 쌓이기도 전에 구간이 끝나므로 실제 대기가 공식보다 짧게 나옵니다. 3.1절에서 이 차이를 직접 봅니다(5편의 종료형 시뮬레이션).</p></div>
+
+  <h3 id="s2-5"><span class="n">2.5</span>데이터 수집 계획</h3>
+  <div class="prose"><p>4편에서 데이터로 분포를 고르는 법을 배웠다면, 여기서는 데이터를 <strong>얼마나, 어떻게</strong> 모을지 정합니다. 먼저 짧게 시험 측정(파일럿)을 해서 표준편차를 어림한 뒤, 원하는 정밀도에 필요한 관측 수를 계산합니다.</p></div>
+  <figure class="eqx" id="eq-n">
+    <p class="cap">평균을 원하는 정밀도로 추정하는 데 필요한 관측 수</p>
+    <div class="eq-big">
+      <i>n</i><span class="op"> ≥ </span>(<span class="frac"><span><span class="t" data-t="z" data-c="1"><i>z</i></span> · <span class="t" data-t="s" data-c="2"><i>s</i></span></span><span><span class="t" data-t="e" data-c="3"><i>E</i></span></span></span>)<sup>2</sup>
+    </div>
+    <div class="eq-terms">
+      <button type="button" data-t="z"><b>z</b>신뢰수준에 해당하는 값</button>
+      <button type="button" data-t="s"><b>s</b>파일럿에서 잰 표준편차</button>
+      <button type="button" data-t="e"><b>E</b>허용 오차 (구간의 반폭)</button>
+    </div>
+    <template data-t="z">95%면 1.96, 90%면 1.64입니다. 0편 2.6절의 신뢰구간 식을 거꾸로 푼 것입니다. 평균 ± z·s/√n의 반폭을 E 이하로 만들려면 n이 이만큼 필요합니다.</template>
+    <template data-t="s">10~20개 정도를 먼저 재서 구합니다. 지수분포에 가까운 도착 간격은 표준편차가 평균과 비슷하므로, 평균만 알아도 대략 어림할 수 있습니다.</template>
+    <template data-t="e">“평균 도착 간격을 ±0.2분 정도로 알고 싶다”처럼 정합니다. 2.4절의 어림 공식에서 ρ가 1에 가까우면 작은 입력 오차가 대기를 크게 흔들므로(8편 민감도) E를 더 작게 잡아야 합니다. E를 절반으로 줄이면 n은 4배가 됩니다.</template>
+    <div class="eq-detail"></div>
+    <div class="eq-live">
+      <div class="ctrl">
+        <label>신뢰수준 (%) <input type="range" min="80" max="99" step="1" value="95" data-var="conf"> <b></b></label>
+        <label>s (분) <input type="range" min="0.2" max="5" step="0.1" value="1.8" data-var="s" data-fmt="1"> <b></b></label>
+        <label>E (분) <input type="range" min="0.05" max="1" step="0.05" value="0.3" data-var="e" data-fmt="2"> <b></b></label>
+        <label>따로 잴 시간대 수 <input type="range" min="1" max="6" step="1" value="3" data-var="k"> <b></b></label>
+      </div>
+      <p class="eq-num" data-o="num"></p>
+      <p class="readout" data-o="msg"></p>
+    </div>
+  </figure>
+  <div class="prose"><p>실제 측정에서는 다음을 지키세요.</p></div>
+  <ol class="steps">
+    <li><b>시간대를 나눠서 잰다.</b> 도착률이 시간에 따라 변하면(4편 2.7절) 한데 섞어 평균 내면 안 됩니다. 시간대별로 관측 수를 확보하세요.</li>
+    <li><b>사건 시각을 그대로 적는다.</b> “몇 명 왔다”보다 “각자 몇 시 몇 분 몇 초에 왔다”가 훨씬 쓸모 있습니다. 간격도, 시간대별 개수도, 무리 지어 왔는지도 나중에 다 계산할 수 있습니다.</li>
+    <li><b>여러 날에 걸쳐 잰다.</b> 하루만 재면 그날의 특수성(행사, 날씨)을 일반적인 것으로 착각합니다. 요일을 섞어 여러 날 재세요.</li>
+    <li><b>보정용과 확인용을 나눈다.</b> 처음부터 일부 날짜(가능하면 조건이 다른 날)는 확인용으로 떼어 두고 보정에 쓰지 않습니다(8편, 3.3절).</li>
+  </ol>
+  <div class="note"><p><strong>사람을 관찰할 때의 원칙.</strong> 얼굴이 나오는 사진이나 영상, 이름, 학번처럼 개인을 알아볼 수 있는 정보는 기록하지 마세요. 시각과 사건 종류만 적으면 충분합니다. 식당이나 도서관 안에서 측정할 때는 운영 부서에 미리 알리고, 설문처럼 사람에게 직접 묻는 조사라면 학교의 연구윤리 규정(IRB 대상 여부)을 먼저 확인하세요.</p></div>
+  <div class="prose"><p>휴대폰 스톱워치나 간단한 기록 앱으로 도착 시각을 CSV로 모았다면, 아래 코드로 바로 요약할 수 있습니다.</p></div>
+<pre class="code"><code><span class="kw">import</span> csv
+<span class="kw">import</span> statistics
+<span class="kw">from</span> datetime <span class="kw">import</span> datetime
+
+<span class="com"># arrivals.csv: 한 줄에 손님 한 명, 열은 time(도착 시각, 예: 12:03:41)</span>
+<span class="kw">with</span> <span class="bi">open</span>(<span class="str">&quot;arrivals.csv&quot;</span>, encoding=<span class="str">&quot;utf-8&quot;</span>) <span class="kw">as</span> f:
+    times = [datetime.strptime(row[<span class="str">&quot;time&quot;</span>], <span class="str">&quot;%H:%M:%S&quot;</span>) <span class="kw">for</span> row <span class="kw">in</span> csv.DictReader(f)]
+
+times.sort()
+gaps = [(b - a).total_seconds() / <span class="num">60</span> <span class="kw">for</span> a, b <span class="kw">in</span> <span class="bi">zip</span>(times, times[<span class="num">1</span>:])]   <span class="com"># 도착 간격(분)</span>
+
+m, s = statistics.mean(gaps), statistics.stdev(gaps)
+<span class="bi">print</span>(<span class="str">f&quot;</span><span class="str">간격 </span>{<span class="bi">len</span>(gaps)}<span class="str">개: 평균 </span>{m:<span class="str">.2f</span>}<span class="str">분, 표준편차 </span>{s:<span class="str">.2f</span>}<span class="str">분, 변동계수 </span>{s / m:<span class="str">.2f</span>}<span class="str">&quot;</span>)
+<span class="com"># 변동계수가 1에 가까우면 포아송 도착(4편), 1보다 꽤 크면 무리 지어 오는지 의심해 본다</span>
+
+slots = {}
+<span class="kw">for</span> t <span class="kw">in</span> times:                       <span class="com"># 10분 칸별 도착 수: 도착률이 시간에 따라 변하는지 확인</span>
+    key = t.strftime(<span class="str">&quot;%H:&quot;</span>) + <span class="str">f&quot;</span>{t.minute // <span class="num">10</span> * <span class="num">10</span>:<span class="str">02d</span>}<span class="str">&quot;</span>
+    slots[key] = slots.get(key, <span class="num">0</span>) + <span class="num">1</span>
+<span class="kw">for</span> key <span class="kw">in</span> <span class="bi">sorted</span>(slots):
+    <span class="bi">print</span>(key, <span class="str">&quot;■&quot;</span> * slots[key])</code></pre>
+  <p class="code-cap">변동계수가 1보다 꽤 크게 나오면 손님이 무리 지어 오는지 의심해 보세요. 3.3절의 핵심이 바로 이 신호입니다.</p>
+
+  <h3 id="s2-6"><span class="n">2.6</span>실험 계획과 보고</h3>
+  <div class="prose"><p>모델이 검증과 타당성 확인을 통과하면 실험을 합니다. 대안마다 몇 번씩 돌릴지는 5편의 방법으로 정합니다. 먼저 n<sub>0</sub>번 돌려 신뢰구간의 반폭 h<sub>0</sub>를 보고, 목표 반폭 h에 필요한 반복 수를 어림합니다.</p></div>
+  <figure class="eqx" id="eq-rep">
+    <p class="cap">목표 정밀도에 필요한 반복 횟수 (5편 2.2절)</p>
+    <div class="eq-big">
+      <i>n</i><span class="op"> ≈ </span><span class="t" data-t="n0" data-c="1"><i>n</i><sub>0</sub></span> · (<span class="frac"><span><span class="t" data-t="h0" data-c="2"><i>h</i><sub>0</sub></span></span><span><span class="t" data-t="h" data-c="3"><i>h</i></span></span></span>)<sup>2</sup>
+    </div>
+    <div class="eq-terms">
+      <button type="button" data-t="n0"><b>n<sub>0</sub></b>처음 돌린 횟수</button>
+      <button type="button" data-t="h0"><b>h<sub>0</sub></b>그때 얻은 반폭</button>
+      <button type="button" data-t="h"><b>h</b>원하는 반폭</button>
+    </div>
+    <template data-t="n0">10번 정도로 시작합니다. 너무 적으면 표준편차 추정 자체가 흔들립니다.</template>
+    <template data-t="h0">n<sub>0</sub>번의 결과로 만든 t 신뢰구간의 반폭입니다. 반폭은 1/√n에 비례하므로, 반폭을 절반으로 줄이려면 반복을 4배로 늘려야 합니다.</template>
+    <template data-t="h">두 대안을 비교한다면, 두 대안의 차이가 이 반폭보다 커야 “차이가 있다”고 말할 수 있습니다. 판단 기준(2.2절)에서 정한 차이보다 작게 잡으세요. 공통 난수를 쓰면 차이의 반폭이 크게 줄어 필요한 반복이 적어집니다(5편).</template>
+    <div class="eq-detail"></div>
+    <div class="eq-live">
+      <div class="ctrl">
+        <label><span>n<sub>0</sub></span> <input type="range" min="5" max="30" step="1" value="10" data-var="n0"> <b></b></label>
+        <label><span>h<sub>0</sub> (분)</span> <input type="range" min="0.1" max="3" step="0.05" value="1.2" data-var="h0" data-fmt="2"> <b></b></label>
+        <label>h (분) <input type="range" min="0.05" max="2" step="0.05" value="0.3" data-var="h" data-fmt="2"> <b></b></label>
+      </div>
+      <p class="eq-num" data-o="num"></p>
+      <p class="readout" data-o="msg"></p>
+    </div>
+  </figure>
+  <div class="prose">
+    <p>결론은 다음 틀에 맞춰 씁니다. 숫자 하나가 아니라 범위로, 조건과 함께, 그리고 한계를 붙여서 말합니다.</p>
+  </div>
+  <div class="link-note"><p><span class="k">결론 문장의 틀</span>[조건]에서 [대안 A]는 [기준안]보다 [지표]를 평균 [차이]만큼 줄인다(95% 신뢰구간 [하한]~[상한], 공통 난수로 [n]일씩 비교). 이 결론은 [주요 가정]을 전제로 하며, [민감한 입력]이 [범위]를 벗어나면 달라질 수 있다.</p></div>
+
+  <h3 id="s2-7"><span class="n">2.7</span>점검 목록과 평가 기준</h3>
+  <div class="prose"><p>단계별 점검 목록입니다. 체크한 내용은 이 브라우저에 저장되므로 프로젝트를 진행하며 다시 열어 볼 수 있습니다.</p></div>
+  <div class="widget" id="w-check">
+    <h4>프로젝트 점검 목록</h4>
+    <div class="progress" aria-hidden="true"><span data-bar></span></div>
+    <p class="readout" data-out style="margin-top:6px"></p>
+    <div class="checks" data-list></div>
+    <div class="ctrl"><button type="button" data-act="clear">모두 지우기</button></div>
+  </div>
+  <div class="prose"><p>평가 기준의 예시입니다. 비중은 수업에 맞게 조정하세요. 중요한 것은 구현보다 질문, 검증, 출력 분석에 무게가 있다는 점입니다.</p></div>
+  <div class="scroll tbl">
+    <table>
+      <thead><tr><th>항목</th><th>비중</th><th>잘한 프로젝트의 모습</th></tr></thead>
+      <tbody>
+        <tr><td>질문과 범위</td><td>15</td><td>다섯 부분을 갖춘 질문, 근거 있는 경계, 가정 목록</td></tr>
+        <tr><td>개념 모델</td><td>10</td><td>사건, 자원, 흐름을 그린 그림. 단순한 모델에서 출발</td></tr>
+        <tr><td>입력 모델링</td><td>15</td><td>직접 잰 데이터, 계획된 관측 수, 분포 선택과 적합도 확인</td></tr>
+        <tr><td>구현과 검증</td><td>20</td><td>어림 계산과의 비교, 리틀의 법칙, 극한 조건 등 여러 점검</td></tr>
+        <tr><td>타당성 확인</td><td>10</td><td>보정에 쓰지 않은 데이터와의 비교, 실용 기준</td></tr>
+        <tr><td>실험과 출력 분석</td><td>20</td><td>반복 횟수의 근거, 신뢰구간, 공통 난수, 민감도 분석</td></tr>
+        <tr><td>결론과 발표</td><td>10</td><td>틀에 맞춘 결론, 한계와 다음 단계, 결정권자가 이해할 수 있는 설명</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== 3 ===================== -->
+<section class="chap" id="ch3">
+  <h2><span class="n">3</span>예제와 사례 연구</h2>
+  <p class="intro">같은 과정을 세 번 반복합니다. 쉬운 예제는 과정 전체를 짧게 보여 주고, 뒤로 갈수록 어림 계산이 놓치는 것, 모델이 현실과 어긋나는 것을 다룹니다.</p>
+
+  <div class="case" id="s3-1">
+    <h3><span class="n">3.1</span>학과 복합기<span class="lvl">쉬움</span></h3>
+    <div class="prose">
+      <p><strong>질문.</strong> 기말 과제 마감 전날 저녁(19~21시), 학과 복합기를 한 대 더 빌리면 학생 1인당 평균 대기가 3분 아래로 내려가는가?</p>
+      <p><strong>데이터.</strong> 지난 학기 같은 날 출력 기록을 보니 시간당 약 25명, 1인당 출력 시간은 평균 2분, 변동계수 0.8이었습니다.</p>
+      <p><strong>어림 계산.</strong> 2.4절 공식에 넣으면 한 대일 때 ρ = 0.83, 평균 대기 약 8.2분입니다. 두 대면 ρ = 0.42, 약 0.4분입니다. 어림만으로도 한 대는 기준을 넘고 두 대는 넉넉히 통과할 것 같습니다.</p>
+      <p><strong>시뮬레이션.</strong> 그런데 이 시스템은 텅 빈 상태에서 시작해 2시간 만에 끝납니다. 아래에서 2시간짜리 저녁을 100번 돌려 보세요.</p>
+    </div>
+    <div class="widget" id="w-prn">
+      <h4>어림 공식과 시뮬레이션 비교</h4>
+      <p class="sub">막대: 시뮬레이션 평균과 95% 신뢰구간. 점선 막대: 어림 공식(정상 상태). 가로 점선: 판단 기준 3분.</p>
+      <canvas data-w="640" data-h="220" role="img" aria-label="복합기 대수에 따른 평균 대기의 어림값과 시뮬레이션 값"></canvas>
+      <div class="ctrl">
+        <label>λ (명/시간) <input type="range" min="10" max="29" step="1" value="25" data-lam> <b></b></label>
+        <button type="button" class="primary" data-act="run">2시간 저녁을 100번 돌리기</button>
+      </div>
+      <p class="readout" data-out></p>
+    </div>
+    <div class="prose">
+      <p>한 대일 때 시뮬레이션 평균은 약 5분으로, 어림 공식의 8.2분보다 훨씬 짧습니다. 버그가 아닙니다. 2.4절의 상자에서 말한 대로, 2시간은 줄이 정상 상태까지 쌓이기에 너무 짧습니다. 그래도 결론은 같습니다. 한 대는 3분 기준을 넘고, 두 대는 0.3분 정도로 기준을 크게 밑돕니다. λ를 15명 정도로 낮추면 ρ가 작아져 줄이 금방 정상 상태에 이르므로 두 값이 거의 같아집니다.</p>
+      <p>이 예제는 과정 전체를 담고 있습니다. 질문, 데이터, 어림 계산, 시뮬레이션, 그리고 어림과 시뮬레이션의 차이를 <strong>설명</strong>하는 것까지입니다. 설명할 수 없는 차이가 남았다면 8편의 검증 기법으로 돌아가야 합니다.</p>
+    </div>
+  </div>
+
+  <div class="case" id="s3-2">
+    <h3><span class="n">3.2</span>셔틀버스 정류장<span class="lvl">중간</span></h3>
+    <div class="prose">
+      <p><strong>질문.</strong> 9시 수업 전(8:20~8:55) 배차 간격을 바꾸면, 정원이 차서 한 번 이상 버스를 못 타는 학생의 비율이 5% 아래로 내려가는가?</p>
+      <p><strong>데이터.</strong> 정류장 도착은 수업 직전에 몰려 8:45 무렵 분당 약 5명까지 올라갑니다(시간에 따라 변하는 포아송 도착, 4편 2.7절). 버스 정원은 35명입니다.</p>
+      <p><strong>어림 계산.</strong> 10분 간격이면 시간당 수송 능력은 35 × 6 = 210명인데, 피크의 도착률은 분당 5명, 즉 시간당 300명입니다. 피크 동안은 능력이 모자랍니다. 하지만 피크는 길지 않아서, 이 계산만으로는 몇 %가 못 타는지 알 수 없습니다. 시뮬레이션이 필요한 지점입니다.</p>
+    </div>
+    <div class="widget" id="w-sht">
+      <h4>정류장의 줄</h4>
+      <p class="sub">선: 정류장에서 기다리는 학생 수(한 번 돌린 결과). 막대: 버스가 태운 인원(정원 대비). 배경 곡선: 도착률.</p>
+      <canvas data-w="640" data-h="240" role="img" aria-label="시간에 따른 정류장 대기 인원과 버스 탑승 인원"></canvas>
+      <div class="ctrl">
+        <label>배차 간격 (분) <input type="range" min="5" max="15" step="1" value="10" data-h> <b></b></label>
+        <label>정원 (명) <input type="range" min="25" max="60" step="5" value="35" data-k> <b></b></label>
+        <button type="button" data-act="one">한 번 더 돌리기</button>
+        <button type="button" class="primary" data-act="many">200번 돌려 비율 구하기</button>
+      </div>
+      <p class="readout" data-out></p>
+    </div>
+    <div class="prose">
+      <p>정원 35명으로 배차 간격을 바꿔 가며 200번씩 돌려 보면 재미있는 일이 보입니다. 간격을 10분에서 12분으로 <strong>늘렸는데</strong> 못 타는 비율이 약 11%에서 8% 정도로 오히려 줄어듭니다. 12분 간격이면 버스가 8:44, 피크 한가운데에 와서 몰린 학생을 한꺼번에 태우지만, 10분 간격이면 8:40과 8:50에 와서 피크를 둘로 쪼개고 그 사이에 줄이 정원을 넘기 때문입니다. 시간당 수송 능력이라는 어림 계산으로는 절대 보이지 않는 효과입니다. 배차 <strong>간격</strong>뿐 아니라 피크에 대한 <strong>시각</strong>도 결정 변수라는 것을 시뮬레이션이 알려 준 셈입니다.</p>
+      <p>8분 간격이면 비율이 2% 안팎으로 떨어져 기준을 통과합니다. 보고서에는 “8분 간격이면 기준 통과, 단 첫 버스 시각에 따라 결과가 달라지므로 시각표도 함께 정해야 함”처럼 적습니다.</p>
+    </div>
+  </div>
+
+  <div class="case" id="s3-3">
+    <h3><span class="n">3.3</span>학생식당 점심: 모델과 현실 맞추기<span class="lvl real">실전</span></h3>
+    <div class="prose">
+      <p><strong>질문.</strong> 시험 기간(평소보다 손님 25% 증가)에 배식구를 3개에서 4개로 늘려야 하는가? 기준은 점심 피크의 평균 대기 2분입니다.</p>
+      <p><strong>데이터.</strong> 학생들이 평소 날 20일, 시험 기간 15일 동안 11:30~13:30의 배식 대기를 10분 단위로 쟀습니다. 2.5절의 원칙대로 시험 기간 데이터는 처음부터 확인용으로 떼어 두었습니다.</p>
+      <p><strong>과제.</strong> 네 단계로 해 보세요. ① “무리 지어 도착”을 끈 채 배식 시간만 바꿔 왼쪽(평소, 보정용)에 가장 잘 맞는 값을 찾습니다. ② “확인용 데이터 열기”를 켜서 오른쪽(시험 기간) 예측을 실측과 비교합니다. ③ 무리 지어 도착을 켜고, 배식 시간과 무리 크기 두 손잡이로 다시 맞춰 봅니다. ④ 마지막으로 배식 시간을 현장에서 스톱워치로 직접 잰 값인 0.32분에 고정하고, 무리 크기만 맞춰 봅니다.</p>
+    </div>
+    <div class="widget" id="w-caf">
+      <h4>보정과 확인</h4>
+      <p class="sub">점과 세로선: 실측 평균과 95% 구간. 선: 모델 예측(공통 난수로 30번 돌린 평균). 오른쪽 아래 숫자는 10분 칸 12개에 대한 평균 제곱근 오차(RMSE).</p>
+      <canvas data-w="640" data-h="260" role="img" aria-label="평소와 시험 기간의 시간대별 실측 대기와 모델 예측"></canvas>
+      <div class="ctrl">
+        <label>1인 평균 배식 시간 (분) <input type="range" min="0.26" max="0.50" step="0.01" value="0.30" data-ms> <b></b></label>
+        <label><input type="checkbox" data-group> 무리 지어 도착</label>
+        <label data-gmwrap>무리 평균 크기 <input type="range" min="1.5" max="4" step="0.5" value="2" data-gm disabled> <b></b></label>
+      </div>
+      <div class="ctrl"><label><input type="checkbox" data-open> 확인용 데이터 열기 (보정을 마친 뒤에)</label></div>
+      <p class="readout" data-out></p>
+    </div>
+    <div class="prose">
+      <p><strong>①과 ②: 맞는 것처럼 보이는 모델.</strong> 한 명씩 오는 모델은 배식 시간 약 0.42분에서 평소 데이터에 가장 잘 맞습니다(RMSE 약 0.15분). 그래프만 보면 그럴듯합니다. 그런데 확인용 데이터를 열면, 이 모델은 시험 기간 피크 대기를 약 4.2분으로 예측하는데 실측은 약 1.7분입니다. 이 모델을 믿었다면 필요 없는 배식구를 하나 더 열었을 겁니다.</p>
+      <p>원인은 구조입니다. 실제로는 학생 서너 명이 함께 와서 한꺼번에 줄을 서므로, 피크가 아닌 시간에도 짧은 대기가 생깁니다. 한 명씩 오는 모델이 그 대기를 설명하는 방법은 배식 시간을 늘리는 것뿐이었고, 그 결과 배식 시간을 실제보다 30% 넘게 길게, 즉 처리 능력을 4분의 1가량 낮게 잡았습니다. 손님이 늘어나는 순간 낮게 잡은 처리 능력이 그대로 드러난 것입니다.</p>
+      <p><strong>③: 구조를 고쳐도 끝이 아닙니다.</strong> 무리 지어 도착을 켜고 두 손잡이를 함께 맞추면, 평소 데이터에 가장 잘 맞는 조합은 배식 0.35분, 무리 2.5명 정도입니다(RMSE 약 0.07분). 실제 값(0.32분, 3명)보다도 오차가 작습니다. 그런데 이 조합은 시험 기간 피크를 약 2.6분으로 예측해 여전히 기준 2분을 넘깁니다. 평소 데이터만으로는 “배식이 느리고 무리가 작다”와 “배식이 빠르고 무리가 크다”를 구별할 수 없기 때문입니다. 서로 다른 모수 조합이 같은 데이터를 똑같이 잘 설명하는 이 현상을 <strong>식별 문제</strong>라고 합니다.</p>
+      <p><strong>④: 잴 수 있는 것은 직접 잰다.</strong> 배식 시간은 스톱워치로 직접 잴 수 있습니다. 0.32분으로 고정하고 무리 크기만 맞추면 3명 안팎에서 가장 잘 맞고, 시험 기간 피크를 약 1.6분으로 예측해 실측 1.7분과 맞습니다. 결론은 “배식구를 늘리지 않아도 된다”입니다. 덤으로, 배식 시간을 0.32분에 고정한 채 무리 지어 도착을 끄면 평소 데이터에서도 오차가 0.3분 넘게 커집니다. 직접 잰 값이 있으면 확인용 데이터를 열기 전에 이미 구조의 오류가 드러난다는 뜻입니다.</p>
+      <p>현장에서 무리 도착을 미리 알아챌 신호도 있었습니다. 2.5절의 코드로 도착 간격의 변동계수를 계산하면 1보다 훨씬 크게 나옵니다. 같은 순간에 여러 명이 도착해 간격 0이 많이 생기기 때문입니다. 4편의 “데이터 살펴보기”를 건너뛰지 않았다면 처음부터 볼 수 있었던 신호입니다.</p>
+    </div>
+<pre class="code"><code><span class="kw">import</span> random
+
+<span class="kw">def</span> <span class="fn">arrivals</span>(rate, t_end, group_mean=<span class="num">1.0</span>, rmax=<span class="num">9.0</span>):
+    <span class="str">&quot;&quot;&quot;사람 도착 시각 목록. rate(t)는 분당 사람 수, 무리는 1 + 기하분포(평균 group_mean).&quot;&quot;&quot;</span>
+    out, t = [], <span class="num">0.0</span>
+    lam_max = rmax / group_mean                       <span class="com"># 무리 단위 최대 도착률</span>
+    <span class="kw">while</span> <span class="kw">True</span>:
+        t += random.expovariate(lam_max)
+        <span class="kw">if</span> t &gt; t_end:
+            <span class="kw">return</span> out
+        <span class="kw">if</span> random.random() &lt; rate(t) / group_mean / lam_max:     <span class="com"># 솎아내기 (4편 2.7)</span>
+            size = <span class="num">1</span>
+            <span class="kw">while</span> random.random() &gt; <span class="num">1</span> / group_mean:              <span class="com"># 무리 크기</span>
+                size += <span class="num">1</span>
+            out.extend([t] * size)                    <span class="com"># 같은 순간에 줄을 선다</span>
+
+<span class="kw">def</span> <span class="fn">fcfs_waits</span>(arr, servers, service):
+    <span class="str">&quot;&quot;&quot;배식구 여러 개, 선착순. 각자 대기 시간을 돌려준다.&quot;&quot;&quot;</span>
+    free = [<span class="num">0.0</span>] * servers
+    waits = []
+    <span class="kw">for</span> a <span class="kw">in</span> arr:
+        k = <span class="bi">min</span>(<span class="bi">range</span>(servers), key=free.__getitem__)  <span class="com"># 가장 먼저 비는 배식구</span>
+        start = <span class="bi">max</span>(a, free[k])
+        waits.append(start - a)
+        free[k] = start + service()
+    <span class="kw">return</span> waits</code></pre>
+    <p class="code-cap">3.3절 모델의 핵심 두 부분입니다. 무리 지어 도착하는 사람들은 같은 시각을 여러 번 목록에 넣는 것으로 표현합니다.</p>
+    <div class="note"><p><strong>sim2real에서 배울 점.</strong> 보정은 모델을 데이터에 맞추지만, 맞았다고 해서 구조나 모수가 옳다는 보장은 없습니다. 조절 손잡이 하나(배식 시간)가 빠진 구조(무리 도착)를 흉내 낼 수 있고, 손잡이가 둘이면 서로를 흉내 낼 수 있습니다. 그래서 직접 잴 수 있는 모수는 재서 고정하고, 보정하는 손잡이는 최소한으로 줄이며, 조건이 다른 확인용 데이터로 마지막 확인을 합니다. 7편에서 시뮬레이터로 튜닝한 제어기가 실물에서 흔들린 것과 같은 원리입니다. 그래서 확인용 데이터는 결론을 적용하려는 조건(여기서는 시험 기간)에 가까울수록 가치가 큽니다.</p></div>
+  </div>
+</section>
+
+<!-- ===================== 4 ===================== -->
+<section class="chap" id="ch4">
+  <h2><span class="n">4</span>연결과 정리</h2>
+
+  <h3 id="s4-1"><span class="n">4.1</span>시리즈 전체 지도</h3>
+  <div class="prose"><p>프로젝트의 각 단계에서 다시 펼쳐 볼 편입니다.</p></div>
+  <div class="scroll tbl">
+    <table>
+      <thead><tr><th>단계</th><th>주로 쓰는 것</th><th>참고할 편</th></tr></thead>
+      <tbody>
+        <tr><td>1. 질문 정하기</td><td>결정, 대안, 조건, 지표, 기준</td><td>이 편 2.2절, <a href="simulation-101.html#s1-1">0편 1.1</a></td></tr>
+        <tr><td>2. 개념 모델</td><td>경계, 사건, 자원, 패러다임 선택</td><td><a href="littles-law.html">1편</a>, <a href="prompt-cafe-des.html">2편</a>, <a href="abm-ecosystem.html">3편</a>, <a href="system-dynamics.html">6편</a>, <a href="continuous-simulation.html">7편</a></td></tr>
+        <tr><td>3. 데이터 모으기</td><td>관측 수, 분포 선택, 적합도, 시간대별 도착</td><td>이 편 2.5절, <a href="input-modeling.html">4편</a></td></tr>
+        <tr><td>4. 프로그램 짜기</td><td>사건 리스트, 역변환법, 에이전트의 step()</td><td><a href="simulation-101.html#s2-5">0편 2.5</a>, <a href="prompt-cafe-des.html">2편</a>, <a href="abm-ecosystem.html">3편</a></td></tr>
+        <tr><td>5. 검증과 타당성 확인</td><td>어림 계산, 리틀의 법칙, 보정과 확인용 데이터</td><td>이 편 2.4절, <a href="verification-optimization.html">8편</a></td></tr>
+        <tr><td>6. 실험하기</td><td>반복 횟수, 공통 난수, 요인 설계</td><td><a href="output-analysis.html">5편</a></td></tr>
+        <tr><td>7. 분석과 결정</td><td>신뢰구간, 민감도, 최적화</td><td><a href="output-analysis.html">5편</a>, <a href="verification-optimization.html">8편</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="s4-2"><span class="n">4.2</span>자주 하는 실수</h3>
+  <dl class="terms">
+    <dt>질문 없이 모델부터</dt><dd>무엇을 잴지 모르고 만든 모델은 끝없이 커집니다. 2.2절의 문장 하나를 먼저 쓰세요.</dd>
+    <dt>처음부터 큰 모델</dt><dd>모든 것을 넣은 모델은 틀렸을 때 어디가 틀렸는지 찾을 수 없습니다. 가장 단순한 모델에서 하나씩 더하세요.</dd>
+    <dt>평균만 입력</dt><dd>평균이 같아도 퍼짐이 다르면 대기가 두 배가 됩니다(0편 2.4절). 분포 전체를 입력하세요.</dd>
+    <dt>한 번 돌리고 결론</dt><dd>결과 하나는 표본 하나입니다. 반복하고 구간으로 말하세요(5편).</dd>
+    <dt>보정한 데이터로 확인</dt><dd>맞춘 데이터와 다시 비교하면 당연히 맞습니다. 확인용 데이터를 처음부터 떼어 두세요(3.3절).</dd>
+    <dt>조건 없는 결론</dt><dd>“배식구 4개가 낫다”가 아니라 “시험 기간 점심 피크에는”처럼 조건을 붙이세요. 그 밖의 상황은 이 모델이 말해 주지 않습니다.</dd>
+  </dl>
+
+  <h3 id="s4-3"><span class="n">4.3</span>연구를 시작하려면</h3>
+  <div class="cards">
+    <div><h4>도구</h4><p>Python의 SimPy(사건 기반, 2편)와 Mesa(에이전트 기반, 3편)로 시작하면 이 시리즈의 코드를 그대로 옮길 수 있습니다. NetLogo는 ABM 시제품을 빠르게 만들기 좋고, AnyLogic은 DES, ABM, SD를 한 모델에 섞을 수 있습니다.</p></div>
+    <div><h4>교과서</h4><p>Law의 <em>Simulation Modeling and Analysis</em>와 Banks 등의 <em>Discrete-Event System Simulation</em>이 DES와 출력 분석의 표준 교재입니다. ABM은 Wilensky와 Rand의 <em>An Introduction to Agent-Based Modeling</em>, SD는 Sterman의 <em>Business Dynamics</em>를 권합니다.</p></div>
+    <div><h4>학회와 저널</h4><p>Winter Simulation Conference(WSC)의 튜토리얼 논문들은 무료로 공개되어 입문자가 읽기 좋습니다. ABM 연구는 JASSS(Journal of Artificial Societies and Social Simulation)에서 많이 볼 수 있습니다.</p></div>
+  </div>
+  <div class="prose"><p>연구의 첫 주제로는 이 편의 프로젝트를 한 단계 확장하는 것이 좋습니다. 예를 들어 3.3절의 식당 모델에 좌석 점유를 더해 배식 줄과 식탁이 서로 막는 현상을 보거나, 3.2절의 셔틀버스 시각표를 8편의 지역 탐색으로 최적화해 볼 수 있습니다. 실측 데이터와 함께라면 그 자체로 학부 연구 논문 한 편이 됩니다.</p></div>
+
+  <h3 id="s4-4"><span class="n">4.4</span>연습 문제</h3>
+  <div class="ex">
+    <details><summary>1. “셔틀버스 대기 시간을 분석한다”를 2.2절의 다섯 부분을 갖춘 질문으로 바꿔 보세요.</summary><div><p>예: “9시 수업 전(조건) 배차 간격(결정 변수)을 10분에서 8분으로(대안) 줄이면, 한 번 이상 못 타는 학생 비율(지표)이 5% 아래(기준)로 떨어지는가?” 지표와 기준이 숫자로 정해졌는지 확인하세요.</p></div></details>
+    <details><summary>2. 어림 공식으로 ρ = 1.05가 나왔습니다. 시뮬레이션을 계속 진행해도 될까요?</summary><div><p>정상 상태가 없으므로 평균 대기라는 질문 자체가 성립하지 않습니다. 다만 피크가 짧고 그 앞뒤가 한가하다면 종료형 시뮬레이션으로 “피크 동안 줄이 얼마나 쌓였다가 언제 풀리는가”를 물을 수 있습니다. 질문을 바꾸거나, 서버를 늘린 대안을 기준안으로 삼으세요.</p></div></details>
+    <details><summary>3. 파일럿 측정에서 도착 간격의 표준편차가 2분이었습니다. 95% 신뢰수준에서 평균을 ±0.25분 이내로 알려면 몇 개를 재야 하나요? 시간대 3개를 따로 잰다면요?</summary><div><p>(1.96 × 2 / 0.25)<sup>2</sup> ≈ 245.9이므로 246개, 시간대 3개면 각각 246개씩 약 738개입니다. 한가한 시간대는 도착이 드물어 같은 개수를 모으는 데 훨씬 오래 걸린다는 점도 일정에 반영하세요.</p></div></details>
+    <details><summary>4. 3.3절에서 무리 도착 없이 보정한 모델의 평소 데이터 오차는 작았습니다. 그런데도 이 모델을 쓰면 안 되는 이유를 결정의 관점에서 설명하세요.</summary><div><p>모델이 처리 능력을 실제보다 낮게 잡고 있어서, 손님이 늘어나는 조건(시험 기간)에서 대기를 크게 부풀립니다. 그 결과 필요 없는 배식구를 여는 잘못된 결정으로 이어집니다. 결정하려는 조건에서의 타당성 확인 없이는, 보정 데이터에서의 작은 오차가 아무것도 보장하지 않습니다.</p></div></details>
+    <details><summary>5. 3.2절의 셔틀버스에서 간격을 늘렸는데 못 타는 학생이 줄었습니다. 이 결과를 보고서에 어떻게 써야 할까요?</summary><div><p>“간격을 늘리는 것이 낫다”가 아니라, 결과가 피크 시각과 버스 도착 시각의 관계에 좌우된다는 사실을 써야 합니다. 첫 버스 시각을 결정 변수로 추가해 다시 실험하고, 간격과 시각의 조합을 함께 추천하는 것이 올바른 다음 단계입니다.</p></div></details>
+  </div>
+</section>
+
+<nav class="pager" aria-label="이전 다음 편">
+  <a href="verification-optimization.html"><span>이전 편</span><b>8. 검증, 타당성, 최적화</b></a>
+  <a class="next" href="index.html"><span>처음으로</span><b>모델링과 시뮬레이션 목차</b></a>
+</nav>
+<footer><a href="https://sites.google.com/view/knunextcom">Next-generation Computing Systems Lab</a>, 경북대학교 컴퓨터학부</footer>
+</div>
+<script>
+(function(){
+"use strict";
+/* ===== 공통 도구: 색, 캔버스, 난수, 통계, 수식 탐색기 ===== */
+var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+var COL = {};
+function readColors(){
+  var s = getComputedStyle(document.documentElement);
+  ["ink","muted","line","soft","panel","bg","acc","c1","c2","c3","miss","t1","t2","t3","t4","t5"].forEach(function(k){ COL[k] = s.getPropertyValue("--"+k).trim(); });
+}
+readColors();
+function rgba(hex, a){
+  var h = hex.replace("#",""); if(h.length===3) h = h.replace(/(.)/g,"$1$1");
+  var n = parseInt(h,16); return "rgba("+(n>>16&255)+","+(n>>8&255)+","+(n&255)+","+a+")";
+}
+function F(size, weight){ return (weight||400)+" "+size+'px "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif'; }
+function txt(c, s, x, y, o){
+  o = o || {}; c.font = o.font || F(o.size||11, o.weight); c.fillStyle = o.color || COL.muted;
+  c.textAlign = o.align || "left"; c.textBaseline = o.base || "alphabetic"; c.fillText(s, x, y);
+  c.textAlign = "left"; c.textBaseline = "alphabetic";
+}
+function line(c, x0, y0, x1, y1, col, w, dash){
+  c.strokeStyle = col; c.lineWidth = w||1; c.setLineDash(dash||[]);
+  c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.setLineDash([]); c.lineWidth = 1;
+}
+function dot(c, x, y, r, col){ c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+function fmt(v, d){ if(!isFinite(v)) return "∞"; return (+v).toFixed(d===undefined?2:d); }
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+var CANVASES = [];
+function setup(rootOrCanvas, draw){
+  var cv = rootOrCanvas.tagName === "CANVAS" ? rootOrCanvas : rootOrCanvas.querySelector("canvas");
+  var c = cv.getContext("2d"), W = +cv.dataset.w, H = +cv.dataset.h;
+  cv.style.aspectRatio = W + " / " + H;
+  var o = {cv:cv, c:c, W:W, H:H};
+  o.redraw = function(){ c.clearRect(0,0,W,H); draw(c, W, H); };
+  o.fit = function(){
+    var w = cv.clientWidth || W, d = window.devicePixelRatio || 1;
+    cv.width = Math.round(w*d); cv.height = Math.round(w*H/W*d);
+    c.setTransform(cv.width/W, 0, 0, cv.height/H, 0, 0); o.redraw();
+  };
+  o.toLocal = function(ev){ var r = cv.getBoundingClientRect(); return {x:(ev.clientX-r.left)/r.width*W, y:(ev.clientY-r.top)/r.height*H}; };
+  new ResizeObserver(o.fit).observe(cv);
+  CANVASES.push(o);
+  return o;
+}
+function seg(root, sel, onPick){
+  var g = typeof sel === "string" ? root.querySelector(sel) : sel;
+  g.addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    g.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x===b ? "true" : "false"); });
+    onPick(b.dataset.v, b);
+  });
+}
+function bindRange(root, sel, onChange, fmtFn){
+  var inp = root.querySelector(sel), out = inp.parentElement.querySelector("b,output");
+  function u(){ if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value; onChange(+inp.value); }
+  inp.addEventListener("input", u); if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value;
+  return inp;
+}
+
+/* 축과 눈금 */
+function scale(box, xr, yr){
+  return {box:box, xr:xr, yr:yr,
+    X:function(v){ return box[0] + (v-xr[0])/(xr[1]-xr[0])*(box[2]-box[0]); },
+    Y:function(v){ return box[3] - (v-yr[0])/(yr[1]-yr[0])*(box[3]-box[1]); }};
+}
+function axes(c, s, o){
+  o = o || {}; var b = s.box;
+  (o.yt||[]).forEach(function(v){ var y = s.Y(v); line(c, b[0], y+.5, b[2], y+.5, COL.soft); txt(c, o.fy ? o.fy(v) : v, b[0]-6, y+4, {align:"right", size:10}); });
+  line(c, b[0], b[3]+.5, b[2], b[3]+.5, COL.line);
+  line(c, b[0]+.5, b[1], b[0]+.5, b[3], COL.line);
+  (o.xt||[]).forEach(function(v){ var x = s.X(v); line(c, x+.5, b[3], x+.5, b[3]+4, COL.line); txt(c, o.fx ? o.fx(v) : v, x, b[3]+15, {align:"center", size:10}); });
+  if(o.xl) txt(c, o.xl, b[2], b[3]+28, {align:"right", size:10});
+  if(o.yl) txt(c, o.yl, b[0], b[1]-6, {size:10});
+}
+function path(c, s, pts, col, w, dash){
+  var bx = s.box; c.save(); c.beginPath(); c.rect(bx[0]-1, bx[1]-3, bx[2]-bx[0]+2, bx[3]-bx[1]+4); c.clip();
+  c.strokeStyle = col; c.lineWidth = w||1.6; c.setLineDash(dash||[]); c.beginPath();
+  var started = false;
+  pts.forEach(function(p){ if(p == null || !isFinite(p[1])){ started = false; return; }
+    var x = s.X(p[0]), y = clamp(s.Y(p[1]), s.box[1]-3000, s.box[3]+3000); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; });
+  c.stroke(); c.setLineDash([]); c.lineWidth = 1; c.restore();
+}
+function ticks(a, b, n){
+  var span = b - a, step = Math.pow(10, Math.floor(Math.log10(span/n))), err = span/n/step;
+  step *= err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1;
+  var out = [], v = Math.ceil(a/step)*step;
+  for(; v <= b + 1e-9; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+
+/* 난수: 재현 가능한 생성기와 분포 */
+function mulberry(seed){ var a = seed >>> 0; return function(){ a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function U(r){ return (r || Math.random)(); }
+function expo(mean, r){ return -mean*Math.log(1-U(r)); }
+function normal(r){ var u = 1-U(r), v = U(r); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gammaRV(k, theta, r){
+  if(k < 1){ return gammaRV(k+1, theta, r)*Math.pow(U(r), 1/k); }
+  var d = k - 1/3, cc = 1/Math.sqrt(9*d);
+  while(true){ var x, v; do { x = normal(r); v = 1 + cc*x; } while(v <= 0);
+    v = v*v*v; var u = U(r);
+    if(u < 1 - .0331*x*x*x*x || Math.log(u) < .5*x*x + d*(1 - v + Math.log(v))) return d*v*theta; }
+}
+function lognormRV(mu, s, r){ return Math.exp(mu + s*normal(r)); }
+function poissonRV(lam, r){ var L = Math.exp(-lam), k = 0, p = 1; do { k++; p *= U(r); } while(p > L); return k-1; }
+
+/* 통계 */
+function mean(a){ var s = 0; for(var i=0;i<a.length;i++) s += a[i]; return s/a.length; }
+function sd(a){ var m = mean(a), s = 0; for(var i=0;i<a.length;i++) s += (a[i]-m)*(a[i]-m); return Math.sqrt(s/(a.length-1)); }
+function quantile(sorted, p){ var i = (sorted.length-1)*p, lo = Math.floor(i), hi = Math.ceil(i); return sorted[lo] + (sorted[hi]-sorted[lo])*(i-lo); }
+function normInv(p){ // Acklam 근사
+  var a=[-39.6968302866538,220.946098424521,-275.928510446969,138.357751867269,-30.6647980661472,2.50662827745924],
+      b=[-54.4760987982241,161.585836858041,-155.698979859887,66.8013118877197,-13.2806815528857],
+      cc=[-.00778489400243029,-.322396458041136,-2.40075827716184,-2.54973253934373,4.37466414146497,2.93816398269878],
+      d=[.00778469570904146,.32246712907004,2.445134137143,3.75440866190742], q, r;
+  if(p < .02425){ q = Math.sqrt(-2*Math.log(p)); return (((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if(p > .97575){ q = Math.sqrt(-2*Math.log(1-p)); return -(((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  q = p - .5; r = q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+function normCdf(x){ var t = 1/(1+.2316419*Math.abs(x)), y = .3989423*Math.exp(-x*x/2)*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return x > 0 ? 1-y : y; }
+function tcrit(df, conf){ // 양측 신뢰수준 conf의 t 임계값 (Cornish-Fisher 근사)
+  var z = normInv(1 - (1-(conf||.95))/2), z3 = z*z*z, z5 = z3*z*z, z7 = z5*z*z;
+  return z + (z3+z)/(4*df) + (5*z5+16*z3+3*z)/(96*df*df) + (3*z7+19*z5+17*z3-15*z)/(384*df*df*df);
+}
+
+/* 수식 탐색기: 항을 누르면 강조하고 설명을 보여 준다. EQ[id](값) 이 실시간 계산을 맡는다. */
+var EQ = {}, EQRUN = {};
+function refreshEq(id){ if(EQRUN[id]) EQRUN[id](); }
+function initEqx(){
+  document.querySelectorAll(".eqx").forEach(function(box){
+    var detail = box.querySelector(".eq-detail"), btns = box.querySelectorAll(".eq-terms button");
+    function pick(t){
+      var same = box.dataset.on === t;
+      if(same || !t){ delete box.dataset.on; } else box.dataset.on = t;
+      box.querySelectorAll(".eq-big .t").forEach(function(s){ s.classList.toggle("on", !same && s.dataset.t === t); });
+      btns.forEach(function(b){ b.setAttribute("aria-pressed", !same && b.dataset.t === t ? "true" : "false"); });
+      if(detail){ var src = box.querySelector('template[data-t="'+t+'"]'); detail.innerHTML = !same && src ? src.innerHTML : ""; }
+    }
+    btns.forEach(function(b){
+      var t = box.querySelector('.eq-big .t[data-t="'+b.dataset.t+'"]'); if(t) b.dataset.c = t.dataset.c;
+      b.style.setProperty("--tc", "var(--t"+(b.dataset.c||1)+")");
+      b.addEventListener("click", function(){ pick(b.dataset.t); });
+    });
+    box.querySelectorAll(".eq-big .t").forEach(function(s){ s.tabIndex = 0; s.setAttribute("role","button");
+      s.addEventListener("click", function(){ pick(s.dataset.t); });
+      s.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pick(s.dataset.t); } }); });
+    var fn = EQ[box.id];
+    if(fn){
+      var vars = box.querySelectorAll("[data-var]");
+      var run = function(){
+        var v = {}; vars.forEach(function(i){ v[i.dataset.var] = i.type === "checkbox" ? i.checked : +i.value;
+          var o = i.parentElement.querySelector("b"); if(o) o.textContent = i.dataset.fmt ? fmt(+i.value, +i.dataset.fmt) : i.value; });
+        var res = fn(v, box) || {};
+        Object.keys(res).forEach(function(k){ box.querySelectorAll('[data-o="'+k+'"]').forEach(function(el){ el.innerHTML = res[k]; }); });
+      };
+      vars.forEach(function(i){ i.addEventListener("input", run); });
+      EQRUN[box.id] = run; run();
+    }
+  });
+}
+function onTheme(){ readColors(); CANVASES.forEach(function(o){ o.redraw(); }); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onTheme);
+new MutationObserver(onTheme).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+
+/* 감마 함수와 분포 함수 */
+function lgamma(x){
+  var g = 7, cf = [0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(x < .5) return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*x))) - lgamma(1-x);
+  x -= 1; var a = cf[0], t = x + g + .5;
+  for(var i=1;i<g+2;i++) a += cf[i]/(x+i);
+  return .5*Math.log(2*Math.PI) + (x+.5)*Math.log(t) - t + Math.log(a);
+}
+function gammaP(a, x){ // 정규화된 하부 불완전 감마 함수
+  if(x <= 0) return 0;
+  var gln = lgamma(a);
+  if(x < a + 1){ var ap = a, sum = 1/a, del = sum; for(var n=0;n<300;n++){ ap++; del *= x/ap; sum += del; if(Math.abs(del) < Math.abs(sum)*1e-12) break; } return sum*Math.exp(-x + a*Math.log(x) - gln); }
+  var b = x + 1 - a, c = 1e300, d = 1/b, h = d;
+  for(var i=1;i<300;i++){ var an = -i*(i-a); b += 2; d = an*d + b; if(Math.abs(d) < 1e-300) d = 1e-300; c = b + an/c; if(Math.abs(c) < 1e-300) c = 1e-300; d = 1/d; var del2 = d*c; h *= del2; if(Math.abs(del2-1) < 1e-12) break; }
+  return 1 - Math.exp(-x + a*Math.log(x) - gln)*h;
+}
+function gammaPdf(x, k, th){ if(x <= 0) return (k < 1 && x === 0) ? Infinity : 0; return Math.exp((k-1)*Math.log(x) - x/th - lgamma(k) - k*Math.log(th)); }
+function chi2crit(df, z){ z = z || 1.6449; var a = 2/(9*df); return df*Math.pow(1 - a + z*Math.sqrt(a), 3); }
+function seededSample(seed, n, gen){ var r = mulberry(seed), out = []; for(var i=0;i<n;i++) out.push(gen(r)); return out; }
+
+/* ===== 9편 엔진: 화면과 상관없는 계산만 (Node에서도 시험 가능) ===== */
+
+/* 어림 공식 (앨런-커닌 근사 + 사카사가와의 ρ 지수). 단위: 분 */
+function envWq(lamPerMin, ES, c, ca2, cs2){
+  var rho = lamPerMin*ES/c;
+  if(rho >= 1) return {rho:rho, wq:Infinity};
+  var wq = (ca2+cs2)/2 * Math.pow(rho, Math.sqrt(2*(c+1)) - 1)/(c*(1-rho)) * ES;
+  return {rho:rho, wq:wq};
+}
+
+/* 다중 서버 선착순 대기열. 도착 시각(오름차순)과 처리 시간 → 사람별 대기 */
+function fcfs(arr, c, svc){
+  var free = []; for(var i=0;i<c;i++) free.push(0);
+  var w = new Array(arr.length);
+  for(var j=0;j<arr.length;j++){
+    var k = 0; for(var s=1;s<c;s++) if(free[s] < free[k]) k = s;
+    var start = Math.max(arr[j], free[k]); w[j] = start - arr[j]; free[k] = start + svc();
+  }
+  return w;
+}
+
+/* 3.1 학과 복합기: 시험 전날 저녁 2시간. 도착은 포아송, 출력 시간은 평균 2분, 변동계수 0.8 */
+var PRN = {T:120, ES:2, CV:.8};
+function printerRun(lamH, c, r){
+  var lam = lamH/60, t = 0, arr = [];
+  while(true){ t += expo(1/lam, r); if(t > PRN.T) break; arr.push(t); }
+  var k = 1/(PRN.CV*PRN.CV), th = PRN.ES/k;
+  var w = fcfs(arr, c, function(){ return gammaRV(k, th, r); });
+  return w.length ? mean(w) : 0;
+}
+
+/* 3.2 셔틀버스 정류장: 8:20~8:55 도착, 수업 직전에 몰린다. 버스는 H분마다, 정원 K명 */
+var SHT = {T:35};
+function shuttleRate(t){ return 1 + 4*Math.exp(-Math.pow((t-25)/7, 2)); }   // 명/분, 8:45 무렵 최고 5명/분
+function shuttleRun(H, K, r, keepTrace){
+  var lmax = 5, t = 0, arr = [];
+  while(true){ t += expo(1/lmax, r); if(t > SHT.T) break; if(U(r) < shuttleRate(t)/lmax) arr.push(t); }   // 솎아내기
+  var q = [], i = 0, waits = [], left = 0, leftMark = [], trace = keepTrace ? [[0,0]] : null, buses = [];
+  for(var b = H; i < arr.length || q.length; b += H){
+    while(i < arr.length && arr[i] <= b){ q.push(i); leftMark.push(false); if(trace) trace.push([arr[i], q.length]); i++; }
+    var n = Math.min(K, q.length);
+    for(var j=0;j<n;j++){ waits.push(b - arr[q[j]]); }
+    q = q.slice(n);
+    q.forEach(function(id){ if(!leftMark[id]){ leftMark[id] = true; left++; } });
+    if(trace) trace.push([b, q.length]);
+    buses.push([b, n]);
+    if(b > 200) break;
+  }
+  return {n:arr.length, wait:waits.length ? mean(waits) : 0, maxw:waits.length ? Math.max.apply(null, waits) : 0, leftFrac:arr.length ? left/arr.length : 0, trace:trace, buses:buses};
+}
+
+/* 3.3 학생식당 점심: 11:20~13:30, 배식구 3개. 결과는 11:30~13:30의 10분 칸 12개별 평균 대기 */
+var CAF = {c:3, T:130, SLOT0:10, NS:12, b0:2, amp:5, EXAM:1.25};
+function cafRate(t){ return CAF.b0 + CAF.amp*Math.exp(-Math.pow((t-50)/22, 2)); }    // 사람/분, 12:10 무렵이 최고
+function cafRun(p, r){
+  // p: {ms: 1인 평균 배식 시간(분), group: 무리 도착 여부, gm: 무리 평균 크기, mult: 도착률 배율}
+  var gm = p.group ? p.gm : 1, lmax = (CAF.b0+CAF.amp)*p.mult/gm, t = 0, arr = [];
+  while(true){
+    t += expo(1/lmax, r); if(t > CAF.T) break;
+    if(U(r) < cafRate(t)*p.mult/gm/lmax){
+      var g = 1; if(p.group){ var pg = 1/gm; while(U(r) > pg) g++; }   // 1 + 기하분포, 평균 gm
+      for(var k=0;k<g;k++) arr.push(t);
+    }
+  }
+  var kk = 4, th = p.ms/kk;
+  var w = fcfs(arr, CAF.c, function(){ return gammaRV(kk, th, r); });
+  var sum = new Array(CAF.NS).fill(0), cnt = new Array(CAF.NS).fill(0);
+  arr.forEach(function(a, j){ var s = Math.floor((a - CAF.SLOT0)/10); if(s >= 0 && s < CAF.NS){ sum[s] += w[j]; cnt[s]++; } });
+  return sum.map(function(v, s){ return cnt[s] ? v/cnt[s] : 0; });
+}
+function cafMean(p, reps, seed){
+  var r = mulberry(seed), acc = new Array(CAF.NS).fill(0);
+  for(var i=0;i<reps;i++){ var o = cafRun(p, r); for(var s=0;s<CAF.NS;s++) acc[s] += o[s]/reps; }
+  return acc;
+}
+var CAF_TRUTH = {ms:.32, group:true, gm:3};
+/* ===================== 9편 위젯 ===================== */
+
+/* ---------- 1.3 주제 탐색기 ---------- */
+(function(){
+  var root = document.getElementById("w-topics"), list = root.querySelector("[data-list]"), out = root.querySelector("[data-out]");
+  var TOP = [
+    {t:"학과 복합기", m:["DES"], l:"쉬움", q:"마감 전날 저녁, 복합기를 한 대 더 빌리면 평균 대기가 3분 아래로 내려가는가?", i:"출력 요청 시각, 1인당 출력 시간", o:"평균 대기, 복합기 가동률", d:"쉬움. 복합기 사용 기록이 있으면 바로 쓸 수 있음", r:"1, 2, 5편, 이 편 3.1절"},
+    {t:"셔틀버스 정류장", m:["DES"], l:"중간", q:"9시 수업 전 배차 간격을 10분에서 8분으로 줄이면, 한 번 이상 못 타는 학생이 5% 아래가 되는가?", i:"정류장 도착 시각, 버스 도착 시각과 탑승 인원", o:"탑승 실패 비율, 평균 대기", d:"보통. 아침 30분씩 여러 날 직접 세야 함", r:"2, 4, 5편, 이 편 3.2절"},
+    {t:"도서관 열람실 좌석", m:["DES"], l:"중간", q:"시험 기간 좌석 이용 시간을 4시간에서 3시간으로 줄이면, 빈자리를 기다리다 돌아가는 학생이 10% 아래가 되는가?", i:"입실 시각, 좌석 이용 시간", o:"포기 비율, 좌석 가동률", d:"보통. 좌석 예약 시스템의 기록을 얻으면 쉬워짐", r:"2, 4, 5편"},
+    {t:"학과 GPU 서버 작업 대기열", m:["DES"], l:"중간", q:"짧은 작업 전용 GPU 한 장을 떼어 두면, 짧은 작업의 대기는 얼마나 줄고 긴 작업은 얼마나 늘어나는가?", i:"작업 제출 시각, 실행 시간, 요청 GPU 수", o:"작업 길이별 대기, GPU 가동률", d:"쉬움. 스케줄러 로그에 이미 다 있음", r:"1, 2, 4, 5편"},
+    {t:"학생식당 점심", m:["DES"], l:"실전", q:"시험 기간에 배식구를 3개에서 4개로 늘려야 점심 피크 평균 대기가 2분 아래가 되는가?", i:"도착 시각(무리 지어 오는지 포함), 1인 배식 시간", o:"시간대별 평균 대기, 배식구 가동률", d:"보통. 평소와 시험 기간에 나눠 여러 날 재야 함", r:"2, 4, 5, 8편, 이 편 3.3절"},
+    {t:"IT대학 엘리베이터", m:["DES","ABM"], l:"실전", q:"수업 시작 10분 전 짝수층 전용 운행을 하면, 1층 대기의 95번째 백분위가 2분 아래로 줄어드는가?", i:"층별 도착, 목적층, 계단을 고르는 경향", o:"대기 분포, 계단 이용 비율", d:"어려움. 목적층과 사람의 선택을 함께 관찰해야 함", r:"2, 3, 4, 5편"},
+    {t:"공유 킥보드 재배치", m:["ABM","DES"], l:"실전", q:"매일 아침 정문의 킥보드를 기숙사 쪽으로 몇 대 옮겨 두면, 빌리려다 못 빌리는 경우가 절반으로 줄어드는가?", i:"장소별 대여와 반납 시각", o:"대여 실패 횟수, 재배치에 드는 노력", d:"보통. 운영사 데이터가 없으면 직접 세야 함", r:"3, 4, 8편"},
+    {t:"축제 부스 거리의 인파", m:["ABM"], l:"실전", q:"부스를 한쪽 일렬에서 양쪽 배치로 바꾸면, 통로가 꽉 막히는 시간이 줄어드는가?", i:"시간대별 입장 인원, 부스별 머무는 시간, 걷는 속도", o:"통로 밀도, 정체 시간", d:"어려움. 축제 기간에만 잴 수 있음", r:"3, 4, 8편"},
+    {t:"캠퍼스 독감과 휴강 정책", m:["SD"], l:"중간", q:"확진자가 일정 수를 넘으면 대면 수업을 1주 멈추는 정책이 최대 동시 감염을 얼마나 낮추는가?", i:"전파율과 회복 기간(문헌값), 수업을 통한 접촉 정도", o:"최대 감염 비율과 시점, 휴강 일수", d:"쉬움. 문헌값으로 시작하고 민감도 분석으로 보완", r:"6, 8편"},
+    {t:"배송 드론 고도 제어", m:["연속"], l:"중간", q:"바람 세기가 달라져도 목표 고도를 ±0.2m 안에 유지하는 PID 게인 조합이 있는가?", i:"드론 질량, 추력 응답, 바람 세기의 분포", o:"고도 오차, 정착 시간", d:"보통. 사양서와 간단한 실험으로 모수를 정함", r:"7, 8편"}
+  ];
+  var fm = "all", fl = "all";
+  function render(){
+    var shown = TOP.filter(function(x){ return (fm === "all" || x.m.indexOf(fm) >= 0) && (fl === "all" || x.l === fl); });
+    list.innerHTML = shown.map(function(x){
+      return '<details><summary>' + x.t + '<span class="tags">' + x.m.join(", ") + ', ' + x.l + '</span></summary>'
+        + '<p class="q">' + x.q + '</p><dl><dt>잴 것</dt><dd>' + x.i + '</dd><dt>볼 것</dt><dd>' + x.o + '</dd><dt>데이터 구하기</dt><dd>' + x.d + '</dd><dt>참고할 편</dt><dd>' + x.r + '</dd></dl></details>';
+    }).join("");
+    out.textContent = shown.length ? "주제 " + shown.length + "개" : "조건에 맞는 주제가 없습니다. 거르기를 풀어 보세요.";
+  }
+  seg(root, "[data-fm]", function(v){ fm = v; render(); });
+  seg(root, "[data-fl]", function(v){ fl = v; render(); });
+  render();
+})();
+
+/* ---------- 2.1 프로젝트 일정표 ---------- */
+(function(){
+  var root = document.getElementById("w-plan"), box = root.querySelector("[data-gantt]"), detail = root.querySelector("[data-detail]");
+  var STEPS = [
+    {n:"질문 정하기", f:[0,.12], todo:"주제 후보를 두세 개 고르고, 2.2절의 다섯 부분을 갖춘 질문으로 다듬습니다. 결정권자(운영 부서나 지도교수)에게 질문과 판단 기준을 확인받습니다.", out:"질문 한 문장, 판단 기준", chk:"지표와 기준이 숫자로 정해졌는가?", ref:"이 편 2.2절, 0편 1.1절"},
+    {n:"개념 모델", f:[.08,.22], todo:"경계를 긋고, 사건과 자원과 흐름을 종이에 그립니다. 어떤 패러다임(DES, ABM, SD, 연속)이 맞는지 정합니다.", out:"개념 모델 그림, 가정 목록", chk:"현장을 아는 사람이 그림을 보고 고개를 끄덕이는가?", ref:"이 편 2.3절, 1~3편, 6~7편"},
+    {n:"데이터 모으기", f:[.15,.45], todo:"파일럿 측정으로 표준편차를 어림하고 관측 수를 계산한 뒤, 시간대와 날짜를 나눠 잽니다. 확인용 데이터를 떼어 둡니다. 분포를 고르고 적합도를 봅니다.", out:"원자료 CSV, 입력 분포와 모수", chk:"관측 수에 근거가 있는가? 확인용 데이터를 따로 두었는가?", ref:"이 편 2.5절, 4편"},
+    {n:"프로그램 짜기", f:[.25,.55], todo:"가장 단순한 모델부터 동작시키고 하나씩 더합니다. 데이터가 다 모이기 전에는 파일럿 값으로 먼저 짭니다.", out:"동작하는 코드, 시드를 고정한 재현 가능한 실행", chk:"단순한 모델이 어림 공식과 맞는가?", ref:"2편, 3편, 0편 2.5절"},
+    {n:"검증과 타당성 확인", f:[.45,.70], todo:"어림 계산, 리틀의 법칙, 극한 조건으로 검증합니다. 보정용 데이터로 모수를 맞추고, 확인용 데이터로 타당성을 확인합니다. 어긋나면 2단계로 돌아갑니다.", out:"점검 결과표, 보정값, 확인용 데이터와의 비교", chk:"어긋남을 설명할 수 있는가? 보정에 안 쓴 데이터와 비교했는가?", ref:"이 편 2.4절과 3.3절, 8편"},
+    {n:"실험하기", f:[.65,.85], todo:"대안과 조건을 정해 실험표를 만들고, 필요한 반복 횟수를 계산해 공통 난수로 돌립니다.", out:"실험 계획, 대안별 결과와 신뢰구간", chk:"반복 횟수의 근거가 있는가? 공통 난수를 썼는가?", ref:"이 편 2.6절, 5편"},
+    {n:"분석과 결정", f:[.80,1], todo:"결론을 2.6절의 틀로 쓰고, 민감도 분석으로 결론이 뒤집히는 조건을 찾습니다. 보고서와 발표를 준비합니다.", out:"결론 문장, 민감도 분석, 보고서와 발표 자료", chk:"결론에 신뢰구간, 조건, 한계가 모두 붙어 있는가?", ref:"이 편 2.6절, 8편"}
+  ];
+  var MS = [[.15,"제안서"],[.5,"중간 점검"],[1,"최종 발표"]];
+  var W = 8, open = -1;
+  function wk(f){ return [Math.floor(f[0]*W)+1, Math.max(Math.floor(f[0]*W)+1, Math.ceil(f[1]*W))]; }
+  function render(){
+    var cols = "repeat(" + W + ",1fr)", h = '<div class="head"><span class="wk">주차</span><div class="weeks" style="grid-template-columns:' + cols + '">';
+    for(var i=1;i<=W;i++) h += "<span>" + i + "</span>";
+    h += '</div></div><div class="gbody"><div class="grid" style="grid-template-columns:' + cols + '">' + new Array(W+1).join("<i></i>") + '</div>';
+    STEPS.forEach(function(s, k){
+      h += '<div class="row" role="button" tabindex="0" data-k="' + k + '" aria-expanded="' + (open === k) + '"><span class="name"><small>' + (k+1) + '</small>' + s.n + '</span><span class="track"><span class="bar" style="left:' + (s.f[0]*100) + '%; width:' + ((s.f[1]-s.f[0])*100) + '%"></span></span></div>';
+    });
+    MS.forEach(function(m){ h += '<div class="ms" style="left:calc(var(--lab) + (100% - var(--lab)) * ' + m[0] + ')"><span' + (m[0] === 1 ? ' style="left:auto; right:4px"' : '') + '>' + m[1] + ' (' + Math.round(m[0]*W) + '주)</span></div>'; });
+    h += '</div><p class="ms-legend">점선: ' + MS.map(function(m){ return m[1] + " " + Math.round(m[0]*W) + "주"; }).join(", ") + '</p>';
+    box.innerHTML = h;
+    if(open >= 0){
+      var s = STEPS[open], w = wk(s.f);
+      detail.innerHTML = "<b>" + (open+1) + ". " + s.n + "</b> <span style='color:var(--muted)'>" + w[0] + "~" + w[1] + "주차</span><dl><dt>할 일</dt><dd>" + s.todo + "</dd><dt>산출물</dt><dd>" + s.out + "</dd><dt>점검 질문</dt><dd>" + s.chk + "</dd><dt>참고</dt><dd>" + s.ref + "</dd></dl>";
+    } else detail.innerHTML = "단계를 누르면 할 일과 산출물이 나옵니다.";
+  }
+  function toggle(k){ open = open === k ? -1 : k; render(); var r = box.querySelector('.row[data-k="'+k+'"]'); if(r) r.focus(); }
+  box.addEventListener("click", function(e){ var r = e.target.closest(".row"); if(r) toggle(+r.dataset.k); });
+  box.addEventListener("keydown", function(e){ var r = e.target.closest(".row"); if(r && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); toggle(+r.dataset.k); } });
+  bindRange(root, "[data-weeks]", function(v){ W = v; render(); }, function(v){ return v + "주"; });
+  render();
+})();
+
+/* ---------- 2.4~2.6 수식 탐색기의 실시간 계산 ---------- */
+function T9(c, s){ return '<span class="t" data-c="' + c + '">' + s + '</span>'; }
+EQ["eq-env"] = function(v){
+  var lam = v.lamh/60, r = envWq(lam, v.es, v.c, v.ca2, v.cs2);
+  var num = "ρ = " + T9(4, fmt(lam,3)) + " × " + T9(3, fmt(v.es,1)) + " ÷ " + T9(5, v.c) + " = <b>" + fmt(r.rho,2) + "</b>";
+  if(r.rho >= 1) return {num:num, msg:"<span class='bad'>ρ ≥ 1입니다.</span> 처리 능력보다 손님이 많아 줄이 끝없이 늘어납니다. 정상 상태의 평균 대기는 존재하지 않습니다. 서버를 늘리거나 처리 시간을 줄이는 대안부터 생각하거나, 피크가 짧다면 종료형 시뮬레이션으로 “줄이 얼마나 쌓였다가 풀리는가”를 물으세요."};
+  var vt = (v.ca2+v.cs2)/2, ct = Math.pow(r.rho, Math.sqrt(2*(v.c+1))-1)/(v.c*(1-r.rho));
+  num += "&nbsp;&nbsp;&nbsp; W<sub>q</sub> ≈ " + T9(1, fmt(vt,2)) + " × " + T9(2, fmt(ct,3)) + " × " + T9(3, fmt(v.es,1)) + " = <b>" + fmt(r.wq,2) + "분</b>";
+  var lev = r.rho < .7 ? "<span class='good'>여유</span>" : r.rho < .9 ? "주의" : "<span class='bad'>위험</span>";
+  return {num:num, msg:"혼잡도 " + lev + ". 줄에 서 있는 평균 인원은 리틀의 법칙으로 L<sub>q</sub> = λ·W<sub>q</sub> ≈ <b>" + fmt(lam*r.wq,2) + "명</b>입니다."
+    + (r.rho >= .9 ? " ρ가 0.9를 넘으면 입력의 작은 오차가 대기를 크게 흔듭니다. 입력을 더 정확히 재고 민감도 분석을 꼭 하세요(8편)." : "")};
+};
+EQ["eq-n"] = function(v){
+  var z = normInv(1 - (1 - v.conf/100)/2), n = Math.ceil(Math.pow(z*v.s/v.e, 2));
+  return {num:"n ≥ (" + T9(1, fmt(z,2)) + " × " + T9(2, fmt(v.s,1)) + " ÷ " + T9(3, fmt(v.e,2)) + ")<sup>2</sup> = <b>" + n + "개</b>",
+    msg:"시간대 " + v.k + "개를 따로 잰다면 모두 <b>" + (n*v.k).toLocaleString() + "개</b>가 필요합니다. 허용 오차를 절반으로 줄이면 시간대마다 " + Math.ceil(Math.pow(z*v.s/(v.e/2), 2)).toLocaleString() + "개로 4배 가까이 늘어납니다."};
+};
+EQ["eq-rep"] = function(v){
+  var n = Math.ceil(v.n0*Math.pow(v.h0/v.h, 2));
+  return {num:"n ≈ " + T9(1, v.n0) + " × (" + T9(2, fmt(v.h0,2)) + " ÷ " + T9(3, fmt(v.h,2)) + ")<sup>2</sup> = <b>" + n + "번</b>",
+    msg: n <= v.n0 ? "이미 충분히 돌렸습니다." : "이미 " + v.n0 + "번 돌렸으므로 <b>" + (n - v.n0) + "번</b> 더 돌리면 됩니다. 늘린 뒤 반폭을 다시 계산해 목표에 닿았는지 확인하세요(어림식이라 조금 모자랄 수 있습니다)."};
+};
+
+/* ---------- 2.7 점검 목록 ---------- */
+(function(){
+  var root = document.getElementById("w-check"), list = root.querySelector("[data-list]"), bar = root.querySelector("[data-bar]"), out = root.querySelector("[data-out]");
+  var G = [
+    ["질문", ["다섯 부분을 갖춘 질문을 한 문장으로 썼다", "결정권자(또는 지도교수)가 질문과 판단 기준을 확인했다"]],
+    ["개념 모델", ["경계, 사건, 자원을 그림으로 그렸다", "뺀 것과 단순화한 것을 가정 목록으로 적었다"]],
+    ["데이터", ["파일럿으로 표준편차를 어림하고 관측 수를 계산했다", "시간대와 날짜를 나눠 원자료(사건 시각)를 모았다", "확인용 데이터를 처음부터 떼어 두었다", "분포를 고르고 적합도를 확인했다"]],
+    ["구현", ["가장 단순한 모델부터 동작시켰다", "시드를 고정해 같은 결과를 다시 낼 수 있다"]],
+    ["검증과 타당성", ["어림 계산과 비교하고 차이를 설명할 수 있다", "리틀의 법칙, 극한 조건 등 두 가지 이상으로 점검했다", "보정에 쓰지 않은 데이터와 비교했다"]],
+    ["실험과 분석", ["반복 횟수에 근거가 있다", "대안 비교에 공통 난수를 썼다", "민감도 분석으로 결론을 좌우하는 입력을 찾았다"]],
+    ["보고", ["결론을 신뢰구간, 조건과 함께 2.6절의 틀로 썼다", "한계와 다음 단계를 적었다"]]
+  ];
+  var KEY = "ms9-checklist", st = {};
+  try { st = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch(e){ st = {}; }
+  var total = 0, h = "";
+  G.forEach(function(g, gi){
+    h += "<h5>" + g[0] + "</h5>";
+    g[1].forEach(function(item, ii){ var id = gi + "-" + ii; total++;
+      h += '<label><input type="checkbox" data-id="' + id + '"' + (st[id] ? " checked" : "") + '><span>' + item + '</span></label>'; });
+  });
+  list.innerHTML = h;
+  function upd(){
+    var done = list.querySelectorAll("input:checked").length;
+    bar.style.width = (done/total*100) + "%";
+    out.innerHTML = "<b>" + done + "</b> / " + total + " 완료" + (done === total ? ". 발표 준비가 끝났습니다." : "");
+  }
+  list.addEventListener("change", function(e){
+    var id = e.target.dataset.id; if(!id) return; st[id] = e.target.checked;
+    try { localStorage.setItem(KEY, JSON.stringify(st)); } catch(err){}
+    upd();
+  });
+  root.querySelector('[data-act="clear"]').onclick = function(){
+    st = {}; list.querySelectorAll("input").forEach(function(i){ i.checked = false; });
+    try { localStorage.removeItem(KEY); } catch(err){}
+    upd();
+  };
+  upd();
+})();
+
+/* ---------- 3.1 학과 복합기 ---------- */
+(function(){
+  var root = document.getElementById("w-prn"), out = root.querySelector("[data-out]"), lamH = 25, res = null;
+  function run(){
+    res = [1,2].map(function(c){
+      var xs = []; for(var i=0;i<100;i++) xs.push(printerRun(lamH, c));
+      var m = mean(xs), h = tcrit(99)*sd(xs)/Math.sqrt(100), e = envWq(lamH/60, PRN.ES, c, 1, PRN.CV*PRN.CV);
+      return {c:c, m:m, h:h, env:e.wq, rho:e.rho};
+    });
+    view.redraw(); report();
+  }
+  var view = setup(root, function(c){
+    if(!res) return;
+    var ymax = Math.max(4, Math.min(30, Math.max.apply(null, res.map(function(r){ return Math.max(r.env, r.m + r.h); }))*1.15));
+    var s = scale([56, 14, 620, 180], [0, 1], [0, ymax]);
+    axes(c, s, {yt:ticks(0, ymax, 5), yl:"평균 대기(분)"});
+    var B = s.Y(3); line(c, 56, B+.5, 620, B+.5, COL.miss, 1.2, [5,4]); txt(c, "기준 3분", 616, B-5, {align:"right", size:10, color:COL.miss});
+    res.forEach(function(r, i){
+      var cx = 56 + (i+.5)*(620-56)/2, w = 70;
+      txt(c, r.c === 1 ? "복합기 1대 (ρ = " + fmt(r.rho,2) + ")" : "복합기 2대 (ρ = " + fmt(r.rho,2) + ")", cx, 205, {align:"center", size:12, color:COL.ink, weight:500});
+      // 어림 공식
+      var ye = s.Y(Math.min(r.env, ymax));
+      c.strokeStyle = COL.ink; c.setLineDash([4,3]); c.lineWidth = 1.4; c.strokeRect(cx - w - 6, ye, w, 180 - ye); c.setLineDash([]); c.lineWidth = 1;
+      txt(c, (r.env > ymax ? "▲ " : "") + "어림 " + fmt(r.env,1), cx - w/2 - 6, ye - 5, {align:"center", size:11, color:COL.ink});
+      // 시뮬레이션
+      var ym = s.Y(r.m);
+      c.fillStyle = rgba(COL.acc, .75); c.fillRect(cx + 6, ym, w, 180 - ym);
+      line(c, cx + 6 + w/2, s.Y(r.m + r.h), cx + 6 + w/2, s.Y(Math.max(0, r.m - r.h)), COL.ink, 1.6);
+      line(c, cx + w/2, s.Y(r.m + r.h), cx + 12 + w/2, s.Y(r.m + r.h), COL.ink, 1.6);
+      txt(c, "시뮬 " + fmt(r.m,1), cx + 6 + w/2, s.Y(r.m + r.h) - 5, {align:"center", size:11, color:COL.ink, weight:500});
+    });
+  });
+  function report(){
+    var a = res[0], b = res[1];
+    function verdict(r){ return r.m + r.h < 3 ? "<span class='good'>기준 통과</span>" : r.m - r.h > 3 ? "<span class='bad'>기준 초과</span>" : "기준 근처라 판단 보류"; }
+    out.innerHTML = "1대: 어림 <b>" + fmt(a.env,1) + "분</b>, 시뮬레이션 <b>" + fmt(a.m,2) + " ± " + fmt(a.h,2) + "분</b>, " + verdict(a)
+      + ". 2대: 어림 <b>" + fmt(b.env,2) + "분</b>, 시뮬레이션 <b>" + fmt(b.m,2) + " ± " + fmt(b.h,2) + "분</b>, " + verdict(b) + "."
+      + (a.env > a.m*1.3 ? " 1대일 때 시뮬레이션이 어림보다 짧은 것은 2시간 동안 줄이 정상 상태까지 쌓이지 못했기 때문입니다." : " 혼잡이 낮아 어림과 시뮬레이션이 거의 같습니다.");
+  }
+  bindRange(root, "[data-lam]", function(v){ lamH = v; run(); });
+  root.querySelector('[data-act="run"]').onclick = run;
+  run();
+})();
+
+/* ---------- 3.2 셔틀버스 정류장 ---------- */
+(function(){
+  var root = document.getElementById("w-sht"), out = root.querySelector("[data-out]"), H = 10, K = 35, one = null, many = null;
+  function hm(t){ var m = 20 + Math.round(t), h = 8 + Math.floor(m/60); m = m % 60; return h + ":" + (m < 10 ? "0" : "") + m; }
+  function runOne(){ one = shuttleRun(H, K, null, true); many = null; view.redraw(); report(); }
+  function runMany(){
+    var lf = [], w = []; for(var i=0;i<200;i++){ var o = shuttleRun(H, K); lf.push(o.leftFrac); w.push(o.wait); }
+    many = {lf:mean(lf), lfh:1.96*sd(lf)/Math.sqrt(200), w:mean(w)}; report();
+  }
+  var view = setup(root, function(c){
+    if(!one) return;
+    var tmax = 48, qmax = Math.max(40, K, Math.max.apply(null, one.trace.map(function(p){ return p[1]; }))*1.15);
+    var s = scale([48, 14, 600, 190], [0, tmax], [0, qmax]);
+    // 도착률 배경
+    c.fillStyle = rgba(COL.acc, .08); c.beginPath(); c.moveTo(s.X(0), s.Y(0));
+    for(var t=0;t<=SHT.T;t+=.5) c.lineTo(s.X(t), s.Y(shuttleRate(t)/5*qmax*.55));
+    c.lineTo(s.X(SHT.T), s.Y(0)); c.closePath(); c.fill();
+    txt(c, "도착률(최고 분당 5명)", s.X(25), s.Y(qmax*.55) - 6, {align:"center", size:10});
+    var xt = []; for(var k=0;k<=tmax;k+=10) xt.push(k);
+    axes(c, s, {yt:ticks(0, qmax, 4), xt:xt, fx:hm, yl:"정류장에서 기다리는 학생(명)"});
+    line(c, 48, s.Y(K)+.5, 600, s.Y(K)+.5, COL.miss, 1, [4,4]); txt(c, "정원 " + K + "명", 596, s.Y(K) - 4, {align:"right", size:10, color:COL.miss});
+    // 버스
+    one.buses.forEach(function(b){ if(b[0] > tmax) return;
+      var x = s.X(b[0]); c.fillStyle = rgba(COL.c1, .25); c.fillRect(x - 5, s.Y(b[1]), 10, s.Y(0) - s.Y(b[1]));
+      txt(c, b[1], x, s.Y(b[1]) - 4, {align:"center", size:10, color:COL.c1}); });
+    // 줄 길이 (계단)
+    c.save(); c.beginPath(); c.rect(48, 10, 552, 182); c.clip();
+    c.strokeStyle = COL.ink; c.lineWidth = 1.8; c.beginPath();
+    var prev = null;
+    one.trace.forEach(function(p){ var x = s.X(p[0]), y = s.Y(p[1]); if(!prev) c.moveTo(x, y); else { c.lineTo(x, s.Y(prev[1])); c.lineTo(x, y); } prev = p; });
+    c.stroke(); c.restore(); c.lineWidth = 1;
+    txt(c, "막대: 버스가 태운 인원", 52, 222, {size:10, color:COL.c1});
+  });
+  function report(){
+    var cap = Math.round(60*K/H), s = "배차 " + H + "분, 정원 " + K + "명: 시간당 수송 능력 <b>" + cap + "명</b> (피크 도착은 시간당 약 300명). ";
+    s += "이번 실행: 학생 " + one.n + "명, 평균 대기 <b>" + fmt(one.wait,1) + "분</b>, 한 번 이상 못 탄 학생 <b>" + fmt(one.leftFrac*100,1) + "%</b>.";
+    if(many) s += "<br>200번 평균: 못 탄 비율 <b>" + fmt(many.lf*100,1) + "% ± " + fmt(many.lfh*100,1) + "%</b>, 평균 대기 <b>" + fmt(many.w,1) + "분</b>. 기준 5%: "
+      + (many.lf + many.lfh < .05 ? "<span class='good'>통과</span>" : many.lf - many.lfh > .05 ? "<span class='bad'>미달</span>" : "경계선");
+    out.innerHTML = s;
+  }
+  bindRange(root, "[data-h]", function(v){ H = v; runOne(); });
+  bindRange(root, "[data-k]", function(v){ K = v; runOne(); });
+  root.querySelector('[data-act="one"]').onclick = runOne;
+  root.querySelector('[data-act="many"]').onclick = runMany;
+  runOne();
+})();
+
+/* ---------- 3.3 학생식당: 보정과 확인 ---------- */
+(function(){
+  var root = document.getElementById("w-caf"), out = root.querySelector("[data-out]");
+  function measure(n, mult, seed){
+    var r = mulberry(seed), d = []; for(var i=0;i<n;i++) d.push(cafRun({ms:CAF_TRUTH.ms, group:true, gm:CAF_TRUTH.gm, mult:mult}, r));
+    return d[0].map(function(_, s){ var col = d.map(function(x){ return x[s]; }); return {m:mean(col), h:1.96*sd(col)/Math.sqrt(n)}; });
+  }
+  var MA = measure(20, 1, 33), MB = measure(15, CAF.EXAM, 34);
+  var p = {ms:.30, group:false, gm:2}, openV = false, predA = null, predB = null, timer = null;
+  function rmse(pred, meas){ var s = 0; for(var i=0;i<pred.length;i++) s += Math.pow(pred[i] - meas[i].m, 2); return Math.sqrt(s/pred.length); }
+  function compute(){
+    predA = cafMean({ms:p.ms, group:p.group, gm:p.gm, mult:1}, 30, 7);
+    predB = cafMean({ms:p.ms, group:p.group, gm:p.gm, mult:CAF.EXAM}, 30, 8);
+    view.redraw(); report();
+  }
+  function later(){ clearTimeout(timer); timer = setTimeout(compute, 40); }
+  var LAB = ["11:30","","12:00","","12:30","","13:00","","13:30"];
+  var view = setup(root, function(c){
+    if(!predA) return;
+    var ymax = 3;
+    [MA, MB].forEach(function(M){ M.forEach(function(v){ ymax = Math.max(ymax, v.m + v.h); }); });
+    ymax = Math.min(6, Math.max(ymax, Math.max.apply(null, predA), openV ? 0 : 0) * 1.1);
+    var panels = [{x0:48, x1:318, M:MA, P:predA, t:"평소 20일 (보정용)", show:true}, {x0:360, x1:630, M:MB, P:predB, t:"시험 기간 15일 (확인용)", show:openV}];
+    panels.forEach(function(pn, pi){
+      var s = scale([pn.x0, 40, pn.x1, 196], [-.5, 11.5], [0, ymax]);
+      axes(c, s, {yt:ticks(0, ymax, 4), xt:[]});
+      [0,2,4,6,8,10,12].forEach(function(k, j){ txt(c, LAB[j*1] !== undefined ? ["11:30","11:50","12:10","12:30","12:50","13:10","13:30"][j] : "", s.X(k - .5), 211, {align:"center", size:9.5}); });
+      txt(c, pn.t, pn.x0, 14, {size:11.5, color:COL.ink, weight:500}); txt(c, "평균 대기(분)", pn.x0, 30, {size:10});
+      if(pi === 1){ var yb = s.Y(2); line(c, pn.x0, yb+.5, pn.x1, yb+.5, COL.miss, 1, [5,4]); txt(c, "기준 2분", pn.x1, yb - 4, {align:"right", size:10, color:COL.miss}); }
+      if(pn.show){
+        pn.M.forEach(function(v, k){ var x = s.X(k);
+          line(c, x, s.Y(Math.min(ymax, v.m + v.h)), x, s.Y(Math.max(0, v.m - v.h)), rgba(COL.ink, .5), 1.4);
+          dot(c, x, s.Y(Math.min(ymax, v.m)), 3.6, COL.ink); });
+      } else {
+        c.fillStyle = rgba(COL.soft, .7); c.fillRect(pn.x0 + 2, 40, pn.x1 - pn.x0 - 4, 154);
+        txt(c, "보정을 마친 뒤 열어 보세요", (pn.x0 + pn.x1)/2, 120, {align:"center", size:12, color:COL.muted});
+      }
+      path(c, s, pn.P.map(function(v, k){ return [k, Math.min(v, ymax*1.5)]; }), COL.acc, 2.4);
+      if(Math.max.apply(null, pn.P) > ymax) txt(c, "▲ 최고 " + fmt(Math.max.apply(null, pn.P),1) + "분", pn.x1, 52, {align:"right", size:10.5, color:COL.acc, weight:500});
+      if(pn.show) txt(c, "RMSE " + fmt(rmse(pn.P, pn.M),2) + "분", pn.x1, 250, {align:"right", size:11.5, color:COL.ink, weight:500});
+    });
+    txt(c, "점: 실측 평균과 95% 구간   선: 모델", 48, 250, {size:10});
+  });
+  function report(){
+    var pkA = Math.max.apply(null, predA), pkB = Math.max.apply(null, predB);
+    var mA = Math.max.apply(null, MA.map(function(v){ return v.m; })), mB = Math.max.apply(null, MB.map(function(v){ return v.m; }));
+    var s = "모델: 배식 " + fmt(p.ms,2) + "분, " + (p.group ? "무리 지어 도착(평균 " + p.gm + "명)" : "한 명씩 도착") + ". 평소 RMSE <b>" + fmt(rmse(predA, MA),2) + "분</b>, 피크 예측 " + fmt(pkA,2) + "분 (실측 " + fmt(mA,2) + "분).";
+    if(openV) s += "<br>시험 기간 RMSE <b>" + fmt(rmse(predB, MB),2) + "분</b>, 피크 예측 <b>" + fmt(pkB,2) + "분</b> (실측 " + fmt(mB,2) + "분). 이 모델대로라면 배식구를 "
+      + (pkB > 2 ? "<span class='bad'>늘려야 합니다</span>" : "<span class='good'>늘리지 않아도 됩니다</span>") + ". 실측으로는 " + (mB > 2 ? "늘려야 합니다." : "늘리지 않아도 됩니다.");
+    else s += " 시험 기간 예측 피크는 " + fmt(pkB,2) + "분입니다. 확인용 데이터를 열어 비교해 보세요.";
+    out.innerHTML = s;
+  }
+  var gm = root.querySelector("[data-gm]");
+  bindRange(root, "[data-ms]", function(v){ p.ms = v; later(); }, function(v){ return v.toFixed(2); });
+  bindRange(root, "[data-gm]", function(v){ p.gm = v; later(); }, function(v){ return v.toFixed(1); });
+  root.querySelector("[data-group]").addEventListener("change", function(e){ p.group = e.target.checked; gm.disabled = !p.group; later(); });
+  root.querySelector("[data-open]").addEventListener("change", function(e){ openV = e.target.checked; view.redraw(); report(); });
+  compute();
+})();
+
+initEqx();
+})();
+</script>
+</body>
+</html>
