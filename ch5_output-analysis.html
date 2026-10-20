@@ -203,6 +203,8 @@ footer a{color:inherit}
   .widget, .eqx{padding:14px 12px 12px; margin-left:-6px; margin-right:-6px}
   .ctrl input[type=range]{width:120px}
 }
+.subs{margin:72px 0 -56px; font-size:15px; color:var(--muted)}
+.subs a{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -224,7 +226,7 @@ footer a{color:inherit}
     </div>
     <div class="pre">
       <h2>먼저 보면 좋은 것</h2>
-      <a href="simulation-101.html#s2-1">0편 2.1 시드</a><a href="simulation-101.html#s2-6">0편 2.6 신뢰구간</a><a href="littles-law.html">1편 큐잉</a><a href="prompt-cafe-des.html">2편 DES</a><a href="input-modeling.html">4편 입력 모델링</a>
+      <a href="ch0_simulation-101.html#s2-1">0편 2.1 시드</a><a href="ch0_simulation-101.html#s2-6">0편 2.6 신뢰구간</a><a href="ch1_littles_law.html">1편 큐잉</a><a href="ch2_DES.html">2편 DES</a><a href="ch4_input-modeling.html">4편 입력 모델링</a>
       <p>2편의 “반복 실행과 신뢰구간” 도구가 왜 그렇게 동작하는지를 이 편에서 자세히 봅니다.</p>
     </div>
   </div>
@@ -549,6 +551,8 @@ m, h = ci(np.array(a) - np.array(b))
   <div class="link-note"><p><span class="k">4편에서</span>입력 분포는 데이터에서 추정한 것이라 그 자체가 불확실합니다. 엄밀히는 이 입력 불확실성도 출력 구간에 반영해야 합니다(입력 불확실성 정량화). 적어도 입력 모수를 바꿔 결론이 유지되는지 확인하세요.</p></div>
   <div class="link-note"><p><span class="k">8편으로</span>대안이 수십, 수백 개면 하나하나 비교할 수 없으므로 탐색 알고리즘이 필요합니다. 그때도 공통 난수와 반복 실행이 탐색의 정확도를 좌우합니다.</p></div>
 
+  <div class="link-note"><p><span class="k">심화편 5-2로</span>반복 횟수를 늘리는 대신 같은 반복으로 더 좁은 구간을 얻는 방법(대조 변량, 제어 변량)과, 백만 번에 한 번 일어나는 사건을 재는 중요도 표본추출은 <a href="ch5-2_variance-reduction.html">5-2편</a>에서 다룹니다.</p></div>
+
   <h3 id="s4-2"><span class="n">4.2</span>요약</h3>
   <dl class="terms">
     <dt>종료형</dt><dd>자연스러운 시작과 끝. 반복 실행 → 결과마다 독립 → t 구간.</dd>
@@ -568,9 +572,10 @@ m, h = ci(np.array(a) - np.array(b))
   </div>
 </section>
 
+<p class="subs">이 편의 심화편: <a href="ch5-2_variance-reduction.html">5-2 분산 감소와 희귀 사건</a></p>
 <nav class="pager" aria-label="이전 다음 편">
-  <a href="input-modeling.html"><span>이전 편</span><b>4. 입력 모델링</b></a>
-  <a class="next" href="system-dynamics.html"><span>다음 편</span><b>6. 시스템 다이내믹스</b></a>
+  <a href="ch4_input-modeling.html"><span>이전 편</span><b>4. 입력 모델링</b></a>
+  <a class="next" href="ch6_system-dynamics.html"><span>다음 편</span><b>6. 시스템 다이내믹스</b></a>
 </nav>
 <footer><a href="https://sites.google.com/view/knunextcom">Next-generation Computing Systems Lab</a>, 경북대학교 컴퓨터학부</footer>
 </div>

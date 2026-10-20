@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LLM 에이전트와 시뮬레이션</title>
+<!--
+  모델링과 시뮬레이션 학습 자료 — 3-2편 (3편 심화): LLM 에이전트와 시뮬레이션
+  파일명: ch3-2_LLM-agents.html, 강조색 --acc는 메인 페이지의 --c3b와 같습니다.
+  데모의 LLM은 실제 모델이 아니라 성질을 흉내 낸 대역입니다. 외부 라이브러리나 API 호출은 없습니다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F8; --panel:#FFFFFF; --ink:#17202E; --muted:#5A6577; --line:#D5DBE3; --soft:#E8ECF1;
+  --acc:#2F8F5B; --c1:#3557C9; --c2:#C27C00; --c3:#0E7C6B; --miss:#C8372D;
+  --t1:#2E62D0; --t2:#C2410C; --t3:#0E8A6B; --t4:#8B3FD9; --t5:#B91C5C;
+  --k-kw:#8A3FA8; --k-fn:#2457C5; --k-str:#2E7D32; --k-num:#B5560F; --k-com:#7A8494; --k-bi:#0F7C86;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --math:"STIX Two Text","Times New Roman",Times,serif;
+  --code:"D2Coding","Consolas","SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+    --acc:#5FD39A; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+    --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+    --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+  --acc:#5FD39A; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+  --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+  --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+  color-scheme:dark;
+}
+:root{box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 16px); scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+body{margin:0; background:var(--bg); color:var(--ink); font:400 17px/1.75 var(--sans); -webkit-font-smoothing:antialiased; word-break:keep-all; overflow-wrap:break-word}
+a{color:var(--acc)}
+.wrap{max-width:980px; margin:0 auto; padding:40px 24px 48px}
+.prose{max-width:42em}
+p{margin:0 0 1em}
+code{font-family:var(--code); font-size:.9em; background:var(--soft); padding:1px 5px; border-radius:4px}
+
+/* 머리말 */
+.back{font-size:15px; margin:0 0 36px}
+.back a{color:var(--muted)}
+.series{margin:0 0 10px; color:var(--muted); font-size:15px}
+h1{margin:0; font-weight:700; font-size:clamp(34px,6vw,54px); line-height:1.12; letter-spacing:-0.02em}
+h1 .n{font-family:var(--math); font-weight:500; color:var(--acc); margin-right:.2em}
+.lead{margin:18px 0 0; color:var(--muted); max-width:38em; font-size:18px}
+.goals{display:grid; grid-template-columns:1.4fr 1fr; gap:24px; margin:32px 0 0}
+.goals > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px}
+.goals h2{font-size:15px; margin:0 0 6px}
+.goals ul{margin:0; padding-left:1.1em; font-size:15px; line-height:1.65}
+.goals .pre a{display:inline-block; margin:2px 6px 2px 0; font-size:14px; text-decoration:none; padding:2px 9px; border-radius:5px; background:var(--soft); color:var(--ink)}
+.goals .pre a:hover{background:var(--acc); color:var(--panel)}
+.goals .pre p{font-size:14.5px; color:var(--muted); margin:6px 0 0}
+.toc{margin:28px 0 0; display:grid; grid-template-columns:repeat(4,1fr); gap:0 24px; border-top:2px solid var(--ink); padding-top:16px}
+.toc h2{font-size:15px; margin:0 0 6px}
+.toc h2 a{color:var(--ink); text-decoration:none}
+.toc ol{list-style:none; margin:0; padding:0; font-size:14px; line-height:1.65}
+.toc ol a{color:var(--muted); text-decoration:none}
+.toc a:hover{color:var(--acc); text-decoration:underline}
+
+/* 장, 절 */
+.chap{margin-top:88px}
+.chap > h2{display:flex; align-items:baseline; gap:16px; font-size:clamp(28px,4.4vw,38px); line-height:1.2; margin:0 0 12px; letter-spacing:-0.01em}
+.chap > h2 .n{font:500 1.5em/1 var(--math); color:var(--acc)}
+.chap > .intro{color:var(--muted); font-size:18px; max-width:40em; margin-bottom:8px}
+h3{font-size:22px; line-height:1.35; margin:56px 0 12px}
+h3 .n{font:500 1em var(--math); color:var(--acc); margin-right:10px}
+h4{font-size:17px; margin:24px 0 6px}
+.m{font-family:var(--math); font-style:italic; font-size:1.08em; white-space:nowrap}
+.mr{font-family:var(--math); font-size:1.08em; white-space:nowrap}
+.note{max-width:42em; margin:20px 0; padding:14px 18px; border-radius:8px; background:var(--soft); font-size:15.5px; line-height:1.7}
+.note > :last-child{margin-bottom:0}
+.link-note{max-width:42em; margin:20px 0; padding:12px 18px 12px 16px; border-left:3px solid var(--acc); background:var(--panel); border-radius:0 8px 8px 0; font-size:15.5px}
+.link-note > :last-child{margin-bottom:0}
+.link-note .k{font-weight:700; color:var(--acc); margin-right:6px}
+dl.terms{display:grid; grid-template-columns:auto 1fr; gap:6px 18px; max-width:42em; margin:0; font-size:15.5px}
+dl.terms dt{font-weight:700}
+dl.terms dd{margin:0; color:var(--muted)}
+.cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:20px 0}
+.cards.two{grid-template-columns:1fr 1fr}
+.cards > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; font-size:15.5px}
+.cards h4{margin:0 0 6px}
+.cards p{margin:0}
+ol.steps{list-style:none; margin:20px 0; padding:0; counter-reset:s; max-width:44em}
+ol.steps > li{counter-increment:s; position:relative; padding:0 0 14px 44px}
+ol.steps > li::before{content:counter(s); position:absolute; left:0; top:-2px; width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font:500 17px/1 var(--math); background:var(--acc); color:var(--panel)}
+ol.steps > li b{display:block}
+
+/* 사례 연구 머리 */
+.case{margin:56px 0 0; padding-top:18px; border-top:1px solid var(--line)}
+.case h3{margin-top:0}
+.lvl{display:inline-block; font-size:13px; font-weight:500; padding:1px 8px; border-radius:4px; margin-left:8px; vertical-align:3px; background:var(--soft); color:var(--muted)}
+.lvl.real{background:var(--acc); color:var(--panel)}
+
+/* 수식 탐색기 */
+.eqx{margin:28px 0; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px 16px}
+.eqx > .cap{margin:0 0 4px; font-size:14px; color:var(--muted)}
+.eq-big{font-family:var(--math); font-size:clamp(24px,3.6vw,36px); line-height:1.6; padding:12px 0 14px; overflow-x:auto; white-space:nowrap; text-align:center}
+.eq-big .t{--tc:var(--ink); border-bottom:3px solid var(--tc); padding:0 3px; border-radius:4px; cursor:pointer; transition:background .15s}
+.eq-big .t:hover, .eqx[data-on] .eq-big .t.on{background:color-mix(in srgb, var(--tc) 22%, transparent)}
+.eqx[data-on] .eq-big .t:not(.on){opacity:.4}
+.eq-big .op{color:var(--muted); padding:0 .12em}
+.eq-big sub, .eq-big sup{font-size:.6em}
+.eq-big .frac{display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; line-height:1.15; margin:0 .1em}
+.eq-big .frac > span:first-child{border-bottom:2px solid currentColor; padding:0 .15em .05em}
+.eq-big .frac > span:last-child{padding:.08em .15em 0}
+.t[data-c="1"]{--tc:var(--t1)} .t[data-c="2"]{--tc:var(--t2)} .t[data-c="3"]{--tc:var(--t3)} .t[data-c="4"]{--tc:var(--t4)} .t[data-c="5"]{--tc:var(--t5)}
+.eq-terms{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; margin:4px 0 0}
+.eq-terms button{
+  --tc:var(--ink); text-align:left; font:400 14px/1.5 var(--sans); color:var(--ink); background:var(--bg);
+  border:1px solid var(--line); border-left:4px solid var(--tc); border-radius:6px; padding:8px 10px; cursor:pointer;
+}
+.eq-terms button b{display:block; font-family:var(--math); font-size:17px; font-weight:500; color:var(--tc)}
+.eq-terms button[aria-pressed="true"]{background:color-mix(in srgb, var(--tc) 14%, var(--panel)); border-color:var(--tc)}
+.eq-terms button:focus-visible{outline:2px solid var(--tc); outline-offset:2px}
+.eq-detail{margin:12px 0 0; padding:12px 14px; border-radius:8px; background:var(--soft); font-size:15px; min-height:3em}
+.eq-detail:empty{display:none}
+.eq-live{margin-top:14px; padding-top:12px; border-top:1px dashed var(--line)}
+.eq-live .sub{font-size:14px; color:var(--muted); margin:0 0 6px}
+.eqx canvas{display:block; width:100%; height:auto; margin-top:8px}
+.hat{position:relative; display:inline-block}
+.hat::after{content:"ˆ"; position:absolute; left:50%; top:-.42em; transform:translateX(-45%); font-style:normal}
+.lim{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; line-height:1; margin:0 .08em; font-size:1.3em}
+.lim small{font-size:.34em; line-height:1.15}
+.eq-num{font-family:var(--math); font-size:22px; text-align:center; margin:10px 0 2px; overflow-x:auto; white-space:nowrap}
+.eq-num .t{border-bottom:2px solid var(--tc); padding:0 2px}
+
+/* 위젯 */
+.widget{margin:24px 0 28px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px 14px}
+.widget > h4{margin:0 0 2px; font-size:16px}
+.widget > .sub{margin:0 0 12px; color:var(--muted); font-size:14.5px}
+.widget canvas{display:block; width:100%; height:auto; touch-action:manipulation}
+.ctrl, .eq-live .ctrl{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin-top:12px; font-size:14px}
+.ctrl button, .seg button{font:500 14px/1 var(--sans); color:var(--ink); background:var(--soft); border:1px solid var(--line); border-radius:7px; padding:8px 12px; cursor:pointer}
+.ctrl button:hover, .seg button:hover{border-color:var(--acc)}
+.ctrl button.primary{background:var(--acc); border-color:var(--acc); color:var(--panel)}
+.ctrl button:disabled{opacity:.5; cursor:default}
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+.seg{display:inline-flex; flex-wrap:wrap; gap:4px}
+.seg button[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--panel)}
+.ctrl label{display:inline-flex; align-items:center; gap:8px; color:var(--muted)}
+.ctrl label b, .ctrl label output{color:var(--ink); font-weight:500; min-width:2.8em; font-variant-numeric:tabular-nums}
+.ctrl input[type=range]{width:150px; accent-color:var(--acc)}
+.ctrl input[type=checkbox]{accent-color:var(--acc); width:16px; height:16px}
+.ctrl select{font:400 14px var(--sans); color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px 8px}
+textarea.data{width:100%; min-height:90px; font:400 13.5px/1.5 var(--code); color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px; resize:vertical}
+.readout{margin:12px 0 0; font-size:14.5px; line-height:1.6; color:var(--muted); font-variant-numeric:tabular-nums}
+.readout b{color:var(--ink); font-weight:500}
+.readout .good{color:var(--c3); font-weight:500}
+.readout .bad{color:var(--miss); font-weight:500}
+.split{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+
+/* 표 */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:15px; line-height:1.55}
+th,td{padding:9px 12px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line)}
+thead th{font-weight:700; color:var(--muted); font-size:14px}
+tbody tr:last-child th, tbody tr:last-child td{border-bottom:0}
+table.num td{font-variant-numeric:tabular-nums}
+.tbl{background:var(--panel); border:1px solid var(--line); border-radius:10px; margin:20px 0; max-width:46em}
+
+/* 연습 문제 */
+.ex{max-width:44em; margin:16px 0}
+.ex details{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 16px; margin:0 0 8px}
+.ex summary{cursor:pointer; font-weight:500}
+.ex summary::marker{color:var(--acc)}
+.ex details > div{margin-top:8px; color:var(--muted); font-size:15.5px}
+.ex details > div > :last-child{margin-bottom:0}
+
+/* 코드 */
+pre.code{margin:20px 0; padding:16px 18px; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow-x:auto; font:400 14px/1.65 var(--code); tab-size:4; max-width:46em}
+pre.code code{background:none; padding:0; font-size:1em}
+pre.code .kw{color:var(--k-kw); font-weight:500}
+pre.code .fn{color:var(--k-fn)}
+pre.code .bi{color:var(--k-bi)}
+pre.code .str{color:var(--k-str)}
+pre.code .num{color:var(--k-num)}
+pre.code .com{color:var(--k-com); font-style:italic}
+.code-cap{font-size:14px; color:var(--muted); margin:-12px 0 20px}
+
+/* 이전 / 다음 */
+.pager{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:72px}
+.pager a{display:block; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; text-decoration:none; color:var(--ink)}
+.pager a:hover{border-color:var(--acc)}
+.pager span{display:block; font-size:13.5px; color:var(--muted)}
+.pager b{font-size:17px}
+.pager .next{text-align:right}
+footer{margin-top:40px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:14px}
+footer a{color:inherit}
+
+@media (max-width:760px){
+  .wrap{padding:28px 18px 40px}
+  .toc{grid-template-columns:1fr 1fr; gap:14px}
+  .goals, .cards, .cards.two, .split, .pager{grid-template-columns:1fr}
+  .widget, .eqx{padding:14px 12px 12px; margin-left:-6px; margin-right:-6px}
+  .ctrl input[type=range]{width:120px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="back"><a href="index.html">모델링과 시뮬레이션 목차</a></p>
+<header>
+  <p class="series">모델링과 시뮬레이션, 3-2편 (3편 심화)</p>
+  <h1><span class="n">3-2</span>LLM 에이전트와 시뮬레이션</h1>
+  <p class="lead">3편의 여우와 토끼는 사람이 적은 if문으로 움직였습니다. 대화하고, 협상하고, 상황을 판단하는 에이전트는 if문으로 다 적기 어렵습니다. 그래서 에이전트의 판단을 대규모 언어 모델(LLM)에 맡기는 시도가 늘고 있습니다. 이 편은 그렇게 했을 때 시뮬레이션의 무엇이 깨지는지, 비용, 재현성, 출력 분석, 검증을 하나씩 살펴봅니다.</p>
+  <div class="goals">
+    <div>
+      <h2>이 편을 마치면</h2>
+      <ul>
+        <li>LLM 에이전트의 관찰, 프롬프트, 파싱, 행동으로 이어지는 루프를 설계하고, 판단과 세계를 나눌 수 있습니다.</li>
+        <li>호출 시점을 사건 기반으로 바꾸고 응답을 기록해, 비용과 재현성 문제를 줄일 수 있습니다.</li>
+        <li>LLM 샘플링이 출력 분산에 더하는 몫을 알고, 반복 실행과 비교 실험을 설계할 수 있습니다.</li>
+        <li>프롬프트 민감성, 행동의 획일화 같은 타당성 위협을 알고 기준 모델과 비교해 점검할 수 있습니다.</li>
+      </ul>
+    </div>
+    <div class="pre">
+      <h2>먼저 보면 좋은 것</h2>
+      <a href="ch3_ABM.html">3편 ABM</a><a href="ch2-2_DEVS.html">2-2편 DEVS</a><a href="ch5_output-analysis.html">5편 출력 분석</a><a href="ch8_verification-optimization.html">8편 검증</a>
+      <p>이 페이지의 데모는 실제 LLM을 부르지 않습니다. LLM의 성질(확률적 응답, 표현에 대한 민감성, 가끔 틀리는 형식)을 흉내 낸 대역을 씁니다.</p>
+    </div>
+  </div>
+  <nav class="toc" aria-label="목차">
+    <div><h2><a href="#ch1">1. 왜 LLM 에이전트인가</a></h2><ol><li><a href="#s1-1">if문으로 적기 어려운 판단</a></li><li><a href="#s1-2">시뮬레이션 쪽에서 보면</a></li></ol></div>
+    <div><h2><a href="#ch2">2. 이론</a></h2><ol><li><a href="#s2-1">에이전트 루프</a></li><li><a href="#s2-2">언제 부를까</a></li><li><a href="#s2-3">재현성</a></li><li><a href="#s2-4">출력 분석</a></li><li><a href="#s2-5">검증과 타당성</a></li></ol></div>
+    <div><h2><a href="#ch3">3. 예제와 사례 연구</a></h2><ol><li><a href="#s3-1">줄을 보고 떠나는 손님</a></li><li><a href="#s3-2">파이썬 에이전트 루프</a></li><li><a href="#s3-3">워게임과 지휘결심</a></li></ol></div>
+    <div><h2><a href="#ch4">4. 연결과 정리</a></h2><ol><li><a href="#s4-1">앞뒤 편과의 연결</a></li><li><a href="#s4-2">요약</a></li><li><a href="#s4-3">연습 문제</a></li></ol></div>
+  </nav>
+</header>
+
+<!-- ===================== 1 ===================== -->
+<section class="chap" id="ch1">
+  <h2><span class="n">1</span>왜 LLM 에이전트인가</h2>
+  <p class="intro">행동 규칙을 사람이 다 적을 수 없는 에이전트가 있습니다. LLM은 그 규칙을 대신 '상상'해 줄 수 있지만, 그 대가로 시뮬레이션이 원래 갖고 있던 성질 몇 가지를 잃습니다.</p>
+
+  <h3 id="s1-1"><span class="n">1.1</span>if문으로 적기 어려운 판단</h3>
+  <div class="prose">
+    <p>3편의 토끼는 "배고프면 풀로 간다, 여우가 보이면 도망간다"처럼 몇 줄의 규칙으로 충분했습니다. 하지만 커피점 손님이 친구에게 받은 메시지를 보고 계획을 바꾸거나, 협상 상대의 말투에 따라 양보 폭을 정하거나, 지휘관이 애매한 첩보를 놓고 방책을 고르는 판단은 규칙으로 옮기기 어렵습니다.</p>
+    <p>Park 등이 2023년에 발표한 Generative Agents 연구는 LLM으로 움직이는 에이전트 스물다섯 명이 사는 작은 마을을 만들었습니다. 에이전트들은 겪은 일을 기억 흐름에 쌓고, 가끔 그것을 되돌아보며(반성) 하루 계획을 세웠습니다. 에이전트 하나에게 파티를 열겠다는 생각만 심어 두었는데, 소문이 퍼지고 초대가 오가며 다른 에이전트들이 그 시각에 모이는 일이 나타났습니다. 규칙을 하나하나 적지 않아도 그럴듯한 사회적 행동이 생길 수 있다는 것을 보여 준 사례입니다.</p>
+  </div>
+
+  <h3 id="s1-2"><span class="n">1.2</span>시뮬레이션 쪽에서 보면</h3>
+  <div class="prose"><p>에이전트의 결정 함수가 LLM 호출로 바뀌면, 앞의 편들에서 당연하게 여겼던 것들이 달라집니다.</p></div>
+  <div class="cards two">
+    <div><h4>확률적이고, 시드로 통제되지 않는다</h4><p>LLM은 같은 질문에도 다른 답을 냅니다. 그런데 그 무작위성은 내 난수 생성기가 아니라 서버 쪽에 있어서, 시드를 고정해도 같은 실행을 다시 만들 수 없습니다(2.3절).</p></div>
+    <div><h4>느리고 비싸다</h4><p>규칙 하나는 나노초 단위로 평가되지만, LLM 호출은 초 단위로 걸리고 토큰마다 비용이 듭니다. 에이전트 천 명이 매 틱 판단하면 실행 한 번이 감당하기 어려워집니다(2.2절).</p></div>
+    <div><h4>표현에 민감하다</h4><p>같은 상황을 조금 다르게 적기만 해도 결정이 달라질 수 있습니다. 프롬프트가 곧 모델의 일부이므로, 프롬프트를 바꾸는 것은 모델을 바꾸는 것입니다(2.5절, 3.1절).</p></div>
+    <div><h4>속을 들여다볼 수 없다</h4><p>규칙은 읽고 고칠 수 있지만, LLM이 왜 그렇게 답했는지는 직접 검사할 수 없습니다. 검증은 행동을 관찰해 비교하는 방식으로 할 수밖에 없습니다(2.5절).</p></div>
+  </div>
+</section>
+
+<!-- ===================== 2 ===================== -->
+<section class="chap" id="ch2">
+  <h2><span class="n">2</span>이론</h2>
+  <p class="intro">원칙은 하나입니다. LLM에게는 판단만 맡기고, 세계의 시간과 물리와 자원은 시뮬레이터가 쥡니다.</p>
+
+  <h3 id="s2-1"><span class="n">2.1</span>에이전트 루프</h3>
+  <ol class="steps">
+    <li><b>관찰</b>시뮬레이터가 에이전트에게 보이는 것만 골라 줍니다. 줄 길이, 받은 메시지, 남은 예산처럼 그 에이전트가 실제로 알 수 있는 정보입니다. 전지적인 정보를 주면 에이전트가 알 수 없는 것을 근거로 판단하게 됩니다.</li>
+    <li><b>프롬프트</b>역할, 상황, 고를 수 있는 행동 목록, 답의 형식을 적습니다. 행동을 목록에서만 고르게 해야 시뮬레이터가 결과를 계산할 수 있습니다.</li>
+    <li><b>호출과 파싱</b>응답에서 행동을 읽어 냅니다. 형식을 어긴 응답은 반드시 생기므로, 다시 묻거나 정해 둔 기본 행동을 쓰는 규칙이 필요하고, 그런 일이 몇 번 있었는지 기록합니다.</li>
+    <li><b>행동과 결과</b>시뮬레이터가 그 행동의 결과를 계산합니다. "떠남"을 골랐으면 떠나고, "공격"을 골랐으면 교전 판정은 시뮬레이터의 규칙이 합니다. LLM이 결과까지 정하게 두면 세계의 일관성이 무너집니다.</li>
+    <li><b>기억</b>에이전트가 겪은 일을 다음 프롬프트에 요약해 넣습니다. 기억이 길어지면 관련 있는 것만 골라 넣는 검색과 요약이 필요합니다.</li>
+  </ol>
+  <div class="link-note"><p><span class="k">2-2편에서</span>DEVS 원자 모델로 보면 LLM 호출은 δ<sub>ext</sub> 안에 들어갑니다. 입력 메시지(관찰)가 오면 LLM에게 물어 새 상태와 다음 출력(행동)을 정합니다. 시간 전진 ta와 결합은 그대로 시뮬레이터 몫입니다.</p></div>
+
+  <h3 id="s2-2"><span class="n">2.2</span>언제 부를까</h3>
+  <div class="prose">
+    <p>3편처럼 매 틱 모든 에이전트에게 물으면 호출 수는 에이전트 수 × 틱 수입니다. 그런데 대부분의 틱에서 에이전트는 하던 일을 계속할 뿐입니다. 2편과 2-2편의 생각을 빌려, 판단이 필요한 사건이 일어날 때만 묻고(손님이 도착했을 때, 메시지를 받았을 때) 나머지는 규칙으로 처리하면 호출이 크게 줄어듭니다. 같은 상황에 대한 답을 저장해 두고 다시 쓰면 더 줄어듭니다.</p>
+  </div>
+  <div class="widget" id="w-cost">
+    <h4>호출 수와 시간 어림</h4>
+    <p class="sub">세 가지 호출 방식의 실행 한 번당 호출 수(로그 눈금)와, 반복 실행까지 포함한 총량입니다.</p>
+    <canvas data-w="640" data-h="200" role="img" aria-label="매 틱, 사건 기반, 사건 기반과 응답 재사용의 호출 수 비교"></canvas>
+    <div class="ctrl">
+      <label>에이전트 <input type="range" data-n min="1" max="4" step="0.05" value="2.7"><b></b></label>
+      <label>틱 수 <input type="range" data-t min="1" max="4" step="0.05" value="3"><b></b></label>
+      <label>판단이 필요한 틱 <input type="range" data-p min="0.5" max="50" step="0.5" value="5"><b></b></label>
+      <label>응답 재사용률 <input type="range" data-reuse min="0" max="90" step="5" value="40"><b></b></label>
+    </div>
+    <div class="ctrl">
+      <label>토큰/호출 <input type="range" data-k min="200" max="4000" step="100" value="1200"><b></b></label>
+      <label>응답 시간 <input type="range" data-s min="0.3" max="10" step="0.1" value="2"><b></b></label>
+      <label>동시 호출 <input type="range" data-c min="1" max="64" step="1" value="16"><b></b></label>
+      <label>반복 실행 <input type="range" data-r min="1" max="100" step="1" value="30"><b></b></label>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>사건 기반으로 바꾸는 것만으로 호출이 '판단이 필요한 틱'의 비율만큼 줄어듭니다. 응답 재사용은 더 조심해야 합니다. 같은 상황에 같은 답을 재사용하면 에이전트들이 모두 같은 성격이 되어 버리기 때문입니다. 재사용할 때는 에이전트의 개성(페르소나)까지 키에 넣는 것이 보통입니다.</p>
+  </div>
+
+  <h3 id="s2-3"><span class="n">2.3</span>재현성: 시드가 통제하지 못하는 것</h3>
+  <div class="prose">
+    <p>0편에서 시드를 고정하면 같은 실행을 다시 만들 수 있다고 배웠습니다. LLM이 들어가면 그 약속이 깨집니다. 응답의 샘플링은 서버에서 일어나고, 서비스 쪽에서 모델이 갱신되기도 하며, 샘플링 온도(temperature)를 0으로 두어도 서버의 병렬 계산 때문에 드물게 다른 답이 나올 수 있습니다.</p>
+    <p>아래는 세계(도착 시각과 제조 시간)를 시드로 완전히 고정하고, 판단만 LLM 대역에게 맡긴 커피점을 다섯 번 돌린 결과입니다. 줄이 길수록 떠날 확률이 높아지는 손님입니다.</p>
+  </div>
+  <div class="widget" id="w-rep">
+    <h4>같은 세계, 다섯 번의 실행</h4>
+    <p class="sub">선 하나가 실행 하나이고, 시간에 따라 떠난 손님 수를 누적했습니다.</p>
+    <canvas data-w="640" data-h="220" role="img" aria-label="같은 시드로 다섯 번 실행했을 때 떠난 손님 수의 누적 곡선"></canvas>
+    <div class="ctrl">
+      <span>온도</span><div class="seg" data-temp><button type="button" data-v="0">0</button><button type="button" data-v="0.4">0.4</button><button type="button" data-v="0.8" aria-pressed="true">0.8</button><button type="button" data-v="1.4">1.4</button></div>
+      <label><input type="checkbox" data-replay> 첫 실행의 응답을 기록해 재생</label>
+      <button type="button" data-act="again">다시 다섯 번</button>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>재현성을 되찾는 가장 확실한 방법은 <b>기록하고 재생하는 것</b>입니다. 프롬프트와 응답을 모두 저장해 두면, 같은 실행을 언제든 LLM 없이 그대로 다시 만들 수 있습니다. 모델 이름과 버전, 온도, 프롬프트 원문도 함께 남깁니다. 이 기록은 결과를 보고할 때 시드와 코드 버전을 남기는 것(5편)과 같은 역할을 합니다.</p>
+  </div>
+
+  <h3 id="s2-4"><span class="n">2.4</span>출력 분석이 달라지는 점</h3>
+  <div class="prose">
+    <p>출력의 흔들림에 원천이 하나 더 생깁니다. 세계의 난수에서 오는 분산과 LLM 샘플링에서 오는 분산입니다. 5편의 신뢰구간 공식은 그대로 쓰면 되지만, 실행마다 호출 비용이 드니 필요한 반복 횟수 <span class="m">n</span> ≈ (1.96 <span class="m">S</span>/<span class="m">ε</span>)²가 곧 예산이 됩니다.</p>
+    <p>두 대안을 비교할 때 쓰는 공통 난수(5편 2.6절)도 절반만 통합니다. 세계의 난수는 두 대안에 똑같이 줄 수 있지만 LLM의 응답은 그럴 수 없습니다. 판단 결과가 비교의 대상이 아니라면 기록된 응답을 두 대안에 똑같이 재생해 변동을 줄일 수 있고, 판단 자체가 비교 대상이라면 반복을 더 늘려야 합니다.</p>
+  </div>
+
+  <h3 id="s2-5"><span class="n">2.5</span>검증과 타당성</h3>
+  <div class="prose"><p>그럴듯하게 행동한다는 것과 타당하다는 것은 다릅니다. LLM 에이전트에는 규칙 기반 에이전트에 없던 위협이 있습니다.</p></div>
+  <dl class="terms">
+    <dt>프롬프트 민감성</dt><dd>같은 상황을 다르게 적으면 결정이 달라집니다. 결과가 상황 때문인지 표현 때문인지 구분해야 합니다. 의미가 같은 프롬프트 여러 개로 돌려 결론이 유지되는지 보는 것이 8편의 민감도 분석에 해당합니다.</dd>
+    <dt>획일화</dt><dd>LLM은 평균적인 답을 내는 경향이 있어 손님 백 명이 모두 비슷한 성격이 되기 쉽습니다. 실제 사람들의 행동 분포(참을성의 퍼짐 같은)와 비교해야 합니다.</dd>
+    <dt>편향과 기억</dt><dd>학습한 글에 많이 나온 행동 쪽으로 치우칠 수 있고, 유명한 시나리오는 그 결말을 '기억'해서 답할 수도 있습니다.</dd>
+    <dt>기준 모델</dt><dd>같은 시뮬레이터에서 판단만 단순한 규칙으로 바꾼 기준 모델과 비교합니다. LLM이 그 차이만큼의 가치를 더하는지가 질문입니다.</dd>
+    <dt>사람과 비교</dt><dd>가능하면 실측 데이터나 사람을 대상으로 한 실험 결과와 행동 분포를 비교합니다. 전문가에게 기록된 판단을 보여 주고 그럴듯한지 묻는 것(8편의 대면 타당성)도 도움이 됩니다.</dd>
+  </dl>
+</section>
+
+<!-- ===================== 3 ===================== -->
+<section class="chap" id="ch3">
+  <h2><span class="n">3</span>예제와 사례 연구</h2>
+
+  <h3 id="s3-1"><span class="n">3.1</span>줄을 보고 떠나는 손님</h3>
+  <div class="prose">
+    <p>2편의 "붐비면 포기"를 세 가지 판단 방식으로 돌려 봅니다. 규칙 기반 손님은 각자 참을성(3~7명)이 있어 줄이 그 이상이면 떠납니다. LLM 대역 손님은 "지금 줄에 <span class="m">q</span>명이 서 있습니다"라는 프롬프트 A와, 같은 상황을 "앞에 <span class="m">q</span>명이나 기다리고 있습니다"라고 적은 프롬프트 B를 받습니다. 세계의 시드 30개마다 하루씩, 모두 같은 세계에서 돌립니다.</p>
+  </div>
+  <div class="widget" id="w-prompt">
+    <h4>판단 방식에 따른 하루 이탈률</h4>
+    <p class="sub">점 하나가 하루치 실행이고, 굵은 막대는 평균과 95% 신뢰구간입니다.</p>
+    <canvas data-w="640" data-h="210" role="img" aria-label="규칙 기반, 프롬프트 A, 프롬프트 B의 하루 이탈률 분포"></canvas>
+    <div class="ctrl">
+      <span>LLM 온도</span><div class="seg" data-temp><button type="button" data-v="0">0</button><button type="button" data-v="0.4">0.4</button><button type="button" data-v="0.8" aria-pressed="true">0.8</button><button type="button" data-v="1.4">1.4</button></div>
+      <button type="button" data-act="again">다시 30일씩</button>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>프롬프트 B는 상황을 하나도 바꾸지 않았는데 이탈률이 높습니다. 날마다의 흔들림이 커서 두 구간이 겹쳐 보일 수 있지만, 같은 세계의 날끼리 짝지어 차이를 보면(5편의 공통 난수) 그 차이는 분명히 0보다 큽니다. 이 모델로 "대기 공간을 늘리면 이탈이 얼마나 줄까"를 묻는다면, 답이 프롬프트의 말투에 따라 달라진다는 뜻입니다. 온도를 바꿔도 이탈률의 수준이 달라집니다. 온도 역시 판단 규칙의 일부라는 뜻이므로 결과와 함께 보고해야 합니다. 이 예에서는 날마다의 흔들림 대부분이 손님 도착의 무작위성에서 오지만, 판단의 무작위성이 큰 모델일수록 같은 정밀도에 더 많은 반복이 필요합니다. 대역의 수치는 설명을 위해 정한 것이지만, 실제 LLM에서도 표현에 따라 결정이 흔들리는 일은 흔합니다.</p>
+  </div>
+
+  <h3 id="s3-2"><span class="n">3.2</span>파이썬 에이전트 루프</h3>
+  <div class="prose">
+    <p>호출을 감싸는 정책 객체 하나에 캐시, 파싱, 실패 시 기본 행동, 기록을 모았습니다. <code>fake_llm</code> 자리에 실제 API를 부르는 함수를 넣으면 그대로 동작합니다. 판단은 손님이 도착하는 사건에서만 묻습니다.</p>
+  </div>
+  <pre class="code"><code><span class="com"># llm_agents.py : 커피점 손님의 &#x27;기다릴까, 떠날까&#x27;를 LLM에게 묻는 에이전트 루프</span>
+<span class="kw">import</span> hashlib, heapq, json, math, random, re
+
+PROMPT = (<span class="str">&quot;당신은 커피점에 막 도착한 손님입니다. 지금 줄에 {q}명이 서 있습니다. &quot;</span>
+          <span class="str">&quot;기다릴지 떠날지 정하세요. 답은 &#x27;기다림&#x27; 또는 &#x27;떠남&#x27; 한 단어로만 하세요.&quot;</span>)
+
+<span class="kw">def</span> <span class="fn">fake_llm</span>(prompt, temperature=<span class="num">0.7</span>, rng=random.Random()):
+    <span class="str">&quot;&quot;&quot;실제 API 대신 쓰는 대역. 줄이 길수록 &#x27;떠남&#x27;이 많아지고, 가끔 형식을 어긴다.
+    rng에는 일부러 시드를 주지 않았다. API의 샘플링처럼 우리가 통제할 수 없는 무작위성이다.&quot;&quot;&quot;</span>
+    q = <span class="bi">int</span>(re.search(<span class="str">r&quot;(\d+)명&quot;</span>, prompt).group(<span class="num">1</span>))
+    p_leave = <span class="num">1</span> / (<span class="num">1</span> + math.exp(-(q - <span class="num">5</span>) / <span class="bi">max</span>(temperature, <span class="num">1e-3</span>)))
+    <span class="kw">if</span> rng.random() &lt; <span class="num">0.03</span>:
+        <span class="kw">return</span> <span class="str">&quot;음... 상황에 따라 다를 것 같아요.&quot;</span>          <span class="com"># 형식을 어긴 응답</span>
+    <span class="kw">return</span> <span class="str">&quot;떠남&quot;</span> <span class="kw">if</span> rng.random() &lt; p_leave <span class="kw">else</span> <span class="str">&quot;기다림&quot;</span>
+
+<span class="kw">class</span> <span class="fn">LLMPolicy</span>:
+    <span class="str">&quot;&quot;&quot;LLM 호출을 감싼다: 캐시, 파싱, 실패 시 기본 행동, 기록.&quot;&quot;&quot;</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="bi">self</span>, call, cache=<span class="kw">None</span>):
+        <span class="bi">self</span>.call, <span class="bi">self</span>.cache, <span class="bi">self</span>.log = call, cache <span class="kw">if</span> cache <span class="kw">is</span> <span class="kw">not</span> <span class="kw">None</span> <span class="kw">else</span> {}, []
+        <span class="bi">self</span>.calls = <span class="bi">self</span>.parse_fail = <span class="num">0</span>
+    <span class="kw">def</span> <span class="fn">decide</span>(<span class="bi">self</span>, agent_id, obs):
+        prompt = PROMPT.<span class="bi">format</span>(**obs)
+        key = hashlib.sha256(<span class="str">f&quot;</span>{agent_id}<span class="str">|</span>{prompt}<span class="str">&quot;</span>.encode()).hexdigest()[:<span class="num">16</span>]
+        <span class="kw">if</span> key <span class="kw">in</span> <span class="bi">self</span>.cache:                        <span class="com"># 같은 손님, 같은 상황이면 기록된 답을 재생</span>
+            action = <span class="bi">self</span>.cache[key]
+        <span class="kw">else</span>:
+            <span class="bi">self</span>.calls += <span class="num">1</span>
+            text = <span class="bi">self</span>.call(prompt)
+            m = re.search(<span class="str">r&quot;기다림|떠남&quot;</span>, text)
+            <span class="kw">if</span> m <span class="kw">is</span> <span class="kw">None</span>:
+                <span class="bi">self</span>.parse_fail += <span class="num">1</span>
+            action = m.group(<span class="num">0</span>) <span class="kw">if</span> m <span class="kw">else</span> <span class="str">&quot;기다림&quot;</span>   <span class="com"># 형식이 틀리면 정해 둔 기본 행동</span>
+            <span class="bi">self</span>.cache[key] = action
+        <span class="bi">self</span>.log.append({<span class="str">&quot;agent&quot;</span>: agent_id, <span class="str">&quot;prompt&quot;</span>: prompt, <span class="str">&quot;action&quot;</span>: action})
+        <span class="kw">return</span> action
+
+<span class="kw">def</span> <span class="fn">run_day</span>(policy, seed, lam=<span class="num">1.2</span>, mean_svc=<span class="num">1.0</span>, minutes=<span class="num">120</span>):
+    <span class="str">&quot;&quot;&quot;세계(도착, 제조 시간)는 시드로 고정. 판단은 손님이 도착하는 사건에서만 묻는다.&quot;&quot;&quot;</span>
+    rng = random.Random(seed)
+    fel, t, i = [], <span class="num">0.0</span>, <span class="num">0</span>
+    <span class="kw">while</span> <span class="kw">True</span>:
+        t += rng.expovariate(lam)
+        <span class="kw">if</span> t &gt; minutes: <span class="kw">break</span>
+        heapq.heappush(fel, (t, <span class="str">&quot;arr&quot;</span>, i, rng.expovariate(<span class="num">1</span> / mean_svc))); i += <span class="num">1</span>
+    queue, busy, left = [], <span class="kw">False</span>, <span class="num">0</span>
+    <span class="kw">while</span> fel:
+        t, kind, cid, svc = heapq.heappop(fel)
+        <span class="kw">if</span> kind == <span class="str">&quot;arr&quot;</span>:
+            <span class="kw">if</span> policy.decide(cid, {<span class="str">&quot;q&quot;</span>: <span class="bi">len</span>(queue)}) == <span class="str">&quot;떠남&quot;</span>:
+                left += <span class="num">1</span>
+                <span class="kw">continue</span>
+            <span class="kw">if</span> busy: queue.append(svc)
+            <span class="kw">else</span>: busy = <span class="kw">True</span>; heapq.heappush(fel, (t + svc, <span class="str">&quot;dep&quot;</span>, cid, <span class="num">0</span>))
+        <span class="kw">else</span>:
+            <span class="kw">if</span> queue: heapq.heappush(fel, (t + queue.pop(<span class="num">0</span>), <span class="str">&quot;dep&quot;</span>, cid, <span class="num">0</span>))
+            <span class="kw">else</span>: busy = <span class="kw">False</span>
+    <span class="kw">return</span> left, i
+
+<span class="com"># 1) 기록 없이 같은 세계를 세 번: 결과가 매번 다르다</span>
+<span class="kw">for</span> k <span class="kw">in</span> <span class="bi">range</span>(<span class="num">3</span>):
+    pol = LLMPolicy(<span class="kw">lambda</span> p: fake_llm(p))
+    left, n = run_day(pol, seed=<span class="num">42</span>)
+    <span class="bi">print</span>(<span class="str">f&quot;</span><span class="str">실행 </span>{k + <span class="num">1</span>}<span class="str">: 손님 </span>{n}<span class="str">명 중 </span>{left}<span class="str">명 떠남, LLM 호출 </span>{pol.calls}<span class="str">번, 형식 오류 </span>{pol.parse_fail}<span class="str">번</span><span class="str">&quot;</span>)
+
+<span class="com"># 2) 첫 실행의 응답을 저장하고 재생: 결과가 똑같다</span>
+first = LLMPolicy(<span class="kw">lambda</span> p: fake_llm(p))
+a = run_day(first, seed=<span class="num">42</span>)
+json.dump(first.cache, <span class="bi">open</span>(<span class="str">&quot;responses.json&quot;</span>, <span class="str">&quot;w&quot;</span>, encoding=<span class="str">&quot;utf-8&quot;</span>), ensure_ascii=<span class="kw">False</span>)
+replay = LLMPolicy(<span class="kw">lambda</span> p: fake_llm(p), cache=json.load(<span class="bi">open</span>(<span class="str">&quot;responses.json&quot;</span>, encoding=<span class="str">&quot;utf-8&quot;</span>)))
+b = run_day(replay, seed=<span class="num">42</span>)
+<span class="bi">print</span>(<span class="str">f&quot;</span><span class="str">기록한 실행 </span>{a[<span class="num">0</span>]}<span class="str">명 떠남, 재생한 실행 </span>{b[<span class="num">0</span>]}<span class="str">명 떠남, 재생 중 새 호출 </span>{replay.calls}<span class="str">번</span><span class="str">&quot;</span>)</code></pre>
+  <pre class="code"><code>실행 1: 손님 127명 중 21명 떠남, LLM 호출 127번, 형식 오류 5번
+실행 2: 손님 127명 중 19명 떠남, LLM 호출 127번, 형식 오류 6번
+실행 3: 손님 127명 중 19명 떠남, LLM 호출 127번, 형식 오류 5번
+기록한 실행 16명 떠남, 재생한 실행 16명 떠남, 재생 중 새 호출 0번</code></pre>
+  <p class="code-cap">출력의 한 예입니다. 대역의 난수에 일부러 시드를 주지 않았으므로 돌릴 때마다 위 세 줄은 달라지고, 마지막 줄의 두 값은 언제나 같습니다.</p>
+
+  <div class="case">
+    <h3 id="s3-3"><span class="n">3.3</span>워게임과 지휘결심 <span class="lvl">사례</span></h3>
+    <div class="prose">
+      <p>LLM을 지휘관이나 참모 역할로 넣은 워게임 연구가 빠르게 늘고 있습니다. Rivera 등의 연구(FAccT 2024)는 국가를 대표하는 에이전트들을 여러 LLM으로 움직이는 외교·군사 워게임을 만들고 행동을 점수로 평가했습니다. 연구진은 조사한 다섯 모델 모두에서 긴장을 고조시키는 경향과 예측하기 어려운 급격한 고조가 나타났고, 군비 경쟁 같은 흐름과 드물게는 핵무기 사용까지 관찰되었다고 보고했습니다.</p>
+      <p>이 연구에서 시뮬레이션을 공부하는 사람이 가져갈 교훈은 둘입니다. 첫째, 이런 결과는 "그 모델과 그 프롬프트가 이 시나리오에서 어떻게 행동하는가"에 대한 실험이지, 사람 지휘관이 어떻게 행동할지에 대한 예측이 아닙니다. 둘째, 그렇기 때문에 반복 실행, 프롬프트 변형, 기준 모델 비교, 전문가 검토가 결과 해석의 일부가 되어야 합니다.</p>
+      <p>구조로 보면 2.1절의 원칙이 그대로 적용됩니다. 지형, 이동, 교전 판정, 시간은 규칙과 물리에 기반한 시뮬레이터(2-2편의 부품들)가 맡고, LLM은 관찰 메시지를 받아 명령 메시지를 내놓는 '방책 선택' 부품 하나로 들어갑니다. 그러면 같은 시나리오를 사람 지휘관, 규칙 기반 지휘관, LLM 지휘관으로 바꿔 가며 같은 조건에서 비교할 수 있습니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 4 ===================== -->
+<section class="chap" id="ch4">
+  <h2><span class="n">4</span>연결과 정리</h2>
+  <h3 id="s4-1"><span class="n">4.1</span>앞뒤 편과의 연결</h3>
+  <div class="link-note"><p><span class="k">3편에서</span>규칙 기반 에이전트는 이 편의 기준 모델입니다. LLM 에이전트를 만들기 전에 같은 시뮬레이터에서 규칙 기반 버전부터 돌려 두세요.</p></div>
+  <div class="link-note"><p><span class="k">2-2편에서</span>LLM 호출을 원자 모델의 δ<sub>ext</sub> 안에 두면, 판단 부품만 갈아 끼우며 비교할 수 있습니다.</p></div>
+  <div class="link-note"><p><span class="k">4편으로</span>기록한 프롬프트와 응답은 그 자체로 데이터입니다. 행동의 분포를 추정하면, 다음에는 LLM 대신 그 분포에서 뽑는 값싼 대리 모델을 쓸 수도 있습니다.</p></div>
+  <div class="link-note"><p><span class="k">5편과 8편으로</span>반복 횟수는 곧 예산이고, 프롬프트를 바꿔 보는 것은 민감도 분석입니다.</p></div>
+
+  <h3 id="s4-2"><span class="n">4.2</span>요약</h3>
+  <dl class="terms">
+    <dt>원칙</dt><dd>LLM은 판단만. 시간, 물리, 자원, 결과 판정은 시뮬레이터가.</dd>
+    <dt>루프</dt><dd>관찰 → 프롬프트(행동 목록, 형식) → 호출 → 파싱과 기본 행동 → 결과 → 기억.</dd>
+    <dt>비용</dt><dd>매 틱 대신 사건 기반으로 묻기. 재사용은 개성을 키에 넣어서.</dd>
+    <dt>재현성</dt><dd>시드로는 안 된다. 프롬프트와 응답, 모델 버전, 온도를 기록하고 재생.</dd>
+    <dt>출력 분석</dt><dd>분산의 원천이 둘. 반복 횟수가 예산. 공통 난수는 세계 쪽만.</dd>
+    <dt>타당성</dt><dd>프롬프트 민감성, 획일화, 편향. 기준 모델, 사람 데이터, 전문가와 비교.</dd>
+  </dl>
+
+  <h3 id="s4-3"><span class="n">4.3</span>연습 문제</h3>
+  <div class="ex">
+    <details><summary>1. 에이전트 500명이 1,000틱 동안 매 틱 LLM에게 묻는 모델을, 판단이 필요한 틱이 평균 2%뿐이라는 사실을 이용해 바꾸면 호출은 몇 번이 될까요?</summary><div><p>매 틱이면 500 × 1,000 = 50만 번, 사건 기반이면 2%인 1만 번입니다. 응답 시간이 2초이고 동시에 16개를 보낼 수 있다면 실행 한 번이 약 17시간에서 약 21분으로 줄어듭니다.</p></div></details>
+    <details><summary>2. 온도 0으로 두었는데도 같은 실험의 결과가 가끔 다릅니다. 무엇을 의심하고, 어떻게 해야 할까요?</summary><div><p>서버 쪽 병렬 계산의 비결정성이나 모델 갱신을 의심할 수 있습니다. 어느 쪽이든 내가 통제할 수 없으므로, 프롬프트와 응답을 모두 기록하고 분석과 재현은 기록을 재생해서 합니다. 모델 이름과 버전도 함께 남깁니다.</p></div></details>
+    <details><summary>3. 3.1절에서 대기 공간을 늘리는 대안의 효과를 LLM 손님으로 평가하려 합니다. 프롬프트 민감성에 대해 무엇을 해야 할까요?</summary><div><p>의미가 같은 프롬프트를 여러 개 준비해 각각으로 두 대안을 비교하고, 대안의 효과(차이)가 프롬프트에 상관없이 같은 방향인지 확인합니다. 이탈률의 수준은 프롬프트마다 달라도, 차이의 방향과 크기가 유지되면 결론을 더 믿을 수 있습니다. 규칙 기반 기준 모델의 결과도 함께 보고합니다.</p></div></details>
+    <details><summary>4. 교전 판정까지 LLM에게 "그래서 누가 이겼는지 말해 줘"라고 맡기면 어떤 문제가 생길까요?</summary><div><p>세계의 규칙이 실행마다, 표현마다 달라집니다. 같은 사격이 어떤 때는 명중하고 어떤 때는 빗나가는데 그 이유를 검증할 수 없고, 화력과 거리 같은 모델의 입력을 바꿔도 결과가 일관되게 반응하지 않습니다. 판정은 검증 가능한 규칙(시뮬레이터)에 두어야 합니다.</p></div></details>
+  </div>
+</section>
+
+<nav class="pager" aria-label="이전 다음 편">
+  <a href="ch3_ABM.html"><span>이전 편</span><b>3. 에이전트 기반 모델링</b></a>
+  <a class="next" href="ch4_input-modeling.html"><span>다음 편</span><b>4. 입력 모델링</b></a>
+</nav>
+<footer><a href="https://sites.google.com/view/knunextcom">Next-generation Computing Systems Lab</a>, 경북대학교 컴퓨터학부</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ===== 공통 도구: 색, 캔버스, 난수, 통계, 수식 탐색기 ===== */
+var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+var COL = {};
+function readColors(){
+  var s = getComputedStyle(document.documentElement);
+  ["ink","muted","line","soft","panel","bg","acc","c1","c2","c3","miss","t1","t2","t3","t4","t5"].forEach(function(k){ COL[k] = s.getPropertyValue("--"+k).trim(); });
+}
+readColors();
+function rgba(hex, a){
+  var h = hex.replace("#",""); if(h.length===3) h = h.replace(/(.)/g,"$1$1");
+  var n = parseInt(h,16); return "rgba("+(n>>16&255)+","+(n>>8&255)+","+(n&255)+","+a+")";
+}
+function F(size, weight){ return (weight||400)+" "+size+'px "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif'; }
+function txt(c, s, x, y, o){
+  o = o || {}; c.font = o.font || F(o.size||11, o.weight); c.fillStyle = o.color || COL.muted;
+  c.textAlign = o.align || "left"; c.textBaseline = o.base || "alphabetic"; c.fillText(s, x, y);
+  c.textAlign = "left"; c.textBaseline = "alphabetic";
+}
+function line(c, x0, y0, x1, y1, col, w, dash){
+  c.strokeStyle = col; c.lineWidth = w||1; c.setLineDash(dash||[]);
+  c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.setLineDash([]); c.lineWidth = 1;
+}
+function dot(c, x, y, r, col){ c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+function fmt(v, d){ if(!isFinite(v)) return "∞"; return (+v).toFixed(d===undefined?2:d); }
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+var CANVASES = [];
+function setup(rootOrCanvas, draw){
+  var cv = rootOrCanvas.tagName === "CANVAS" ? rootOrCanvas : rootOrCanvas.querySelector("canvas");
+  var c = cv.getContext("2d"), W = +cv.dataset.w, H = +cv.dataset.h;
+  cv.style.aspectRatio = W + " / " + H;
+  var o = {cv:cv, c:c, W:W, H:H};
+  o.redraw = function(){ c.clearRect(0,0,W,H); draw(c, W, H); };
+  o.fit = function(){
+    var w = cv.clientWidth || W, d = window.devicePixelRatio || 1;
+    cv.width = Math.round(w*d); cv.height = Math.round(w*H/W*d);
+    c.setTransform(cv.width/W, 0, 0, cv.height/H, 0, 0); o.redraw();
+  };
+  o.toLocal = function(ev){ var r = cv.getBoundingClientRect(); return {x:(ev.clientX-r.left)/r.width*W, y:(ev.clientY-r.top)/r.height*H}; };
+  new ResizeObserver(o.fit).observe(cv);
+  CANVASES.push(o);
+  return o;
+}
+function seg(root, sel, onPick){
+  var g = typeof sel === "string" ? root.querySelector(sel) : sel;
+  g.addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    g.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x===b ? "true" : "false"); });
+    onPick(b.dataset.v, b);
+  });
+}
+function bindRange(root, sel, onChange, fmtFn){
+  var inp = root.querySelector(sel), out = inp.parentElement.querySelector("b,output");
+  function u(){ if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value; onChange(+inp.value); }
+  inp.addEventListener("input", u); if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value;
+  return inp;
+}
+
+/* 축과 눈금 */
+function scale(box, xr, yr){
+  return {box:box, xr:xr, yr:yr,
+    X:function(v){ return box[0] + (v-xr[0])/(xr[1]-xr[0])*(box[2]-box[0]); },
+    Y:function(v){ return box[3] - (v-yr[0])/(yr[1]-yr[0])*(box[3]-box[1]); }};
+}
+function axes(c, s, o){
+  o = o || {}; var b = s.box;
+  (o.yt||[]).forEach(function(v){ var y = s.Y(v); line(c, b[0], y+.5, b[2], y+.5, COL.soft); txt(c, o.fy ? o.fy(v) : v, b[0]-6, y+4, {align:"right", size:10}); });
+  line(c, b[0], b[3]+.5, b[2], b[3]+.5, COL.line);
+  line(c, b[0]+.5, b[1], b[0]+.5, b[3], COL.line);
+  (o.xt||[]).forEach(function(v){ var x = s.X(v); line(c, x+.5, b[3], x+.5, b[3]+4, COL.line); txt(c, o.fx ? o.fx(v) : v, x, b[3]+15, {align:"center", size:10}); });
+  if(o.xl) txt(c, o.xl, b[2], b[3]+28, {align:"right", size:10});
+  if(o.yl) txt(c, o.yl, b[0], b[1]-6, {size:10});
+}
+function path(c, s, pts, col, w, dash){
+  var bx = s.box; c.save(); c.beginPath(); c.rect(bx[0]-1, bx[1]-3, bx[2]-bx[0]+2, bx[3]-bx[1]+4); c.clip();
+  c.strokeStyle = col; c.lineWidth = w||1.6; c.setLineDash(dash||[]); c.beginPath();
+  var started = false;
+  pts.forEach(function(p){ if(p == null || !isFinite(p[1])){ started = false; return; }
+    var x = s.X(p[0]), y = clamp(s.Y(p[1]), s.box[1]-2, s.box[3]+2); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; });
+  c.stroke(); c.setLineDash([]); c.lineWidth = 1; c.restore();
+}
+function ticks(a, b, n){
+  var span = b - a, step = Math.pow(10, Math.floor(Math.log10(span/n))), err = span/n/step;
+  step *= err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1;
+  var out = [], v = Math.ceil(a/step)*step;
+  for(; v <= b + 1e-9; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+
+/* 난수: 재현 가능한 생성기와 분포 */
+function mulberry(seed){ var a = seed >>> 0; return function(){ a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function U(r){ return (r || Math.random)(); }
+function expo(mean, r){ return -mean*Math.log(1-U(r)); }
+function normal(r){ var u = 1-U(r), v = U(r); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gammaRV(k, theta, r){
+  if(k < 1){ return gammaRV(k+1, theta, r)*Math.pow(U(r), 1/k); }
+  var d = k - 1/3, cc = 1/Math.sqrt(9*d);
+  while(true){ var x, v; do { x = normal(r); v = 1 + cc*x; } while(v <= 0);
+    v = v*v*v; var u = U(r);
+    if(u < 1 - .0331*x*x*x*x || Math.log(u) < .5*x*x + d*(1 - v + Math.log(v))) return d*v*theta; }
+}
+function lognormRV(mu, s, r){ return Math.exp(mu + s*normal(r)); }
+function poissonRV(lam, r){ var L = Math.exp(-lam), k = 0, p = 1; do { k++; p *= U(r); } while(p > L); return k-1; }
+
+/* 통계 */
+function mean(a){ var s = 0; for(var i=0;i<a.length;i++) s += a[i]; return s/a.length; }
+function sd(a){ var m = mean(a), s = 0; for(var i=0;i<a.length;i++) s += (a[i]-m)*(a[i]-m); return Math.sqrt(s/(a.length-1)); }
+function quantile(sorted, p){ var i = (sorted.length-1)*p, lo = Math.floor(i), hi = Math.ceil(i); return sorted[lo] + (sorted[hi]-sorted[lo])*(i-lo); }
+function normInv(p){ // Acklam 근사
+  var a=[-39.6968302866538,220.946098424521,-275.928510446969,138.357751867269,-30.6647980661472,2.50662827745924],
+      b=[-54.4760987982241,161.585836858041,-155.698979859887,66.8013118877197,-13.2806815528857],
+      cc=[-.00778489400243029,-.322396458041136,-2.40075827716184,-2.54973253934373,4.37466414146497,2.93816398269878],
+      d=[.00778469570904146,.32246712907004,2.445134137143,3.75440866190742], q, r;
+  if(p < .02425){ q = Math.sqrt(-2*Math.log(p)); return (((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if(p > .97575){ q = Math.sqrt(-2*Math.log(1-p)); return -(((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  q = p - .5; r = q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+function normCdf(x){ var t = 1/(1+.2316419*Math.abs(x)), y = .3989423*Math.exp(-x*x/2)*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return x > 0 ? 1-y : y; }
+function tcrit(df, conf){ // 양측 신뢰수준 conf의 t 임계값 (Cornish-Fisher 근사)
+  var z = normInv(1 - (1-(conf||.95))/2), z3 = z*z*z, z5 = z3*z*z, z7 = z5*z*z;
+  return z + (z3+z)/(4*df) + (5*z5+16*z3+3*z)/(96*df*df) + (3*z7+19*z5+17*z3-15*z)/(384*df*df*df);
+}
+
+/* 수식 탐색기: 항을 누르면 강조하고 설명을 보여 준다. EQ[id](값) 이 실시간 계산을 맡는다. */
+var EQ = {}, EQRUN = {};
+function refreshEq(id){ if(EQRUN[id]) EQRUN[id](); }
+function initEqx(){
+  document.querySelectorAll(".eqx").forEach(function(box){
+    var detail = box.querySelector(".eq-detail"), btns = box.querySelectorAll(".eq-terms button");
+    function pick(t){
+      var same = box.dataset.on === t;
+      if(same || !t){ delete box.dataset.on; } else box.dataset.on = t;
+      box.querySelectorAll(".eq-big .t").forEach(function(s){ s.classList.toggle("on", !same && s.dataset.t === t); });
+      btns.forEach(function(b){ b.setAttribute("aria-pressed", !same && b.dataset.t === t ? "true" : "false"); });
+      if(detail){ var src = box.querySelector('template[data-t="'+t+'"]'); detail.innerHTML = !same && src ? src.innerHTML : ""; }
+    }
+    btns.forEach(function(b){
+      var t = box.querySelector('.eq-big .t[data-t="'+b.dataset.t+'"]'); if(t) b.dataset.c = t.dataset.c;
+      b.style.setProperty("--tc", "var(--t"+(b.dataset.c||1)+")");
+      b.addEventListener("click", function(){ pick(b.dataset.t); });
+    });
+    box.querySelectorAll(".eq-big .t").forEach(function(s){ s.tabIndex = 0; s.setAttribute("role","button");
+      s.addEventListener("click", function(){ pick(s.dataset.t); });
+      s.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pick(s.dataset.t); } }); });
+    var fn = EQ[box.id];
+    if(fn){
+      var vars = box.querySelectorAll("[data-var]");
+      var run = function(){
+        var v = {}; vars.forEach(function(i){ v[i.dataset.var] = i.type === "checkbox" ? i.checked : +i.value;
+          var o = i.parentElement.querySelector("b"); if(o) o.textContent = i.dataset.fmt ? fmt(+i.value, +i.dataset.fmt) : i.value; });
+        var res = fn(v, box) || {};
+        Object.keys(res).forEach(function(k){ box.querySelectorAll('[data-o="'+k+'"]').forEach(function(el){ el.innerHTML = res[k]; }); });
+      };
+      vars.forEach(function(i){ i.addEventListener("input", run); });
+      EQRUN[box.id] = run; run();
+    }
+  });
+}
+function onTheme(){ readColors(); CANVASES.forEach(function(o){ o.redraw(); }); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onTheme);
+new MutationObserver(onTheme).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+
+/* 감마 함수와 분포 함수 */
+function lgamma(x){
+  var g = 7, cf = [0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(x < .5) return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*x))) - lgamma(1-x);
+  x -= 1; var a = cf[0], t = x + g + .5;
+  for(var i=1;i<g+2;i++) a += cf[i]/(x+i);
+  return .5*Math.log(2*Math.PI) + (x+.5)*Math.log(t) - t + Math.log(a);
+}
+function gammaP(a, x){ // 정규화된 하부 불완전 감마 함수
+  if(x <= 0) return 0;
+  var gln = lgamma(a);
+  if(x < a + 1){ var ap = a, sum = 1/a, del = sum; for(var n=0;n<300;n++){ ap++; del *= x/ap; sum += del; if(Math.abs(del) < Math.abs(sum)*1e-12) break; } return sum*Math.exp(-x + a*Math.log(x) - gln); }
+  var b = x + 1 - a, c = 1e300, d = 1/b, h = d;
+  for(var i=1;i<300;i++){ var an = -i*(i-a); b += 2; d = an*d + b; if(Math.abs(d) < 1e-300) d = 1e-300; c = b + an/c; if(Math.abs(c) < 1e-300) c = 1e-300; d = 1/d; var del2 = d*c; h *= del2; if(Math.abs(del2-1) < 1e-12) break; }
+  return 1 - Math.exp(-x + a*Math.log(x) - gln)*h;
+}
+function gammaPdf(x, k, th){ if(x <= 0) return (k < 1 && x === 0) ? Infinity : 0; return Math.exp((k-1)*Math.log(x) - x/th - lgamma(k) - k*Math.log(th)); }
+function chi2crit(df, z){ z = z || 1.6449; var a = 2/(9*df); return df*Math.pow(1 - a + z*Math.sqrt(a), 3); }
+function seededSample(seed, n, gen){ var r = mulberry(seed), out = []; for(var i=0;i<n;i++) out.push(gen(r)); return out; }
+
+
+/* ---------- 공통: 커피점 하루와 판단 방식 ---------- */
+function world(seed, lam){ var r = mulberry(seed), t = 0, cs = []; while(true){ t += expo(1/lam, r); if(t > 120) break; cs.push({t:t, s:expo(1, r), pat:3 + Math.floor(r()*5)}); } return cs; }
+function runDay(cs, decide){
+  var lastDep = 0, starts = [], deps = [], left = 0, times = [];
+  for(var i=0;i<cs.length;i++){
+    var c = cs[i], q = 0;
+    for(var j=starts.length-1;j>=0 && deps[j] > c.t;j--) if(starts[j] > c.t) q++;
+    if(decide(i, q, c)){ left++; times.push(c.t); continue; }
+    var st = Math.max(c.t, lastDep); lastDep = st + c.s; starts.push(st); deps.push(lastDep);
+  }
+  return {left:left, n:cs.length, times:times};
+}
+function llmLeave(q, prompt, temp, rnd){
+  var z = (prompt === "B" ? 1.5 : 1)*q - 5;
+  if(temp === 0){ var lv = z > 0; if(rnd() < 0.01) lv = !lv; return lv; }   // 온도 0이어도 드물게 뒤집힌다 (서버 쪽 비결정성 흉내)
+  return rnd() < 1/(1 + Math.exp(-z/temp));
+}
+var LAM = 1.2;
+function ciOf(x){ var n = x.length, m = mean(x), s = n > 1 ? sd(x) : 0, h = n > 1 ? tcrit(n-1)*s/Math.sqrt(n) : NaN; return {m:m, s:s, h:h, n:n}; }
+function nice(x){ var e = Math.pow(10, Math.floor(Math.log10(x)) - 1); return Math.round(x/e)*e; }
+
+/* ---------- 2.2 호출 수 어림 ---------- */
+(function(){
+  var root = document.getElementById("w-cost"), out = root.querySelector("[data-out]"), v = {};
+  function big(x){ if(x >= 1e12) return fmt(x/1e12, x < 1e13 ? 1 : 0) + "조"; if(x >= 1e8) return fmt(x/1e8, x < 1e9 ? 1 : 0) + "억"; if(x >= 1e4) return Math.round(x/1e4).toLocaleString() + "만"; return Math.round(x).toLocaleString(); }
+  function dur(s){ return s < 90 ? fmt(s, 0) + "초" : s < 5400 ? fmt(s/60, 0) + "분" : s < 172800 ? fmt(s/3600, 1) + "시간" : fmt(s/86400, 1) + "일"; }
+  function calc(){
+    var N = nice(Math.pow(10, v.n)), T = nice(Math.pow(10, v.t)), p = v.p/100, h = v.h/100;
+    return {N:N, T:T, rows:[["매 틱 모든 에이전트", N*T], ["판단이 필요할 때만", N*T*p], ["판단할 때만 + 응답 재사용", N*T*p*(1-h)]]};
+  }
+  var view = setup(root, function(c, W, H){
+    var r = calc(), mx = Math.max(2, Math.ceil(Math.log10(r.rows[0][1]) + .3)), s = scale([170, 10, W-60, H-28], [0, mx], [0, 3]);
+    for(var e=0;e<=mx;e++){ var x = s.X(e); line(c, x+.5, s.box[1], x+.5, s.box[3], COL.soft); txt(c, e === 0 ? "1" : "10" + "⁰¹²³⁴⁵⁶⁷⁸⁹¹⁰".charAt(e) , x, s.box[3]+14, {align:"center", size:10}); }
+    txt(c, "실행 한 번당 호출 수 (로그 눈금)", W-60, s.box[3]+26, {align:"right", size:10});
+    var cols = [COL.miss, COL.c2, COL.acc];
+    r.rows.forEach(function(row, i){
+      var y0 = s.Y(3 - i) + 8, y1 = s.Y(2 - i) - 8, w = s.X(Math.log10(Math.max(1, row[1]))) - s.X(0);
+      txt(c, row[0], 8, (y0+y1)/2 + 4, {size:12, weight:500, color:COL.ink});
+      c.fillStyle = cols[i]; c.fillRect(s.X(0), y0, Math.max(2, w), y1 - y0);
+      txt(c, big(row[1]) + "번", s.X(0) + w + 6, (y0+y1)/2 + 4, {size:11, color:COL.ink});
+    });
+  });
+  function report(){
+    var r = calc(), k = v.k, rows = r.rows.map(function(row){ var calls = row[1]*v.r; return {calls:calls, tok:calls*k, time:calls*v.s/v.c}; });
+    out.innerHTML = "에이전트 " + r.N.toLocaleString() + "명 × " + r.T.toLocaleString() + "틱, 반복 " + v.r + "번 기준. 매 틱이면 호출 <b>" + big(rows[0].calls) + " 번</b>, 토큰 " + big(rows[0].tok) + " 개, 약 <b>" + dur(rows[0].time) + "</b>. " +
+      "판단할 때만 물으면 <b>" + big(rows[1].calls) + " 번</b>, 약 " + dur(rows[1].time) + ". 응답까지 재사용하면 <b>" + big(rows[2].calls) + " 번</b>, 약 <b>" + dur(rows[2].time) + "</b>. 같은 판단을 규칙으로 하면 사실상 0초입니다.";
+  }
+  function bind(sel, key, f){ bindRange(root, sel, function(x){ v[key] = x; view.redraw(); report(); }, f); v[key] = +root.querySelector(sel).value; }
+  bind("[data-n]", "n", function(x){ return nice(Math.pow(10, x)).toLocaleString() + "명"; });
+  bind("[data-t]", "t", function(x){ return nice(Math.pow(10, x)).toLocaleString(); });
+  bind("[data-p]", "p", function(x){ return x + "%"; });
+  bind("[data-reuse]", "h", function(x){ return x + "%"; });
+  bind("[data-k]", "k", function(x){ return x; });
+  bind("[data-s]", "s", function(x){ return fmt(x, 1) + "초"; });
+  bind("[data-c]", "c", function(x){ return x; });
+  bind("[data-r]", "r", function(x){ return x + "번"; });
+  view.redraw(); report();
+})();
+
+/* ---------- 2.3 같은 세계, 다섯 번 ---------- */
+(function(){
+  var root = document.getElementById("w-rep"), out = root.querySelector("[data-out]"), temp = 0.8, replay = root.querySelector("[data-replay]"), runs = [];
+  var cs = world(42, LAM);
+  var view = setup(root, function(c, W, H){
+    var mx = 4; runs.forEach(function(r){ mx = Math.max(mx, r.left); });
+    var s = scale([44, 12, W-14, H-30], [0, 120], [0, Math.ceil(mx*1.15)]);
+    axes(c, s, {xt:[0, 20, 40, 60, 80, 100, 120], yt:ticks(0, Math.ceil(mx*1.15), 5), xl:"시각 (분)", yl:"떠난 손님 (누적)"});
+    var cols = [COL.t1, COL.t2, COL.t3, COL.t4, COL.t5];
+    runs.forEach(function(r, k){ var pts = [[0, 0]], n = 0; r.times.forEach(function(t){ pts.push([t, n]); n++; pts.push([t, n]); }); pts.push([120, n]); path(c, s, pts, cols[k], 1.8); });
+  });
+  function go(){
+    var cache = {}; runs = [];
+    for(var k=0;k<5;k++){
+      var rnd = Math.random, useCache = replay.checked && k > 0;
+      runs.push(runDay(cs, function(i, q){
+        var key = i + "|" + q;
+        if(useCache && key in cache) return cache[key];
+        var a = llmLeave(q, "A", temp, rnd); if(k === 0) cache[key] = a; return a;
+      }));
+    }
+    view.redraw();
+    var vals = runs.map(function(r){ return r.left; }), mn = Math.min.apply(null, vals), mxv = Math.max.apply(null, vals);
+    out.innerHTML = "손님 " + cs.length + "명, 다섯 번 모두 같은 도착 시각과 제조 시간. 떠난 손님: <b>" + vals.join(", ") + "명</b>. " +
+      (mn === mxv ? "<span class='good'>다섯 번이 똑같습니다.</span>" + (replay.checked ? " 첫 실행의 응답을 그대로 재생했기 때문입니다." : " 이번에는 우연히 같았지만 같다는 보장은 없습니다.") : "<span class='bad'>시드가 같아도 실행마다 다릅니다</span> (최소 " + mn + ", 최대 " + mxv + ").");
+  }
+  seg(root, "[data-temp]", function(x){ temp = +x; go(); });
+  replay.addEventListener("change", go);
+  root.querySelector('[data-act="again"]').onclick = go;
+  go();
+})();
+
+/* ---------- 3.1 판단 방식과 프롬프트 ---------- */
+(function(){
+  var root = document.getElementById("w-prompt"), out = root.querySelector("[data-out]"), temp = 0.8, res = null;
+  var ROWS = [["규칙 (참을성 3~7명)", "rule", COL.ink], ["LLM 대역, 프롬프트 A", "A", COL.t1], ["LLM 대역, 프롬프트 B", "B", COL.t2]];
+  var view = setup(root, function(c, W, H){
+    if(!res) return;
+    var all = []; res.forEach(function(r){ all = all.concat(r); });
+    var mx = Math.max(40, Math.ceil(Math.max.apply(null, all)/10)*10 + 5), s = scale([170, 8, W-16, H-30], [0, mx], [0, 3]);
+    axes(c, s, {xt:ticks(0, mx, 8), xl:"하루 이탈률 (%)"});
+    ROWS.forEach(function(row, i){
+      var y = s.Y(2.5 - i), col = row[2] === COL.ink ? COL.muted : row[2];
+      txt(c, row[0], 8, y + 4, {size:12, weight:500, color:COL.ink});
+      res[i].forEach(function(v, k){ dot(c, s.X(v), y - 9 + (k % 5)*1.6, 2.6, rgba(col.charAt(0) === "#" ? col : "#888888", .55)); });
+      var r = ciOf(res[i]); line(c, s.X(r.m - r.h), y + 10, s.X(r.m + r.h), y + 10, row[2], 4); dot(c, s.X(r.m), y + 10, 4, row[2]);
+    });
+  });
+  function go(){
+    res = ROWS.map(function(){ return []; });
+    for(var seed=1;seed<=30;seed++){
+      var cs = world(seed, LAM);                 // 세 방식 모두 같은 세계 (공통 난수)
+      ROWS.forEach(function(row, k){ var r = runDay(cs, function(i, q, cu){ return row[1] === "rule" ? q >= cu.pat : llmLeave(q, row[1], temp, Math.random); }); res[k].push(100*r.left/r.n); });
+    }
+    view.redraw();
+    var c = res.map(ciOf), d = ciOf(res[2].map(function(v, k){ return v - res[1][k]; }));
+    out.innerHTML = "평균 이탈률: 규칙 <b>" + fmt(c[0].m, 1) + "% ± " + fmt(c[0].h, 1) + "</b>, 프롬프트 A <b>" + fmt(c[1].m, 1) + "% ± " + fmt(c[1].h, 1) + "</b>, 프롬프트 B <b>" + fmt(c[2].m, 1) + "% ± " + fmt(c[2].h, 1) + "</b>. " +
+      "같은 세계끼리 짝지어 보면 B − A = <b>" + fmt(d.m, 1) + " ± " + fmt(d.h, 1) + "%포인트</b>" + (d.m - d.h > 0 ? ", 분명히 0보다 큽니다." : ".") + " 상황은 같고 표현만 다릅니다.";
+  }
+  seg(root, "[data-temp]", function(x){ temp = +x; go(); });
+  root.querySelector('[data-act="again"]').onclick = go;
+  go();
+})();
+
+initEqx();
+})();
+</script>
+</body>
+</html>

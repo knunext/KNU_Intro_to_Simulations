@@ -1,0 +1,1003 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>응용 사례: 수강신청 서버</title>
+<!--
+  모델링과 시뮬레이션 학습 자료 — 응용 사례 A2: 수강신청 서버의 재시도 폭주
+  파일명: case2_course-registration.html. 강조색은 주로 쓰는 기법(1편 큐잉)의 색입니다.
+  데모는 외부 라이브러리 없이 맨 아래 <script>에서 동작합니다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F8; --panel:#FFFFFF; --ink:#17202E; --muted:#5A6577; --line:#D5DBE3; --soft:#E8ECF1;
+  --acc:#3557C9; --c1:#3557C9; --c2:#C27C00; --c3:#0E7C6B; --miss:#C8372D;
+  --t1:#2E62D0; --t2:#C2410C; --t3:#0E8A6B; --t4:#8B3FD9; --t5:#B91C5C;
+  --k-kw:#8A3FA8; --k-fn:#2457C5; --k-str:#2E7D32; --k-num:#B5560F; --k-com:#7A8494; --k-bi:#0F7C86;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --math:"STIX Two Text","Times New Roman",Times,serif;
+  --code:"D2Coding","Consolas","SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+    --acc:#7690F2; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+    --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+    --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+  --acc:#7690F2; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+  --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+  --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+  color-scheme:dark;
+}
+:root{box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 16px); scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+body{margin:0; background:var(--bg); color:var(--ink); font:400 17px/1.75 var(--sans); -webkit-font-smoothing:antialiased; word-break:keep-all; overflow-wrap:break-word}
+a{color:var(--acc)}
+.wrap{max-width:980px; margin:0 auto; padding:40px 24px 48px}
+.prose{max-width:42em}
+p{margin:0 0 1em}
+code{font-family:var(--code); font-size:.9em; background:var(--soft); padding:1px 5px; border-radius:4px}
+
+/* 머리말 */
+.back{font-size:15px; margin:0 0 36px}
+.back a{color:var(--muted)}
+.series{margin:0 0 10px; color:var(--muted); font-size:15px}
+h1{margin:0; font-weight:700; font-size:clamp(34px,6vw,54px); line-height:1.12; letter-spacing:-0.02em}
+h1 .n{font-family:var(--math); font-weight:500; color:var(--acc); margin-right:.2em}
+.lead{margin:18px 0 0; color:var(--muted); max-width:38em; font-size:18px}
+.goals{display:grid; grid-template-columns:1.4fr 1fr; gap:24px; margin:32px 0 0}
+.goals > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px}
+.goals h2{font-size:15px; margin:0 0 6px}
+.goals ul{margin:0; padding-left:1.1em; font-size:15px; line-height:1.65}
+.goals .pre a{display:inline-block; margin:2px 6px 2px 0; font-size:14px; text-decoration:none; padding:2px 9px; border-radius:5px; background:var(--soft); color:var(--ink)}
+.goals .pre a:hover{background:var(--acc); color:var(--panel)}
+.goals .pre p{font-size:14.5px; color:var(--muted); margin:6px 0 0}
+.toc{margin:28px 0 0; display:grid; grid-template-columns:repeat(4,1fr); gap:0 24px; border-top:2px solid var(--ink); padding-top:16px}
+.toc h2{font-size:15px; margin:0 0 6px}
+.toc h2 a{color:var(--ink); text-decoration:none}
+.toc ol{list-style:none; margin:0; padding:0; font-size:14px; line-height:1.65}
+.toc ol a{color:var(--muted); text-decoration:none}
+.toc a:hover{color:var(--acc); text-decoration:underline}
+
+/* 장, 절 */
+.chap{margin-top:88px}
+.chap > h2{display:flex; align-items:baseline; gap:16px; font-size:clamp(28px,4.4vw,38px); line-height:1.2; margin:0 0 12px; letter-spacing:-0.01em}
+.chap > h2 .n{font:500 1.5em/1 var(--math); color:var(--acc)}
+.chap > .intro{color:var(--muted); font-size:18px; max-width:40em; margin-bottom:8px}
+h3{font-size:22px; line-height:1.35; margin:56px 0 12px}
+h3 .n{font:500 1em var(--math); color:var(--acc); margin-right:10px}
+h4{font-size:17px; margin:24px 0 6px}
+.m{font-family:var(--math); font-style:italic; font-size:1.08em; white-space:nowrap}
+.mr{font-family:var(--math); font-size:1.08em; white-space:nowrap}
+.note{max-width:42em; margin:20px 0; padding:14px 18px; border-radius:8px; background:var(--soft); font-size:15.5px; line-height:1.7}
+.note > :last-child{margin-bottom:0}
+.link-note{max-width:42em; margin:20px 0; padding:12px 18px 12px 16px; border-left:3px solid var(--acc); background:var(--panel); border-radius:0 8px 8px 0; font-size:15.5px}
+.link-note > :last-child{margin-bottom:0}
+.link-note .k{font-weight:700; color:var(--acc); margin-right:6px}
+dl.terms{display:grid; grid-template-columns:auto 1fr; gap:6px 18px; max-width:42em; margin:0; font-size:15.5px}
+dl.terms dt{font-weight:700}
+dl.terms dd{margin:0; color:var(--muted)}
+.cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:20px 0}
+.cards.two{grid-template-columns:1fr 1fr}
+.cards > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; font-size:15.5px}
+.cards h4{margin:0 0 6px}
+.cards p{margin:0}
+ol.steps{list-style:none; margin:20px 0; padding:0; counter-reset:s; max-width:44em}
+ol.steps > li{counter-increment:s; position:relative; padding:0 0 14px 44px}
+ol.steps > li::before{content:counter(s); position:absolute; left:0; top:-2px; width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font:500 17px/1 var(--math); background:var(--acc); color:var(--panel)}
+ol.steps > li b{display:block}
+
+/* 사례 연구 머리 */
+.case{margin:56px 0 0; padding-top:18px; border-top:1px solid var(--line)}
+.case h3{margin-top:0}
+.lvl{display:inline-block; font-size:13px; font-weight:500; padding:1px 8px; border-radius:4px; margin-left:8px; vertical-align:3px; background:var(--soft); color:var(--muted)}
+.lvl.real{background:var(--acc); color:var(--panel)}
+
+/* 수식 탐색기 */
+.eqx{margin:28px 0; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px 16px}
+.eqx > .cap{margin:0 0 4px; font-size:14px; color:var(--muted)}
+.eq-big{font-family:var(--math); font-size:clamp(24px,3.6vw,36px); line-height:1.6; padding:12px 0 14px; overflow-x:auto; white-space:nowrap; text-align:center}
+.eq-big .t{--tc:var(--ink); border-bottom:3px solid var(--tc); padding:0 3px; border-radius:4px; cursor:pointer; transition:background .15s}
+.eq-big .t:hover, .eqx[data-on] .eq-big .t.on{background:color-mix(in srgb, var(--tc) 22%, transparent)}
+.eqx[data-on] .eq-big .t:not(.on){opacity:.4}
+.eq-big .op{color:var(--muted); padding:0 .12em}
+.eq-big sub, .eq-big sup{font-size:.6em}
+.eq-big .frac{display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; line-height:1.15; margin:0 .1em}
+.eq-big .frac > span:first-child{border-bottom:2px solid currentColor; padding:0 .15em .05em}
+.eq-big .frac > span:last-child{padding:.08em .15em 0}
+.t[data-c="1"]{--tc:var(--t1)} .t[data-c="2"]{--tc:var(--t2)} .t[data-c="3"]{--tc:var(--t3)} .t[data-c="4"]{--tc:var(--t4)} .t[data-c="5"]{--tc:var(--t5)}
+.eq-terms{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; margin:4px 0 0}
+.eq-terms button{
+  --tc:var(--ink); text-align:left; font:400 14px/1.5 var(--sans); color:var(--ink); background:var(--bg);
+  border:1px solid var(--line); border-left:4px solid var(--tc); border-radius:6px; padding:8px 10px; cursor:pointer;
+}
+.eq-terms button b{display:block; font-family:var(--math); font-size:17px; font-weight:500; color:var(--tc)}
+.eq-terms button[aria-pressed="true"]{background:color-mix(in srgb, var(--tc) 14%, var(--panel)); border-color:var(--tc)}
+.eq-terms button:focus-visible{outline:2px solid var(--tc); outline-offset:2px}
+.eq-detail{margin:12px 0 0; padding:12px 14px; border-radius:8px; background:var(--soft); font-size:15px; min-height:3em}
+.eq-detail:empty{display:none}
+.eq-live{margin-top:14px; padding-top:12px; border-top:1px dashed var(--line)}
+.eq-live .sub{font-size:14px; color:var(--muted); margin:0 0 6px}
+.eqx canvas{display:block; width:100%; height:auto; margin-top:8px}
+.hat{position:relative; display:inline-block}
+.hat::after{content:"ˆ"; position:absolute; left:50%; top:-.42em; transform:translateX(-45%); font-style:normal}
+.lim{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; line-height:1; margin:0 .08em; font-size:1.3em}
+.lim small{font-size:.34em; line-height:1.15}
+.eq-num{font-family:var(--math); font-size:22px; text-align:center; margin:10px 0 2px; overflow-x:auto; white-space:nowrap}
+.eq-num .t{border-bottom:2px solid var(--tc); padding:0 2px}
+
+/* 위젯 */
+.widget{margin:24px 0 28px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px 14px}
+.widget > h4{margin:0 0 2px; font-size:16px}
+.widget > .sub{margin:0 0 12px; color:var(--muted); font-size:14.5px}
+.widget canvas{display:block; width:100%; height:auto; touch-action:manipulation}
+.ctrl, .eq-live .ctrl{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin-top:12px; font-size:14px}
+.ctrl button, .seg button{font:500 14px/1 var(--sans); color:var(--ink); background:var(--soft); border:1px solid var(--line); border-radius:7px; padding:8px 12px; cursor:pointer}
+.ctrl button:hover, .seg button:hover{border-color:var(--acc)}
+.ctrl button.primary{background:var(--acc); border-color:var(--acc); color:var(--panel)}
+.ctrl button:disabled{opacity:.5; cursor:default}
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+.seg{display:inline-flex; flex-wrap:wrap; gap:4px}
+.seg button[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--panel)}
+.ctrl label{display:inline-flex; align-items:center; gap:8px; color:var(--muted)}
+.ctrl label b, .ctrl label output{color:var(--ink); font-weight:500; min-width:2.8em; font-variant-numeric:tabular-nums}
+.ctrl input[type=range]{width:150px; accent-color:var(--acc)}
+.ctrl input[type=checkbox]{accent-color:var(--acc); width:16px; height:16px}
+.ctrl select{font:400 14px var(--sans); color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px 8px}
+textarea.data{width:100%; min-height:90px; font:400 13.5px/1.5 var(--code); color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px; resize:vertical}
+.readout{margin:12px 0 0; font-size:14.5px; line-height:1.6; color:var(--muted); font-variant-numeric:tabular-nums}
+.readout b{color:var(--ink); font-weight:500}
+.readout .good{color:var(--c3); font-weight:500}
+.readout .bad{color:var(--miss); font-weight:500}
+.split{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+
+/* 표 */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:15px; line-height:1.55}
+th,td{padding:9px 12px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line)}
+thead th{font-weight:700; color:var(--muted); font-size:14px}
+tbody tr:last-child th, tbody tr:last-child td{border-bottom:0}
+table.num td{font-variant-numeric:tabular-nums}
+.tbl{background:var(--panel); border:1px solid var(--line); border-radius:10px; margin:20px 0; max-width:46em}
+
+/* 연습 문제 */
+.ex{max-width:44em; margin:16px 0}
+.ex details{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 16px; margin:0 0 8px}
+.ex summary{cursor:pointer; font-weight:500}
+.ex summary::marker{color:var(--acc)}
+.ex details > div{margin-top:8px; color:var(--muted); font-size:15.5px}
+.ex details > div > :last-child{margin-bottom:0}
+
+/* 코드 */
+pre.code{margin:20px 0; padding:16px 18px; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow-x:auto; font:400 14px/1.65 var(--code); tab-size:4; max-width:46em}
+pre.code code{background:none; padding:0; font-size:1em}
+pre.code .kw{color:var(--k-kw); font-weight:500}
+pre.code .fn{color:var(--k-fn)}
+pre.code .bi{color:var(--k-bi)}
+pre.code .str{color:var(--k-str)}
+pre.code .num{color:var(--k-num)}
+pre.code .com{color:var(--k-com); font-style:italic}
+.code-cap{font-size:14px; color:var(--muted); margin:-12px 0 20px}
+
+/* 이전 / 다음 */
+.pager{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:72px}
+.pager a{display:block; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; text-decoration:none; color:var(--ink)}
+.pager a:hover{border-color:var(--acc)}
+.pager span{display:block; font-size:13.5px; color:var(--muted)}
+.pager b{font-size:17px}
+.pager .next{text-align:right}
+footer{margin-top:40px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:14px}
+footer a{color:inherit}
+
+@media (max-width:760px){
+  .wrap{padding:28px 18px 40px}
+  .toc{grid-template-columns:1fr 1fr; gap:14px}
+  .goals, .cards, .cards.two, .split, .pager{grid-template-columns:1fr}
+  .widget, .eqx{padding:14px 12px 12px; margin-left:-6px; margin-right:-6px}
+  .ctrl input[type=range]{width:120px}
+}
+@media (min-width:761px){ .toc{grid-template-columns:repeat(5,1fr)} }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="back"><a href="index.html">모델링과 시뮬레이션 목차</a></p>
+<header>
+  <p class="series">모델링과 시뮬레이션, 응용 사례 A2</p>
+  <h1><span class="n">A2</span>수강신청 서버: 10시 정각의 폭주</h1>
+  <p class="lead">10시 정각, 수강신청이 열리자마자 1만 명이 거의 동시에 접속합니다. 서버는 하루 평균으로 보면 한가한데, 첫 몇 초는 처리 능력의 몇 배가 몰립니다. 기다리다 지친 학생들이 새로고침을 누르면 요청은 더 늘어납니다. 이 되먹임이 서버를 어떻게 무너뜨리는지, 서버를 늘리지 않고도 막을 방법이 있는지 사건 기반 시뮬레이션으로 확인합니다.</p>
+  <div class="goals">
+    <div>
+      <h2>이 사례에서 해 볼 것</h2>
+      <ul>
+        <li>평균 도착률로 한 용량 계획이 순간적인 몰림 앞에서 왜 틀리는지 1편의 공식으로 따져 봅니다.</li>
+        <li>시간 초과와 재시도가 만드는 되먹임을 사건 기반 모델로 적고, 서버가 한번 무너지면 몰림이 지나가도 회복하지 못하는 현상을 재현합니다.</li>
+        <li>작업자 수에 따라 결과가 갑자기 뒤집히는 절벽을 찾습니다.</li>
+        <li>증설, 재시도 방식, 대기열 길이, 가상 대기실을 같은 조건에서 비교해 가장 싸고 확실한 대책을 고릅니다.</li>
+        <li>5절에서 학생 에이전트 1,000명을 보며 서버를 직접 늘리고, 대책을 켜고, 공지를 내 봅니다.</li>
+      </ul>
+    </div>
+    <div class="pre">
+      <h2>먼저 보면 좋은 것</h2>
+      <a href="ch1_littles_law.html#s2-5">1편 2.5 M/M/c</a><a href="ch1_littles_law.html#s2-7">1편 2.7 정원</a><a href="ch2_DES.html">2편 DES</a><a href="ch5_output-analysis.html">5편 반복 실행</a>
+      <p>각 절의 단계 표시는 <a href="ch0_simulation-101.html#s1-5">0편 1.5절</a>의 시뮬레이션 연구 일곱 단계입니다. 서버의 숫자는 학습용 가정입니다.</p>
+    </div>
+  </div>
+  <nav class="toc" aria-label="목차">
+    <div><h2><a href="#ch1">1. 질문과 개념 모델</a></h2><ol><li><a href="#s1-1">질문 정하기</a></li><li><a href="#s1-2">개념 모델</a></li></ol></div>
+    <div><h2><a href="#ch2">2. 데이터와 구현</a></h2><ol><li><a href="#s2-1">데이터 모으기</a></li><li><a href="#s2-2">프로그램 짜기</a></li><li><a href="#s2-3">검증과 타당성</a></li></ol></div>
+    <div><h2><a href="#ch3">3. 실험과 결정</a></h2><ol><li><a href="#s3-1">작업자 수의 절벽</a></li><li><a href="#s3-2">대책 비교</a></li><li><a href="#s3-3">분석과 결정</a></li></ol></div>
+    <div style="order:5"><h2><a href="#ch5">5. 직접 돌려 보기</a></h2><ol><li><a href="#ch5">학생 1,000명과 서버</a></li><li><a href="#s5-1">큐 네트워크로 보기</a></li><li><a href="#s5-2">해 볼 것</a></li></ol></div>
+    <div><h2><a href="#ch4">4. 연결과 정리</a></h2><ol><li><a href="#s4-1">모델의 한계</a></li><li><a href="#s4-2">쓰인 편들</a></li><li><a href="#s4-3">파이썬으로 확인하기</a></li><li><a href="#s4-4">연습과 확장</a></li></ol></div>
+  </nav>
+</header>
+
+<section class="chap" id="ch1">
+  <h2><span class="n">1</span>질문과 개념 모델</h2>
+  <p class="intro">서버만 모델링하면 답이 틀립니다. 기다리다 새로고침을 누르는 사람까지 모델 안에 넣어야 합니다.</p>
+
+  <h3 id="s1-1"><span class="n">1.1</span>질문 정하기<span class="lvl">단계 1</span></h3>
+  <div class="prose">
+    <p>학생 1만 명이 10시 정각에 수강신청을 시작합니다. 신청 서버에는 요청을 처리하는 작업자(스레드)가 16개 있고, 요청 하나를 처리하는 데 평균 0.05초가 걸립니다. 질문은 셋입니다. 이 서버로 버틸 수 있는가? 버티지 못한다면 작업자를 몇 개까지 늘려야 하는가? 늘리지 않고 설계를 바꿔서 해결할 수는 없는가?</p>
+  </div>
+
+  <h3 id="s1-2"><span class="n">1.2</span>개념 모델<span class="lvl">단계 2</span></h3>
+  <dl class="terms">
+    <dt>학생</dt><dd>75%는 10시 직후 몇 초 안에(평균 3초), 나머지는 조금 늦게(평균 20초) 첫 요청을 보냅니다. 학생 한 명은 성공 한 번이면 끝납니다.</dd>
+    <dt>서버</dt><dd>작업자 <span class="m">c</span>개가 대기열 하나에서 요청을 꺼내 처리합니다. 처리 시간은 평균 0.05초인 지수분포입니다. 작업자 16개의 처리 능력은 초당 320건입니다.</dd>
+    <dt>대기열 상한</dt><dd>대기열에 <span class="m">K</span>개가 차 있으면 새 요청은 바로 거절됩니다("잠시 후 다시 시도하세요" 화면). 1편의 M/M/c/K와 같은 구조입니다.</dd>
+    <dt>시간 초과</dt><dd>10초 안에 처리가 시작되지 않으면 학생의 브라우저는 포기하고, 학생은 새로고침을 누릅니다. 그런데 서버는 그 사실을 모르고, 대기열에 남은 그 요청을 나중에 처리합니다. 받을 사람이 없는 헛일입니다.</dd>
+    <dt>재시도</dt><dd>거절이나 시간 초과를 겪은 학생은 0.5~1.5초 뒤에 다시 요청합니다(즉시 새로고침). 대책으로 쓰는 다른 방식은 3.2절에서 다룹니다.</dd>
+  </dl>
+  <div class="prose">
+    <p>실제 수강신청은 로그인, 과목 검색, 신청을 여러 번 오가고, 데이터베이스의 잠금 경쟁도 있습니다. 여기서는 그것을 "요청 한 번"으로 줄였습니다. 질문이 "되먹임이 서버를 무너뜨리는가"이기 때문에, 그 되먹임을 만드는 시간 초과와 재시도는 반드시 남겼습니다.</p>
+  </div>
+</section>
+
+<section class="chap" id="ch2">
+  <h2><span class="n">2</span>데이터와 구현</h2>
+  <p class="intro">평균으로 보면 아무 문제가 없어 보입니다. 그것이 문제입니다.</p>
+
+  <h3 id="s2-1"><span class="n">2.1</span>데이터 모으기<span class="lvl">단계 3</span></h3>
+  <div class="prose">
+    <p>지난 학기의 서버 접속 기록이 가장 좋은 자료입니다. 요청마다 도착 시각, 처리 시작과 끝 시각, 응답 코드, 세션 번호가 남아 있으면 첫 요청이 몰리는 모양(4편의 시간에 따라 변하는 도착), 처리 시간의 분포, 같은 학생이 몇 초 간격으로 다시 요청하는지까지 알 수 있습니다.</p>
+    <p>1편의 공식으로 먼저 어림해 봅시다. 4분 동안 1만 명이면 평균 도착률은 초당 42건이고, 처리 능력 320건에 대한 이용률은 <span class="m">ρ</span> = 0.13입니다. 평균으로는 서버가 87% 놀고 있습니다. 하지만 첫 5초에는 7천 명 가까이가 몰려 초당 1,400건 안팎이 들어옵니다. 이때 <span class="m">ρ</span>는 4를 넘고, 대기열은 초당 천 건 넘게 늘어납니다. 정상 상태를 가정하는 공식은 이 몇 초를 다루지 못합니다.</p>
+  </div>
+
+  <h3 id="s2-2"><span class="n">2.2</span>프로그램 짜기<span class="lvl">단계 4</span></h3>
+  <div class="prose">
+    <p>사건은 다섯 가지입니다. 요청 도착, 처리 끝, 시간 초과, 재시도, 그리고 가상 대기실을 쓸 때의 입장. 2편의 미래 사건 목록 하나로 모두 돌아갑니다. 아래 그래프의 세로축은 로그 눈금입니다.</p>
+  </div>
+  <div class="widget" id="w-storm">
+    <h4>10시 정각부터 4분</h4>
+    <p class="sub">회색은 초마다 들어온 요청(재시도 포함), 색 선은 학생에게 실제로 전달된 응답, 빨간 선은 시간 초과입니다. 가로 점선이 서버의 처리 능력입니다.</p>
+    <canvas data-w="640" data-h="236" role="img" aria-label="초마다 들어온 요청, 성공한 응답, 시간 초과의 수"></canvas>
+    <div class="ctrl">
+      <label>작업자 <span class="m">c</span> <input type="range" min="8" max="40" step="2" value="16" data-c> <b></b></label>
+      <span>재시도</span><div class="seg" data-g="pol"><button type="button" aria-pressed="true" data-v="now">즉시 새로고침</button><button type="button" aria-pressed="false" data-v="backoff">지수 백오프</button><button type="button" aria-pressed="false" data-v="room">가상 대기실</button></div>
+    </div>
+    <div class="ctrl">
+      <span>대기열 상한</span><div class="seg" data-g="K"><button type="button" aria-pressed="true" data-v="50000">사실상 무제한</button><button type="button" aria-pressed="false" data-v="640">2초분 (640)</button></div>
+      <label><input type="checkbox" data-drop> 서버가 만료된 요청 버리기</label>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>기본 설정에서는 처음 몇 초 뒤 시간 초과(빨강)가 쏟아지고, 들어오는 요청(회색)이 처리 능력의 열 배 가까이로 치솟은 채 내려오지 않습니다. 몰림이 끝난 뒤에도 서버는 계속 바쁘지만 학생에게 전달되는 응답(색 선)은 거의 없습니다. 바쁜데 아무 일도 못 하는 상태입니다.</p>
+  </div>
+
+  <h3 id="s2-3"><span class="n">2.3</span>검증과 타당성<span class="lvl">단계 5</span></h3>
+  <div class="prose">
+    <p><b>검증.</b> 시간 초과를 없애고 대기열을 무제한으로 두면 이 모델은 1만 건을 한꺼번에 받은 M/M/16 서버가 됩니다. 그러면 마지막 요청은 대략 10,000/320 ≈ 31초에 끝나야 합니다. 작업자를 24개로 둔 설정에서 무너지지 않는 것도 같은 계산(10,000/480 ≈ 21초, 대부분의 요청이 10초 전에 처리 시작)과 맞습니다. 서버 상자에 대해 처리량 × 평균 체류시간 = 평균 요청 수(리틀의 법칙)도 확인합니다.</p>
+    <p><b>타당성.</b> 실제 접속 기록에서 몰림이 시작된 뒤 몇 초 만에 오류가 늘기 시작했는지, 오류 비율이 몰림이 지나간 뒤에도 높게 남았는지를 비교합니다. "몰림이 끝나도 회복하지 않는다"는 패턴이 기록에 있다면 이 모델의 핵심 가정, 곧 헛일과 재시도의 되먹임이 실제로 일어난다는 증거입니다.</p>
+  </div>
+</section>
+
+<section class="chap" id="ch3">
+  <h2><span class="n">3</span>실험과 결정</h2>
+  <p class="intro">작업자를 하나씩 늘려 보고, 같은 작업자로 설계만 바꿔 봅니다.</p>
+
+  <h3 id="s3-1"><span class="n">3.1</span>작업자 수의 절벽<span class="lvl">단계 6</span></h3>
+  <div class="widget" id="w-cliff">
+    <h4>작업자 수와 60초 안에 성공한 학생 비율</h4>
+    <p class="sub">작업자 수마다 같은 시드로 4분을 돌렸습니다. 세 설계를 비교합니다.</p>
+    <canvas data-w="640" data-h="240" role="img" aria-label="작업자 수에 따른 60초 안 성공 비율"></canvas>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>즉시 새로고침에 대기열을 무제한으로 두면 작업자 18개까지는 절반도 성공하지 못하다가, 20개에서 갑자기 모두 성공합니다. 처리 능력이 360건에서 400건으로 11% 늘었을 뿐인데 결과가 뒤집힙니다. 문턱은 시간 초과 10초 동안 처리할 수 있는 양, 곧 대기열 길이 10초 × 처리 능력입니다. 대기열이 이보다 길어지면 뒤쪽 요청은 처리가 시작되기 전에 모두 시간 초과가 되고, 서버는 그 죽은 요청들을 처리하느라 산 요청을 처리하지 못합니다. 그러면 재시도가 다시 대기열을 채웁니다. 몰림이 지나가도 이 상태가 스스로 유지되는 것을 준안정 고장(metastable failure)이라 부릅니다.</p>
+  </div>
+
+  <h3 id="s3-2"><span class="n">3.2</span>대책 비교<span class="lvl">단계 6</span></h3>
+  <div class="prose">
+    <p>작업자 16개를 그대로 두고 설계를 바꿔 봅니다. 시드 5개로 돌린 평균입니다. 요청 배수는 학생 한 명이 보낸 요청의 평균 개수이고, 헛일은 서버가 처리했지만 학생에게 전달되지 않은 처리의 비율입니다.</p>
+  </div>
+  <div class="tbl"><table class="num">
+    <thead><tr><th>설계 (작업자 16개)</th><th>60초 안 성공</th><th>요청 배수</th><th>헛일</th></tr></thead>
+    <tbody>
+      <tr><td>즉시 새로고침, 대기열 무제한 (지금)</td><td>37%</td><td>22배</td><td>95%</td></tr>
+      <tr><td>지수 백오프 (0.5초에서 시작해 두 배씩, 최대 30초)</td><td>37%</td><td>8배</td><td>94%</td></tr>
+      <tr><td>서버가 만료된 요청 버리기</td><td>100%</td><td>1.2배</td><td>0%</td></tr>
+      <tr><td>대기열을 2초분(640개)으로 줄이기</td><td>100%</td><td>7.8배</td><td>0%</td></tr>
+      <tr><td>가상 대기실 (처리 능력의 95%로 입장)</td><td>100%</td><td>1.0배</td><td>0%</td></tr>
+      <tr><td>참고: 작업자 24개로 증설</td><td>100%</td><td>1.0배</td><td>0%</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 id="s3-3"><span class="n">3.3</span>분석과 결정<span class="lvl">단계 7</span></h3>
+  <div class="prose">
+    <p>지수 백오프는 요청 수를 셋째로 줄였지만 결과는 그대로입니다. 문제가 재시도의 양이 아니라 헛일이기 때문입니다. 반대로 서버가 처리를 시작하기 전에 "이 요청은 이미 10초가 지났다"를 확인해 버리기만 해도, 또는 대기열을 짧게 잘라 오래 기다릴 요청을 처음부터 거절하기만 해도 같은 서버로 모두가 성공합니다. 거절은 처리보다 훨씬 싸기 때문에, 요청이 여덟 배로 늘어도 서버는 버팁니다.</p>
+    <p>가상 대기실은 학생을 서버 앞이 아니라 번호표 줄에 세웁니다. 서버에는 처리할 수 있는 만큼만 들여보내므로 재시도도 헛일도 없고, 먼저 온 학생이 먼저 들어가는 공정함도 지켜집니다. 첫 응답까지의 중앙값은 대기실이 11초 남짓으로 만료 요청 버리기(9.5초)보다 조금 길지만, 늦게 성공하는 학생 쪽(95번째 백분위)은 대기실이 17초 남짓으로 더 짧습니다. 수강신청과 공연 예매 사이트가 대기 순번을 보여 주는 이유입니다.</p>
+    <p>결정: 작업자를 늘리는 것도 답이지만, 절벽 바로 위에 서는 증설은 위험합니다. 학생이 조금만 늘거나 처리가 조금만 느려져도 다시 떨어집니다. 이 모델로는 <b>만료된 요청 버리기를 먼저 넣고, 가상 대기실을 두는 것</b>이 가장 싸고 확실합니다. 두 대책은 서로를 대신하지 않으므로 함께 쓰는 것이 보통입니다.</p>
+  </div>
+</section>
+
+<section class="chap" id="ch4">
+  <h2><span class="n">4</span>연결과 정리</h2>
+
+  <h3 id="s4-1"><span class="n">4.1</span>모델의 한계</h3>
+  <dl class="terms">
+    <dt>요청 한 번</dt><dd>실제로는 학생 한 명이 여러 과목을 신청하고, 인기 과목에는 데이터베이스 잠금 경쟁이 생깁니다. 병목이 서버가 아니라 데이터베이스일 수도 있습니다.</dd>
+    <dt>같은 학생</dt><dd>모두 똑같이 10초를 기다리고 똑같이 새로고침합니다. 실제로는 더 빨리 포기하는 사람, 탭을 여러 개 여는 사람이 있습니다(3편의 개체 차이).</dd>
+    <dt>지수분포 처리 시간</dt><dd>처리 시간의 꼬리가 더 길면 문턱이 더 낮아집니다(1편 2.6절의 세 손잡이).</dd>
+    <dt>절벽의 위치</dt><dd>문턱 근처(작업자 18~20개)에서는 시드에 따라 무너지기도 하고 버티기도 합니다. 그 확률을 재는 것은 5-2편의 희귀 사건 문제입니다(연습 4).</dd>
+  </dl>
+
+  <h3 id="s4-2"><span class="n">4.2</span>쓰인 편들</h3>
+  <div class="link-note"><p><span class="k">1편</span>평균 이용률 0.13은 리틀의 법칙과 M/M/c로 계산한 값이고, 대기열 상한은 M/M/c/K입니다. 공식이 몰림의 몇 초를 다루지 못한다는 것도 1편의 정상 상태 가정에서 나옵니다.</p></div>
+  <div class="link-note"><p><span class="k">2편</span>도착, 처리 끝, 시간 초과, 재시도는 모두 미래 사건 목록 하나로 돌아갑니다.</p></div>
+  <div class="link-note"><p><span class="k">5편과 5-2편</span>대책 비교는 같은 시드로 했고(공통 난수), 문턱 근처에서 무너질 확률은 희귀 사건 기법으로 잽니다.</p></div>
+  <div class="link-note"><p><span class="k">8편</span>시간 초과를 없앤 특수한 경우를 손계산과 비교한 것이 검증입니다.</p></div>
+
+  <h3 id="s4-3"><span class="n">4.3</span>파이썬으로 확인하기</h3>
+  <div class="prose"><p>같은 모델을 표준 라이브러리만으로 짰습니다. 3.2절 표의 대책을 차례로 돌립니다(시드 1).</p></div>
+<pre class="code"><code><span class="com"># registration.py : 수강신청 오픈 순간의 서버. 시간 초과와 재시도가 서버를 무너뜨리는 과정</span>
+<span class="kw">import</span> heapq, itertools, random
+
+<span class="kw">def</span> <span class="fn">run</span>(c=<span class="num">16</span>, K=<span class="num">50_000</span>, policy=<span class="str">&quot;now&quot;</span>, drop_expired=<span class="kw">False</span>, N=<span class="num">10_000</span>, svc=<span class="num">0.05</span>, tout=<span class="num">10.0</span>, T=<span class="num">240.0</span>, seed=<span class="num">1</span>):
+    rng, tick = random.Random(seed), itertools.count()
+    ev = []                                       <span class="com"># (시각, 순번, 종류, 자료)</span>
+    <span class="kw">def</span> <span class="fn">push</span>(t, kind, data): heapq.heappush(ev, (t, <span class="bi">next</span>(tick), kind, data))
+    first, done, tries = [<span class="num">0.0</span>] * N, [<span class="kw">None</span>] * N, [<span class="num">0</span>] * N
+    <span class="kw">for</span> s <span class="kw">in</span> <span class="bi">range</span>(N):                            <span class="com"># 75%는 오픈 직후, 25%는 조금 늦게</span>
+        first[s] = <span class="bi">max</span>(rng.random() * <span class="num">0.5</span>, -<span class="num">1</span> + rng.expovariate(<span class="num">1</span> / <span class="num">4</span>)) <span class="kw">if</span> rng.random() &lt; <span class="num">0.75</span> <span class="kw">else</span> rng.expovariate(<span class="num">1</span> / <span class="num">20</span>)
+        push(first[s], <span class="str">&quot;enter&quot;</span> <span class="kw">if</span> policy == <span class="str">&quot;room&quot;</span> <span class="kw">else</span> <span class="str">&quot;send&quot;</span>, s)
+    <span class="kw">if</span> policy == <span class="str">&quot;room&quot;</span>:
+        room, rate = [], c / svc * <span class="num">0.95</span>           <span class="com"># 가상 대기실: 처리 능력의 95%로만 들여보낸다</span>
+        push(<span class="num">0.0</span>, <span class="str">&quot;admit&quot;</span>, <span class="kw">None</span>)
+    queue, busy, requests, work, wasted = [], <span class="num">0</span>, <span class="num">0</span>, <span class="num">0.0</span>, <span class="num">0.0</span>
+    <span class="kw">def</span> <span class="fn">retry</span>(s, t):
+        tries[s] += <span class="num">1</span>
+        delay = rng.uniform(<span class="num">0</span>, <span class="bi">min</span>(<span class="num">30</span>, <span class="num">0.5</span> * <span class="num">2</span> ** <span class="bi">min</span>(tries[s], <span class="num">10</span>))) <span class="kw">if</span> policy == <span class="str">&quot;backoff&quot;</span> <span class="kw">else</span> rng.uniform(<span class="num">0.5</span>, <span class="num">1.5</span>)
+        push(t + delay, <span class="str">&quot;send&quot;</span>, s)
+    <span class="kw">def</span> <span class="fn">start</span>(t):
+        <span class="kw">nonlocal</span> busy, work
+        <span class="kw">while</span> busy &lt; c <span class="kw">and</span> queue:
+            req = queue.pop(<span class="num">0</span>)
+            <span class="kw">if</span> req[<span class="str">&quot;dead&quot;</span>] <span class="kw">and</span> drop_expired:      <span class="com"># 이미 떠난 학생의 요청은 처리하지 않는다</span>
+                <span class="kw">continue</span>
+            req[<span class="str">&quot;started&quot;</span>], busy = <span class="kw">True</span>, busy + <span class="num">1</span>
+            d = rng.expovariate(<span class="num">1</span> / svc); work += d
+            push(t + d, <span class="str">&quot;done&quot;</span>, (req, d))
+    <span class="kw">while</span> ev:
+        t, _, kind, x = heapq.heappop(ev)
+        <span class="kw">if</span> t &gt; T: <span class="kw">break</span>
+        <span class="kw">if</span> kind == <span class="str">&quot;enter&quot;</span>: room.append(x)
+        <span class="kw">elif</span> kind == <span class="str">&quot;admit&quot;</span>:
+            <span class="kw">if</span> room: push(t, <span class="str">&quot;send&quot;</span>, room.pop(<span class="num">0</span>))
+            push(t + <span class="num">1</span> / rate, <span class="str">&quot;admit&quot;</span>, <span class="kw">None</span>)
+        <span class="kw">elif</span> kind == <span class="str">&quot;send&quot;</span>:
+            requests += <span class="num">1</span>
+            <span class="kw">if</span> <span class="bi">len</span>(queue) &gt;= K: retry(x, t + <span class="num">0.1</span>); <span class="kw">continue</span>        <span class="com"># 대기열이 꽉 차면 바로 거절</span>
+            req = {<span class="str">&quot;s&quot;</span>: x, <span class="str">&quot;dead&quot;</span>: <span class="kw">False</span>, <span class="str">&quot;started&quot;</span>: <span class="kw">False</span>}
+            queue.append(req)
+            <span class="kw">if</span> policy != <span class="str">&quot;room&quot;</span>: push(t + tout, <span class="str">&quot;timeout&quot;</span>, req)
+            start(t)
+        <span class="kw">elif</span> kind == <span class="str">&quot;timeout&quot;</span>:
+            <span class="kw">if</span> <span class="kw">not</span> x[<span class="str">&quot;started&quot;</span>]: x[<span class="str">&quot;dead&quot;</span>] = <span class="kw">True</span>; retry(x[<span class="str">&quot;s&quot;</span>], t)  <span class="com"># 학생은 기다리다 새로고침</span>
+        <span class="kw">elif</span> kind == <span class="str">&quot;done&quot;</span>:
+            req, d = x; busy -= <span class="num">1</span>
+            <span class="kw">if</span> req[<span class="str">&quot;dead&quot;</span>]: wasted += d                              <span class="com"># 아무도 받지 않는 응답</span>
+            <span class="kw">elif</span> done[req[<span class="str">&quot;s&quot;</span>]] <span class="kw">is</span> <span class="kw">None</span>: done[req[<span class="str">&quot;s&quot;</span>]] = t
+            start(t)
+    ok60 = <span class="bi">sum</span>(<span class="num">1</span> <span class="kw">for</span> s <span class="kw">in</span> <span class="bi">range</span>(N) <span class="kw">if</span> done[s] <span class="kw">is</span> <span class="kw">not</span> <span class="kw">None</span> <span class="kw">and</span> done[s] - first[s] &lt;= <span class="num">60</span>) / N
+    <span class="kw">return</span> ok60, requests / N, (wasted / work <span class="kw">if</span> work <span class="kw">else</span> <span class="num">0.0</span>)
+
+cases = [(<span class="str">&quot;즉시 새로고침, 큰 대기열&quot;</span>, {}), (<span class="str">&quot;+ 만료된 요청 버리기&quot;</span>, {<span class="str">&quot;drop_expired&quot;</span>: <span class="kw">True</span>}),
+         (<span class="str">&quot;지수 백오프&quot;</span>, {<span class="str">&quot;policy&quot;</span>: <span class="str">&quot;backoff&quot;</span>}), (<span class="str">&quot;대기열을 2초분으로&quot;</span>, {<span class="str">&quot;K&quot;</span>: <span class="num">640</span>}),
+         (<span class="str">&quot;가상 대기실&quot;</span>, {<span class="str">&quot;policy&quot;</span>: <span class="str">&quot;room&quot;</span>}), (<span class="str">&quot;작업자 24개로 증설&quot;</span>, {<span class="str">&quot;c&quot;</span>: <span class="num">24</span>})]
+<span class="kw">for</span> name, kw <span class="kw">in</span> cases:
+    ok, amp, waste = run(**kw)
+    <span class="bi">print</span>(<span class="str">f&quot;</span>{name}<span class="str">: 60초 안에 성공 </span>{ok:<span class="str">.0%</span>}<span class="str">, 요청 </span>{amp:<span class="str">.1f</span>}<span class="str">배, 헛일 </span>{waste:<span class="str">.0%</span>}<span class="str">&quot;</span>)</code></pre>
+  <pre class="code"><code>즉시 새로고침, 큰 대기열: 60초 안에 성공 36%, 요청 25.4배, 헛일 95%
++ 만료된 요청 버리기: 60초 안에 성공 100%, 요청 1.2배, 헛일 0%
+지수 백오프: 60초 안에 성공 36%, 요청 8.1배, 헛일 95%
+대기열을 2초분으로: 60초 안에 성공 100%, 요청 7.8배, 헛일 0%
+가상 대기실: 60초 안에 성공 100%, 요청 1.0배, 헛일 0%
+작업자 24개로 증설: 60초 안에 성공 100%, 요청 1.0배, 헛일 0%</code></pre>
+  <p class="code-cap">시드 하나의 결과라 3.2절 표(시드 5개 평균)와 숫자가 조금 다릅니다. 무너지는 경우는 사건이 수십만 개라 몇 초 걸립니다.</p>
+
+  <h3 id="s4-4"><span class="n">4.4</span>연습과 확장</h3>
+  <div class="ex">
+    <details><summary>1. 시간 초과를 10초에서 30초로 늘리면 무너지는 작업자 수의 문턱은 어떻게 될까요?</summary><div><p>문턱이 되는 대기열 길이(시간 초과 × 처리 능력)가 세 배로 길어지므로 더 적은 작업자로도 버틸 가능성이 큽니다. 대신 학생 한 명이 기다리는 시간은 길어집니다. 시간 초과는 사용자 경험과 서버 안정성 사이의 손잡이입니다. 위젯 코드나 파이썬 코드의 <code>tout</code>를 바꿔 확인해 보세요.</p></div></details>
+    <details><summary>2. 학생 한 명이 과목 세 개를 따로 신청해야 한다면 무엇을 바꿔야 할까요?</summary><div><p>성공 횟수를 학생마다 세고, 세 번째 성공까지 걸린 시간을 재도록 바꿉니다. 요청이 세 배가 되므로 같은 작업자 수에서는 문턱 아래로 떨어지기 쉽습니다. 과목마다 정원이 있다면 "정원 마감"이라는 새 응답도 생기고, 마감된 과목을 보고 다른 과목으로 바꾸는 행동은 에이전트의 판단이 됩니다.</p></div></details>
+    <details><summary>3. 가상 대기실의 입장 속도를 처리 능력의 110%로 올리면 어떻게 될까요?</summary><div><p>들어오는 양이 처리 능력보다 많으므로 서버 앞에 다시 줄이 생기고, 그 줄이 10초분을 넘으면 기본 설정과 같은 붕괴가 일어날 수 있습니다. 대기실은 입장 속도를 처리 능력보다 낮게 둘 때만 안전합니다. 실제 시스템은 서버의 응답 시간을 보고 입장 속도를 자동으로 조절합니다(되먹임 제어).</p></div></details>
+    <details><summary>4. 작업자 19개에서 이 서버가 무너질 확률을 재려면 어떻게 해야 할까요?</summary><div><p>시드를 바꿔 수백 번 돌리고 "60초 안 성공 비율이 50% 아래"인 실행의 비율을 셉니다. 그 확률이 아주 작다면(작업자 22개처럼) 단순 반복으로는 한 번도 못 볼 수 있으므로, 5-2편의 스플리팅처럼 대기열이 길어진 상태를 복제해 이어 돌리는 방법을 씁니다.</p></div></details>
+  </div>
+</section>
+
+<section class="chap" id="ch5">
+  <h2><span class="n">5</span>직접 돌려 보기: 학생 1,000명과 서버</h2>
+  <p class="intro">이번에는 학생 한 명 한 명을 에이전트로 보면서, 10시 정각부터 4분 동안 서버 관리자가 되어 직접 개입해 봅니다.</p>
+  <div class="prose">
+    <p>화면에 담으려고 모델을 10분의 1로 줄였습니다. 학생 1,000명, 작업자 16개, 처리 시간 평균 0.5초라서 처리 능력은 초당 32건입니다. 학생 수에 대한 처리 능력의 비율은 3절과 같습니다. 대신 학생들을 조금 더 사람답게 만들었습니다. 기다릴 수 있는 시간이 사람마다 5~15초로 다르고, 10%는 탭을 세 개 열어 한 번에 요청을 세 개씩 보내며, "새로고침 자제" 공지가 나가면 절반만 따릅니다(3편의 개체 차이).</p>
+    <p>재생 중에 언제든 서버를 늘리고 줄이거나, 만료 요청 버리기와 지수 백오프를 켜고 끄거나, 공지를 낼 수 있습니다. 작업자 수, 탭 비율, 가상 대기실은 "처음부터"를 누를 때 적용됩니다.</p>
+  </div>
+  <div class="widget" id="w-live">
+    <h4>10시 정각, 서버 관리자가 되어 보기</h4>
+    <p class="sub">왼쪽 칸 하나가 학생 한 명입니다. 오른쪽 위는 작업자들이 지금 하는 일, 그 아래는 대기열 길이, 맨 아래는 초마다 들어온 요청과 성공한 응답입니다.</p>
+    <canvas data-w="640" data-h="400" role="img" aria-label="학생 1,000명의 상태, 서버 작업자와 대기열, 초당 요청과 성공 그래프"></canvas>
+    <div class="ctrl">
+      <button type="button" class="primary" data-act="play">일시정지</button>
+      <button type="button" data-act="more">긴급 증설 +8</button>
+      <button type="button" data-act="less">작업자 −8</button>
+      <button type="button" data-act="notice">"새로고침 자제" 공지</button>
+      <label><input type="checkbox" data-drop> 만료 요청 버리기</label>
+      <label><input type="checkbox" data-backoff> 지수 백오프</label>
+    </div>
+    <div class="ctrl">
+      <label>처음 작업자 <input type="range" min="8" max="48" step="4" value="16" data-c> <b></b></label>
+      <label>탭 여러 개 <input type="range" min="0" max="0.5" step="0.05" value="0.1" data-multi> <b></b></label>
+      <div class="seg" data-g="mode"><button type="button" aria-pressed="true" data-v="direct">바로 접속</button><button type="button" aria-pressed="false" data-v="room">가상 대기실</button></div>
+      <button type="button" data-act="reset">처음부터</button>
+      <span>속도</span><div class="seg" data-g="spd"><button type="button" aria-pressed="false" data-v="1">1배</button><button type="button" aria-pressed="true" data-v="2">2배</button><button type="button" aria-pressed="false" data-v="8">8배</button></div>
+    </div>
+    <p class="readout" data-out></p>
+    <p class="sub" style="margin:18px 0 6px"><b>같은 시뮬레이션을 큐 네트워크로.</b> 위 그림과 같은 학생, 같은 서버입니다. 노드 안 숫자는 지금 그 노드에 있는 학생이나 요청의 수, 화살표의 점과 굵기는 최근 5초 동안의 초당 흐름입니다. 대기열 상자의 세로선은 시간 초과 10초 동안 처리할 수 있는 양입니다.</p>
+    <canvas data-net data-w="640" data-h="276" role="img" aria-label="접속 전, 서버 대기열, 작업자, 성공, 버려진 응답, 새로고침 대기를 잇는 큐 네트워크와 흐름"></canvas>
+    <p class="readout" data-netout></p>
+  </div>
+  <h3 id="s5-1"><span class="n">5.1</span>큐 네트워크로 보기</h3>
+  <div class="prose">
+    <p>위 아래 그림은 같은 시뮬레이션을 두 방식으로 보여 줍니다. 위는 학생 한 명 한 명(에이전트), 아래는 1편 2.8절의 큐 네트워크입니다. 이 시스템에는 일반적인 큐에 없는 노드가 하나 있습니다. 시간 초과나 거절을 겪은 학생이 잠시 머물렀다 다시 들어오는 "새로고침 대기"입니다. 큐잉 이론에서는 이런 구조를 재시도 큐(retrial queue), 이 노드를 궤도(orbit)라고 부릅니다.</p>
+    <p>1편의 트래픽 방정식으로 읽어 봅시다. 대기열을 떠나는 요청 중 비율 <span class="m">r</span>이 시간 초과로 되돌아온다면, 첫 요청의 흐름이 <span class="m">λ</span><sub>0</sub>일 때 대기열에 들어오는 전체 흐름은 <span class="m">λ</span><sub>0</sub>/(1 − <span class="m">r</span>)입니다. 2.8절 잭슨 네트워크의 "다시 만듦"과 같은 식입니다. 무너진 상태에서는 <span class="m">r</span>이 1에 가까워져, 첫 요청이 거의 끝난 뒤에도 재시도 화살표 하나가 대기열을 계속 채웁니다. 시간 초과와 재시도 화살표가 굵고 성공 화살표가 가늘어지는 순간이 위 그림의 화면이 빨갛게 덮이는 순간입니다.</p>
+    <p>아래 그림의 숫자 줄은 서버 대기열 노드에 리틀의 법칙을 적용한 것입니다. 무너진 뒤 대기열이 계속 길어지는 상태에서도 <span class="m">L</span>과 <span class="m">λW</span>가 거의 같게 나옵니다(시드 1, 120초 무렵 L ≈ 5,600, λW ≈ 5,670). 몰림이 막 시작된 첫 몇 초처럼 상태가 빠르게 바뀔 때는 10초 창 안에서 들어온 요청과 나간 요청이 달라 두 값이 어긋납니다. 리틀의 법칙은 오래 관측했을 때의 법칙이라는 것을 눈으로 볼 수 있습니다.</p>
+  </div>
+  <h3 id="s5-2"><span class="n">5.2</span>해 볼 것</h3>
+  <ol class="steps">
+    <li><b>그냥 지켜보기</b>10초쯤 지나면 왼쪽이 빨간 칸(오류, 새로고침)으로 덮이고, 오른쪽 작업자 상자가 회색(헛일)으로 바뀝니다. 대기열은 "10초분" 선을 넘어 계속 자랍니다. 이 설정으로 시드 세 개를 돌리면 60초 안에 성공한 학생은 평균 32%였습니다.</li>
+    <li><b>무너진 뒤에 증설하기</b>20초쯤 "긴급 증설 +8"을 한 번 누르세요. 작업자가 24개가 되어도 회복하지 못합니다(시드 1에서 60초 안 성공 34%). 그런데 처음부터 작업자를 24개로 두면 75%가 성공합니다. 같은 서버라도 무너지기 전에 갖췄는지, 무너진 뒤에 갖췄는지에 따라 결과가 다릅니다. 무너진 뒤에는 대기열에 쌓인 죽은 요청까지 처리해야 하므로 훨씬 많이 늘려야 합니다.</li>
+    <li><b>무너진 뒤에 만료 요청 버리기</b>처음부터 다시 돌려 무너지게 둔 뒤, 60초쯤 "만료 요청 버리기"를 켜세요. 작업자 상자가 다시 청록색으로 바뀌고 성공이 빠르게 늘어 4분 안에 모두 성공합니다. 증설보다 이쪽이 회복에 강한 이유는, 쌓인 헛일을 한꺼번에 치워 주기 때문입니다.</li>
+    <li><b>공지와 탭</b>"새로고침 자제" 공지는 요청 수를 조금 줄일 뿐 무너진 상태를 되돌리지는 못합니다. 탭 여러 개 비율을 30%로 올리고 처음부터 돌리면 더 빨리, 더 깊게 무너집니다(시드 세 개 평균 60초 안 성공 23%). 한 사람의 영리한 행동이 모두에게 손해가 되는 예입니다.</li>
+    <li><b>가상 대기실</b>"가상 대기실"을 고르고 처음부터 누르세요. 회색 칸(대기실)이 차례로 줄어들며 들어가고, 오류도 헛일도 없이 모두 성공합니다.</li>
+    <li><b>네트워크에서 고리 찾기</b>아래 큐 네트워크 그림에서 시간 초과와 재시도 화살표가 만드는 고리를 보세요. 무너질 때는 이 고리의 흐름이 첫 요청의 흐름보다 커집니다. 만료 요청 버리기를 켜면 "만료 버림" 노드가 생겨 고리를 끊고, 가상 대기실을 쓰면 고리 자체가 사라집니다.</li>
+  </ol>
+  <div class="note"><p>이 시뮬레이터의 숫자는 3.2절 표와 다릅니다. 학생 수를 줄이고 사람마다 다른 행동을 넣었기 때문입니다. 비교할 것은 숫자가 아니라 패턴입니다. 두 모델 모두에서 서버는 문턱을 넘으면 스스로 회복하지 못하고, 만료 요청 버리기와 가상 대기실은 같은 서버로 문제를 풉니다. 서로 다른 두 모델이 같은 패턴을 보이면 그 결론을 더 믿을 수 있습니다(8편).</p></div>
+</section>
+
+<nav class="pager" aria-label="이전 다음 사례">
+  <a href="case1_elevator.html"><span>이전 사례</span><b>A1. 엘리베이터</b></a>
+  <a class="next" href="case3_dorm-flu.html"><span>다음 사례</span><b>A3. 기숙사 독감</b></a>
+</nav>
+<footer><a href="https://sites.google.com/view/knunextcom">Next-generation Computing Systems Lab</a>, 경북대학교 컴퓨터학부</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ===== 공통 도구: 색, 캔버스, 난수, 통계, 수식 탐색기 ===== */
+var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+var COL = {};
+function readColors(){
+  var s = getComputedStyle(document.documentElement);
+  ["ink","muted","line","soft","panel","bg","acc","c1","c2","c3","miss","t1","t2","t3","t4","t5"].forEach(function(k){ COL[k] = s.getPropertyValue("--"+k).trim(); });
+}
+readColors();
+function rgba(hex, a){
+  var h = hex.replace("#",""); if(h.length===3) h = h.replace(/(.)/g,"$1$1");
+  var n = parseInt(h,16); return "rgba("+(n>>16&255)+","+(n>>8&255)+","+(n&255)+","+a+")";
+}
+function F(size, weight){ return (weight||400)+" "+size+'px "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif'; }
+function txt(c, s, x, y, o){
+  o = o || {}; c.font = o.font || F(o.size||11, o.weight); c.fillStyle = o.color || COL.muted;
+  c.textAlign = o.align || "left"; c.textBaseline = o.base || "alphabetic"; c.fillText(s, x, y);
+  c.textAlign = "left"; c.textBaseline = "alphabetic";
+}
+function line(c, x0, y0, x1, y1, col, w, dash){
+  c.strokeStyle = col; c.lineWidth = w||1; c.setLineDash(dash||[]);
+  c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.setLineDash([]); c.lineWidth = 1;
+}
+function dot(c, x, y, r, col){ c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+function fmt(v, d){ if(!isFinite(v)) return "∞"; return (+v).toFixed(d===undefined?2:d); }
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+var CANVASES = [];
+function setup(rootOrCanvas, draw){
+  var cv = rootOrCanvas.tagName === "CANVAS" ? rootOrCanvas : rootOrCanvas.querySelector("canvas");
+  var c = cv.getContext("2d"), W = +cv.dataset.w, H = +cv.dataset.h;
+  cv.style.aspectRatio = W + " / " + H;
+  var o = {cv:cv, c:c, W:W, H:H};
+  o.redraw = function(){ c.clearRect(0,0,W,H); draw(c, W, H); };
+  o.fit = function(){
+    var w = cv.clientWidth || W, d = window.devicePixelRatio || 1;
+    cv.width = Math.round(w*d); cv.height = Math.round(w*H/W*d);
+    c.setTransform(cv.width/W, 0, 0, cv.height/H, 0, 0); o.redraw();
+  };
+  o.toLocal = function(ev){ var r = cv.getBoundingClientRect(); return {x:(ev.clientX-r.left)/r.width*W, y:(ev.clientY-r.top)/r.height*H}; };
+  new ResizeObserver(o.fit).observe(cv);
+  CANVASES.push(o);
+  return o;
+}
+function seg(root, sel, onPick){
+  var g = typeof sel === "string" ? root.querySelector(sel) : sel;
+  g.addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    g.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x===b ? "true" : "false"); });
+    onPick(b.dataset.v, b);
+  });
+}
+function bindRange(root, sel, onChange, fmtFn){
+  var inp = root.querySelector(sel), out = inp.parentElement.querySelector("b,output");
+  function u(){ if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value; onChange(+inp.value); }
+  inp.addEventListener("input", u); if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value;
+  return inp;
+}
+
+/* 축과 눈금 */
+function scale(box, xr, yr){
+  return {box:box, xr:xr, yr:yr,
+    X:function(v){ return box[0] + (v-xr[0])/(xr[1]-xr[0])*(box[2]-box[0]); },
+    Y:function(v){ return box[3] - (v-yr[0])/(yr[1]-yr[0])*(box[3]-box[1]); }};
+}
+function axes(c, s, o){
+  o = o || {}; var b = s.box;
+  (o.yt||[]).forEach(function(v){ var y = s.Y(v); line(c, b[0], y+.5, b[2], y+.5, COL.soft); txt(c, o.fy ? o.fy(v) : v, b[0]-6, y+4, {align:"right", size:10}); });
+  line(c, b[0], b[3]+.5, b[2], b[3]+.5, COL.line);
+  line(c, b[0]+.5, b[1], b[0]+.5, b[3], COL.line);
+  (o.xt||[]).forEach(function(v){ var x = s.X(v); line(c, x+.5, b[3], x+.5, b[3]+4, COL.line); txt(c, o.fx ? o.fx(v) : v, x, b[3]+15, {align:"center", size:10}); });
+  if(o.xl) txt(c, o.xl, b[2], b[3]+28, {align:"right", size:10});
+  if(o.yl) txt(c, o.yl, b[0], b[1]-6, {size:10});
+}
+function path(c, s, pts, col, w, dash){
+  var bx = s.box; c.save(); c.beginPath(); c.rect(bx[0]-1, bx[1]-3, bx[2]-bx[0]+2, bx[3]-bx[1]+4); c.clip();
+  c.strokeStyle = col; c.lineWidth = w||1.6; c.setLineDash(dash||[]); c.beginPath();
+  var started = false;
+  pts.forEach(function(p){ if(p == null || !isFinite(p[1])){ started = false; return; }
+    var x = s.X(p[0]), y = clamp(s.Y(p[1]), s.box[1]-2, s.box[3]+2); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; });
+  c.stroke(); c.setLineDash([]); c.lineWidth = 1; c.restore();
+}
+function ticks(a, b, n){
+  var span = b - a, step = Math.pow(10, Math.floor(Math.log10(span/n))), err = span/n/step;
+  step *= err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1;
+  var out = [], v = Math.ceil(a/step)*step;
+  for(; v <= b + 1e-9; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+
+/* 난수: 재현 가능한 생성기와 분포 */
+function mulberry(seed){ var a = seed >>> 0; return function(){ a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function U(r){ return (r || Math.random)(); }
+function expo(mean, r){ return -mean*Math.log(1-U(r)); }
+function normal(r){ var u = 1-U(r), v = U(r); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gammaRV(k, theta, r){
+  if(k < 1){ return gammaRV(k+1, theta, r)*Math.pow(U(r), 1/k); }
+  var d = k - 1/3, cc = 1/Math.sqrt(9*d);
+  while(true){ var x, v; do { x = normal(r); v = 1 + cc*x; } while(v <= 0);
+    v = v*v*v; var u = U(r);
+    if(u < 1 - .0331*x*x*x*x || Math.log(u) < .5*x*x + d*(1 - v + Math.log(v))) return d*v*theta; }
+}
+function lognormRV(mu, s, r){ return Math.exp(mu + s*normal(r)); }
+function poissonRV(lam, r){ var L = Math.exp(-lam), k = 0, p = 1; do { k++; p *= U(r); } while(p > L); return k-1; }
+
+/* 통계 */
+function mean(a){ var s = 0; for(var i=0;i<a.length;i++) s += a[i]; return s/a.length; }
+function sd(a){ var m = mean(a), s = 0; for(var i=0;i<a.length;i++) s += (a[i]-m)*(a[i]-m); return Math.sqrt(s/(a.length-1)); }
+function quantile(sorted, p){ var i = (sorted.length-1)*p, lo = Math.floor(i), hi = Math.ceil(i); return sorted[lo] + (sorted[hi]-sorted[lo])*(i-lo); }
+function normInv(p){ // Acklam 근사
+  var a=[-39.6968302866538,220.946098424521,-275.928510446969,138.357751867269,-30.6647980661472,2.50662827745924],
+      b=[-54.4760987982241,161.585836858041,-155.698979859887,66.8013118877197,-13.2806815528857],
+      cc=[-.00778489400243029,-.322396458041136,-2.40075827716184,-2.54973253934373,4.37466414146497,2.93816398269878],
+      d=[.00778469570904146,.32246712907004,2.445134137143,3.75440866190742], q, r;
+  if(p < .02425){ q = Math.sqrt(-2*Math.log(p)); return (((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if(p > .97575){ q = Math.sqrt(-2*Math.log(1-p)); return -(((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  q = p - .5; r = q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+function normCdf(x){ var t = 1/(1+.2316419*Math.abs(x)), y = .3989423*Math.exp(-x*x/2)*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return x > 0 ? 1-y : y; }
+function tcrit(df, conf){ // 양측 신뢰수준 conf의 t 임계값 (Cornish-Fisher 근사)
+  var z = normInv(1 - (1-(conf||.95))/2), z3 = z*z*z, z5 = z3*z*z, z7 = z5*z*z;
+  return z + (z3+z)/(4*df) + (5*z5+16*z3+3*z)/(96*df*df) + (3*z7+19*z5+17*z3-15*z)/(384*df*df*df);
+}
+
+/* 수식 탐색기: 항을 누르면 강조하고 설명을 보여 준다. EQ[id](값) 이 실시간 계산을 맡는다. */
+var EQ = {}, EQRUN = {};
+function refreshEq(id){ if(EQRUN[id]) EQRUN[id](); }
+function initEqx(){
+  document.querySelectorAll(".eqx").forEach(function(box){
+    var detail = box.querySelector(".eq-detail"), btns = box.querySelectorAll(".eq-terms button");
+    function pick(t){
+      var same = box.dataset.on === t;
+      if(same || !t){ delete box.dataset.on; } else box.dataset.on = t;
+      box.querySelectorAll(".eq-big .t").forEach(function(s){ s.classList.toggle("on", !same && s.dataset.t === t); });
+      btns.forEach(function(b){ b.setAttribute("aria-pressed", !same && b.dataset.t === t ? "true" : "false"); });
+      if(detail){ var src = box.querySelector('template[data-t="'+t+'"]'); detail.innerHTML = !same && src ? src.innerHTML : ""; }
+    }
+    btns.forEach(function(b){
+      var t = box.querySelector('.eq-big .t[data-t="'+b.dataset.t+'"]'); if(t) b.dataset.c = t.dataset.c;
+      b.style.setProperty("--tc", "var(--t"+(b.dataset.c||1)+")");
+      b.addEventListener("click", function(){ pick(b.dataset.t); });
+    });
+    box.querySelectorAll(".eq-big .t").forEach(function(s){ s.tabIndex = 0; s.setAttribute("role","button");
+      s.addEventListener("click", function(){ pick(s.dataset.t); });
+      s.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pick(s.dataset.t); } }); });
+    var fn = EQ[box.id];
+    if(fn){
+      var vars = box.querySelectorAll("[data-var]");
+      var run = function(){
+        var v = {}; vars.forEach(function(i){ v[i.dataset.var] = i.type === "checkbox" ? i.checked : +i.value;
+          var o = i.parentElement.querySelector("b"); if(o) o.textContent = i.dataset.fmt ? fmt(+i.value, +i.dataset.fmt) : i.value; });
+        var res = fn(v, box) || {};
+        Object.keys(res).forEach(function(k){ box.querySelectorAll('[data-o="'+k+'"]').forEach(function(el){ el.innerHTML = res[k]; }); });
+      };
+      vars.forEach(function(i){ i.addEventListener("input", run); });
+      EQRUN[box.id] = run; run();
+    }
+  });
+}
+function onTheme(){ readColors(); CANVASES.forEach(function(o){ o.redraw(); }); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onTheme);
+new MutationObserver(onTheme).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+
+/* 감마 함수와 분포 함수 */
+function lgamma(x){
+  var g = 7, cf = [0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(x < .5) return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*x))) - lgamma(1-x);
+  x -= 1; var a = cf[0], t = x + g + .5;
+  for(var i=1;i<g+2;i++) a += cf[i]/(x+i);
+  return .5*Math.log(2*Math.PI) + (x+.5)*Math.log(t) - t + Math.log(a);
+}
+function gammaP(a, x){ // 정규화된 하부 불완전 감마 함수
+  if(x <= 0) return 0;
+  var gln = lgamma(a);
+  if(x < a + 1){ var ap = a, sum = 1/a, del = sum; for(var n=0;n<300;n++){ ap++; del *= x/ap; sum += del; if(Math.abs(del) < Math.abs(sum)*1e-12) break; } return sum*Math.exp(-x + a*Math.log(x) - gln); }
+  var b = x + 1 - a, c = 1e300, d = 1/b, h = d;
+  for(var i=1;i<300;i++){ var an = -i*(i-a); b += 2; d = an*d + b; if(Math.abs(d) < 1e-300) d = 1e-300; c = b + an/c; if(Math.abs(c) < 1e-300) c = 1e-300; d = 1/d; var del2 = d*c; h *= del2; if(Math.abs(del2-1) < 1e-12) break; }
+  return 1 - Math.exp(-x + a*Math.log(x) - gln)*h;
+}
+function gammaPdf(x, k, th){ if(x <= 0) return (k < 1 && x === 0) ? Infinity : 0; return Math.exp((k-1)*Math.log(x) - x/th - lgamma(k) - k*Math.log(th)); }
+function chi2crit(df, z){ z = z || 1.6449; var a = 2/(9*df); return df*Math.pow(1 - a + z*Math.sqrt(a), 3); }
+function seededSample(seed, n, gen){ var r = mulberry(seed), out = []; for(var i=0;i<n;i++) out.push(gen(r)); return out; }
+
+
+/* ===== 응용 사례 A2 수강신청 서버 ===== */
+/* ---------- 수강신청 서버: 사건 기반 시뮬레이션 (시간 단위: 초) ---------- */
+function regHeapPush(h, e){ h.push(e); var i = h.length-1; while(i > 0){ var p = (i-1) >> 1; if(h[p].t <= h[i].t) break; var t = h[p]; h[p] = h[i]; h[i] = t; i = p; } }
+function regHeapPop(h){ var top = h[0], last = h.pop(); if(h.length){ h[0] = last; var i = 0; for(;;){ var l = 2*i+1, r = l+1, m = i; if(l < h.length && h[l].t < h[m].t) m = l; if(r < h.length && h[r].t < h[m].t) m = r; if(m === i) break; var t = h[m]; h[m] = h[i]; h[i] = t; i = m; } } return top; }
+/* o: N 학생 수, c 작업자 수, svc 평균 처리 시간, K 대기열 상한, tout 시간 초과, pol "now" | "backoff" | "room", drop 만료 요청 버리기 */
+function regRun(o, seed){
+  var r = mulberry(seed), ev = [], q = [], qh = 0, busy = 0, T = o.T || 300, N = o.N;
+  var first = new Float64Array(N), done = new Float64Array(N).fill(-1), tries = new Int32Array(N);
+  var sec = [], reqs = 0, rejects = 0, timeouts = 0, wasted = 0, good = 0, work = 0;
+  function bin(t){ var k = Math.floor(t); while(sec.length <= k) sec.push({off:0, ok:0, rej:0, q:0, to:0}); return sec[k]; }
+  for(var s=0;s<N;s++){ first[s] = r() < .75 ? -1 + expo(4, r) : expo(20, r); if(first[s] < 0) first[s] = r()*.5; regHeapPush(ev, {t:first[s], k:o.pol === "room" ? "enter" : "send", s:s}); }
+  var admitRate = o.c/o.svc*.95, nextAdmit = 0, room = [], rh = 0;
+  if(o.pol === "room") regHeapPush(ev, {t:0, k:"admit"});
+  function retry(s, t){
+    tries[s]++;
+    var d = o.pol === "backoff" ? r()*Math.min(30, Math.pow(2, Math.min(tries[s], 10))*.5) : .5 + r();
+    regHeapPush(ev, {t:t + d, k:"send", s:s});
+  }
+  function start(t){
+    while(busy < o.c && qh < q.length){
+      var rq = q[qh++];
+      if(rq.dead && o.drop) continue;          // 서버가 만료된 요청을 확인하고 버린다
+      rq.started = true; busy++; var d = expo(o.svc, r); work += d;
+      regHeapPush(ev, {t:t + d, k:"done", rq:rq, d:d});
+    }
+    if(qh > 5000){ q = q.slice(qh); qh = 0; }
+  }
+  while(ev.length){
+    var e = regHeapPop(ev), t = e.t; if(t > T) break;
+    if(e.k === "enter"){ room.push(e.s); continue; }
+    if(e.k === "admit"){ if(rh < room.length){ regHeapPush(ev, {t:t, k:"send", s:room[rh++]}); } regHeapPush(ev, {t:t + 1/admitRate, k:"admit"}); continue; }
+    if(e.k === "send"){
+      reqs++; bin(t).off++;
+      if(q.length - qh >= o.K){ rejects++; bin(t).rej++; retry(e.s, t + .1); continue; }
+      var rq = {s:e.s, t:t, started:false, dead:false}; q.push(rq);
+      if(o.pol !== "room") regHeapPush(ev, {t:t + o.tout, k:"tout", rq:rq});
+      start(t); continue;
+    }
+    if(e.k === "tout"){ if(!e.rq.started){ e.rq.dead = true; timeouts++; bin(t).to++; retry(e.rq.s, t); } continue; }
+    if(e.k === "done"){
+      busy--;
+      if(e.rq.dead){ wasted += e.d; }
+      else if(done[e.rq.s] < 0){ done[e.rq.s] = t; good++; bin(t).ok++; }
+      start(t); continue;
+    }
+  }
+  var tts = [];
+  for(s=0;s<N;s++) tts.push(done[s] >= 0 ? done[s] - first[s] : Infinity);   // 끝내 못 한 학생은 무한대로 센다
+  tts.sort(function(a, b){ return a - b; });
+  function pct(p){ return tts[Math.min(N-1, Math.floor(p*N))]; }
+  var within = tts.filter(function(x){ return x <= 60; }).length/N;
+  return {sec:sec, reqs:reqs, amp:reqs/N, rejects:rejects, timeouts:timeouts, wastedFrac:work ? wasted/work : 0, done:good/N, p50:pct(.5), p95:pct(.95), within60:within, tts:tts};
+}
+
+function inView(el, cb){ if(!("IntersectionObserver" in window)){ cb(true); return; } new IntersectionObserver(function(es){ cb(es[0].isIntersecting); }, {rootMargin:"60px"}).observe(el); }
+var RB = {N:10000, svc:.05, tout:10, T:240};
+function fsec(v){ return isFinite(v) ? fmt(v, 1) + "초" : "4분 안에 못 함"; }
+
+/* ---------- 2.2 10시 정각부터 4분 ---------- */
+(function(){
+  var root = document.getElementById("w-storm"); if(!root) return;
+  var P = {c:16, pol:"now", K:50000, drop:false}, res = null, out = root.querySelector("[data-out]"), pend = 0;
+  var view = setup(root, function(c, W, H){
+    var box = [52, 26, 620, 214], X = function(t){ return box[0] + t/240*(box[2]-box[0]); }, Y = function(v){ return box[3] - Math.log10(Math.max(1, v))/4.3*(box[3]-box[1]); };
+    [1, 10, 100, 1000, 10000].forEach(function(v){ line(c, box[0], Y(v)+.5, box[2], Y(v)+.5, COL.soft); txt(c, v >= 1000 ? (v/1000) + "천" : String(v), box[0] - 6, Y(v) + 4, {align:"right", size:10}); });
+    line(c, box[0], box[3]+.5, box[2], box[3]+.5, COL.line); line(c, box[0]+.5, box[1], box[0]+.5, box[3], COL.line);
+    [0, 30, 60, 90, 120, 150, 180, 210, 240].forEach(function(t){ txt(c, t + "초", X(t), box[3] + 15, {align:"center", size:10}); });
+    txt(c, "초당 건수", box[0], box[1] - 2, {size:10});
+    var cap = P.c/RB.svc; line(c, box[0], Y(cap)+.5, box[2], Y(cap)+.5, COL.ink, 1.2, [6,4]); txt(c, "처리 능력 " + cap + "건/초", box[2] - 4, Y(cap) - 5, {align:"right", size:10, color:COL.ink});
+    if(!res){ txt(c, "계산 중…", (box[0]+box[2])/2, (box[1]+box[3])/2, {align:"center", size:13}); return; }
+    function series(k, col, w, dash){ c.strokeStyle = col; c.lineWidth = w; c.setLineDash(dash||[]); c.beginPath(); res.sec.forEach(function(s, i){ var x = X(i + .5), y = Y(s[k]); i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke(); c.setLineDash([]); c.lineWidth = 1; }
+    series("off", rgba(COL.muted, .8), 1.4); series("to", rgba(COL.miss, .9), 1.4); series("ok", COL.acc, 2.2);
+    var lx = 300; [["들어온 요청", COL.muted], ["성공한 응답", COL.acc], ["시간 초과", COL.miss]].forEach(function(l){ line(c, lx, 10, lx + 16, 10, l[1], 2); txt(c, l[0], lx + 20, 14, {size:10.5}); lx += 96; });
+  });
+  function report(){
+    if(!res){ out.innerHTML = "계산 중…"; return; }
+    out.innerHTML = "60초 안에 성공 <b>" + fmt(res.within60*100, 0) + "%</b>, 첫 응답까지 중앙값 <b>" + fsec(res.p50) + "</b>, 95번째 백분위 " + fsec(res.p95) + ". 학생 한 명이 보낸 요청 " + fmt(res.amp, 1) + "배, 서버가 한 일 중 헛일 " + fmt(res.wastedFrac*100, 0) + "%.";
+  }
+  function run(){ res = null; view.redraw(); report(); var id = ++pend;
+    setTimeout(function(){ if(id !== pend) return; res = regRun({N:RB.N, svc:RB.svc, tout:RB.tout, T:RB.T, c:P.c, K:P.K, pol:P.pol, drop:P.drop}, 1); view.redraw(); report(); }, 30); }
+  bindRange(root, "[data-c]", function(v){ P.c = v; run(); });
+  seg(root, '[data-g="pol"]', function(v){ P.pol = v; run(); });
+  seg(root, '[data-g="K"]', function(v){ P.K = +v; run(); });
+  root.querySelector("[data-drop]").addEventListener("change", function(e){ P.drop = e.target.checked; run(); });
+  run();
+})();
+
+/* ---------- 3.1 작업자 수의 절벽 ---------- */
+(function(){
+  var root = document.getElementById("w-cliff"); if(!root) return;
+  var D = [{nm:"즉시 새로고침, 대기열 무제한", o:{pol:"now", K:50000}, col:"miss", pts:[]}, {nm:"+ 만료된 요청 버리기", o:{pol:"now", K:50000, drop:true}, col:"acc", pts:[]}, {nm:"가상 대기실", o:{pol:"room", K:50000}, col:"c3", pts:[]}];
+  var CS = []; for(var c=8;c<=40;c+=2) CS.push(c);
+  var view = setup(root, function(cx, W, H){
+    var s = scale([52, 14, 600, 186], [8, 40], [0, 100]);
+    axes(cx, s, {xt:[8,12,16,20,24,28,32,36,40], yt:[0,25,50,75,100], fy:function(v){ return v + "%"; }, xl:"작업자 수 c"});
+    D.forEach(function(d, k){ if(d.pts.length) path(cx, s, d.pts, COL[d.col], 2, k === 1 ? [6,3] : null); d.pts.forEach(function(p){ dot(cx, s.X(p[0]), s.Y(p[1]), 2.6, COL[d.col]); }); });
+    var lx = 60; D.forEach(function(d){ line(cx, lx, 226, lx + 16, 226, COL[d.col], 2); txt(cx, d.nm, lx + 20, 230, {size:10.5}); lx += 182; });
+  });
+  var started = false;
+  function go(){
+    var jobs = []; D.forEach(function(d){ CS.forEach(function(c){ jobs.push([d, c]); }); });
+    (function next(){ var j = jobs.shift(); if(!j){ report(); return; }
+      var r = regRun({N:RB.N, svc:RB.svc, tout:RB.tout, T:RB.T, c:j[1], K:j[0].o.K, pol:j[0].o.pol, drop:!!j[0].o.drop}, 1);
+      j[0].pts.push([j[1], r.within60*100]); view.redraw(); setTimeout(next, 0); })();
+  }
+  function report(){
+    var a = D[0].pts, cut = a.filter(function(p){ return p[1] > 90; })[0];
+    root.querySelector("[data-out]").innerHTML = "지금 설계는 작업자 " + (cut ? cut[0] : "?") + "개부터 버팁니다. 그 아래로는 절반 넘게 실패합니다. 만료된 요청을 버리거나 가상 대기실을 쓰면 작업자 8개로도 모두 60초 안에 성공합니다.";
+  }
+  root.querySelector("[data-out]").innerHTML = "화면에 보이면 작업자 수마다 계산을 시작합니다…";
+  inView(root, function(v){ if(v && !started){ started = true; go(); } });
+})();
+
+/* ===== 5. 직접 돌려 보기: 학생 1,000명과 서버 ===== */
+/* ---------- 수강신청 라이브: 학생 에이전트 1,000명과 서버 ---------- */
+/* 학생 1,000명, 처리 능력 초당 32건(작업자 16개 × 평균 0.5초). 3절 모델을 1/10로 줄여 비율을 맞췄다 */
+function RegLive(o, seed){
+  var r = mulberry(seed), N = o.N, me = this;
+  this.o = o; this.r = r; this.t = 0; this.ev = []; this.q = []; this.qh = 0; this.busy = 0; this.c = o.c;
+  this.st = []; this.inSvc = []; this.req = 0; this.work = 0; this.wasted = 0; this.ok = 0; this.sec = []; this.room = []; this.rh = 0; this.notice = false;
+  for(var s=0;s<N;s++){
+    var first = r() < .75 ? Math.max(r()*.5, -1 + expo(4, r)) : expo(20, r);
+    this.st.push({first:first, state:0, pat:5 + 10*r(), multi:r() < o.multi, comply:r() < .5, att:0, out:0, since:0, done:-1, tries:0});
+    regHeapPush(this.ev, {t:first, k:"start", s:s});
+  }
+  this.admit = function(){ return me.c/o.svc*.95; };
+}
+RegLive.prototype.bin = function(t){ var k = Math.floor(Math.max(0, t)); while(this.sec.length <= k) this.sec.push({off:0, ok:0, newA:0, retry:0, rej:0, tout:0, waste:0, drop:0, enq:0, deq:0, areaQ:0, sumWq:0, admit:0}); return this.sec[k]; };
+RegLive.prototype.attempt = function(s, t){
+  var a = this.st[s], k = a.multi && !this.o.room ? 3 : 1;
+  a.att++; a.state = 1; a.since = t; a.out = 0; a.started = false; a.tries++;
+  if(a.tries === 1) this.bin(t).newA++; else this.bin(t).retry++;
+  for(var i=0;i<k;i++){
+    this.req++; this.bin(t).off++;
+    if(this.q.length - this.qh >= this.o.K){ this.bin(t).rej++; continue; }            // 거절
+    var rq = {s:s, att:a.att, dead:false, started:false, t0:t}; this.q.push(rq); a.out++; this.bin(t).enq++;
+  }
+  if(a.out === 0){ a.state = 3; regHeapPush(this.ev, {t:t + .1, k:"retry", s:s, att:a.att}); }
+  else if(!this.o.room) regHeapPush(this.ev, {t:t + a.pat, k:"tout", s:s, att:a.att});
+  this.serve(t);
+};
+RegLive.prototype.serve = function(t){
+  while(this.busy < this.c && this.qh < this.q.length){
+    var rq = this.q[this.qh++];
+    var bq = this.bin(t); bq.deq++; bq.sumWq += t - rq.t0;
+    if(rq.dead && this.o.drop){ bq.drop++; continue; }
+    if(this.st[rq.s].done >= 0 && this.o.drop){ bq.drop++; continue; }
+    rq.started = true; this.busy++; var d = expo(this.o.svc, this.r); this.work += d; this.inSvc.push(rq);
+    if(!rq.dead && this.st[rq.s].att === rq.att){ this.st[rq.s].state = 2; this.st[rq.s].started = true; }
+    regHeapPush(this.ev, {t:t + d, k:"done", rq:rq, d:d});
+  }
+  if(this.qh > 3000){ this.q = this.q.slice(this.qh); this.qh = 0; }
+};
+RegLive.prototype.retryDelay = function(a){
+  if(this.o.backoff) return this.r()*Math.min(30, .5*Math.pow(2, Math.min(a.tries, 10)));
+  var d = .5 + this.r(); if(this.notice && a.comply) d *= 6; return d;
+};
+RegLive.prototype.run = function(T){
+  var o = this.o;
+  while(this.ev.length && this.ev[0].t <= T){
+    var e = regHeapPop(this.ev), t = e.t, a;
+    this.area(t); this.t = t;
+    if(e.k === "start"){ if(o.room){ this.st[e.s].state = 4; this.room.push(e.s); if(this.room.length === 1 && !this.adm){ this.adm = true; regHeapPush(this.ev, {t:t, k:"admit"}); } } else this.attempt(e.s, t); continue; }
+    if(e.k === "admit"){ if(this.rh < this.room.length){ this.bin(t).admit++; this.attempt(this.room[this.rh++], t); } if(this.rh < this.room.length || this.ev.some(function(x){ return x.k === "start"; })) regHeapPush(this.ev, {t:t + 1/this.admit(), k:"admit"}); else this.adm = false; continue; }
+    if(e.k === "retry"){ a = this.st[e.s]; if(a.done < 0 && a.att === e.att){ a.state = 3; regHeapPush(this.ev, {t:t + this.retryDelay(a), k:"again", s:e.s, att:a.att}); } continue; }
+    if(e.k === "again"){ a = this.st[e.s]; if(a.done < 0 && a.att === e.att) this.attempt(e.s, t); continue; }
+    if(e.k === "tout"){ a = this.st[e.s];
+      if(a.done < 0 && a.att === e.att && !a.started){
+        for(var i=this.qh;i<this.q.length;i++){ var rq = this.q[i]; if(rq.s === e.s && rq.att === e.att) rq.dead = true; }
+        a.state = 3; this.bin(t).tout++; regHeapPush(this.ev, {t:t + this.retryDelay(a), k:"again", s:e.s, att:a.att});
+      } continue; }
+    if(e.k === "done"){
+      this.busy--; var rq2 = e.rq, b = this.st[rq2.s], ix = this.inSvc.indexOf(rq2); if(ix >= 0) this.inSvc.splice(ix, 1);
+      if(rq2.dead || b.done >= 0 || b.att !== rq2.att){ this.wasted += e.d; this.bin(t).waste++; }
+      else { b.done = t; b.state = 5; this.ok++; this.bin(t).ok++; }
+      this.serve(t); continue;
+    }
+  }
+  this.area(T); this.t = T;
+};
+RegLive.prototype.area = function(t){ var lt = this.lastT || 0; if(t > lt){ this.bin(lt).areaQ += (this.q.length - this.qh)*(t - lt); this.lastT = t; } };
+/* 최근 w초 창의 흐름과 리틀의 법칙 값 */
+RegLive.prototype.win = function(w){
+  var t = this.t, a = Math.max(0, Math.floor(t - w)), b = Math.floor(t), o = {newA:0, retry:0, rej:0, tout:0, ok:0, waste:0, drop:0, enq:0, deq:0, areaQ:0, sumWq:0, admit:0};
+  for(var k=a;k<=b && k<this.sec.length;k++){ var s = this.sec[k]; for(var key in o) o[key] += s[key] || 0; }
+  var span = Math.max(.5, Math.min(w, t)); o.span = span; o.L = o.areaQ/span; o.lam = o.enq/span; o.W = o.deq ? o.sumWq/o.deq : 0; return o;
+};
+RegLive.prototype.setC = function(c){ this.c = c; this.serve(this.t); };
+RegLive.prototype.stats = function(){
+  var N = this.st.length, w60 = 0, s = this.st;
+  for(var i=0;i<N;i++) if(s[i].done >= 0 && s[i].done - s[i].first <= 60) w60++;
+  return {ok:this.ok, w60:w60/N, amp:this.req/N, waste:this.work ? this.wasted/this.work : 0, queue:this.q.length - this.qh};
+};
+
+(function(){
+  var root = document.getElementById("w-live"); if(!root) return;
+  var P = {c:16, multi:.1, room:false, drop:false, backoff:false}, L, playing = !REDUCED, visible = false, spd = 2, seed = 1;
+  function reset(){ L = new RegLive({N:1000, c:P.c, svc:.5, K:50000, multi:P.multi, room:P.room, drop:P.drop, backoff:P.backoff}, seed++); }
+  var STC = function(k){ return [COL.line, COL.c2, COL.c3, COL.miss, rgba(COL.muted, .7), COL.acc][k]; };
+  var view = setup(root, function(c, W, H){
+    var x0 = 12, y0 = 26, cs = 8.6;
+    txt(c, "학생 1,000명", x0, 16, {size:11, color:COL.ink});
+    L.st.forEach(function(a, i){ var col = i % 40, row = Math.floor(i/40), st = a.state;
+      if(st === 1 && L.t - a.since > a.pat*.6) c.fillStyle = rgba(COL.c2, .55); else c.fillStyle = STC(st);
+      c.fillRect(x0 + col*cs, y0 + row*cs, cs - 1.6, cs - 1.6); });
+    var lg = [["접속 전",0],["기다림",1],["처리 중",2],["오류, 새로고침",3],["대기실",4],["성공",5]], lx = x0;
+    lg.forEach(function(l){ c.fillStyle = STC(l[1]); c.fillRect(lx, y0 + 25*cs + 8, 8, 8); txt(c, l[0], lx + 11, y0 + 25*cs + 16, {size:9.5}); lx += l[0].length*9 + 24; });
+    // 서버
+    var sx = 372; txt(c, "서버 작업자 " + L.c + "개", sx, 16, {size:11, color:COL.ink});
+    var alive = 0, dead = 0; L.inSvc.forEach(function(rq){ if(rq.dead || L.st[rq.s].done >= 0 || L.st[rq.s].att !== rq.att) dead++; else alive++; });
+    for(var k=0;k<L.c;k++){ var bx = sx + (k % 16)*15.5, by = 26 + Math.floor(k/16)*15.5;
+      c.fillStyle = k < alive ? COL.c3 : k < alive + dead ? rgba(COL.muted, .55) : COL.soft; c.fillRect(bx, by, 13, 13); }
+    var qy = 26 + Math.ceil(L.c/16)*15.5 + 14, qn = L.q.length - L.qh, thr = 10*L.c/L.o.svc;
+    txt(c, "대기열 " + qn + "건", sx, qy + 4, {size:11, color:COL.ink});
+    var bw = 248, sc = Math.max(thr*2, qn*1.1, 50);
+    c.fillStyle = COL.soft; c.fillRect(sx, qy + 10, bw, 12); c.fillStyle = qn > thr ? COL.miss : COL.c2; c.fillRect(sx, qy + 10, Math.min(bw, bw*qn/sc), 12);
+    line(c, sx + bw*thr/sc, qy + 6, sx + bw*thr/sc, qy + 26, COL.ink, 1.4); txt(c, "10초분", sx + bw*thr/sc + 3, qy + 34, {size:9.5});
+    txt(c, "청록 = 쓸모 있는 처리, 회색 = 헛일", sx, qy + 50, {size:9.5});
+    // 초당 그래프
+    var gb = [44, 300, 620, 392], X = function(t){ return gb[0] + t/240*(gb[2] - gb[0]); }, Y = function(v){ return gb[3] - Math.log10(Math.max(1, v))/3.5*(gb[3] - gb[1]); };
+    [1, 10, 100, 1000].forEach(function(v){ line(c, gb[0], Y(v)+.5, gb[2], Y(v)+.5, COL.soft); txt(c, String(v), gb[0] - 5, Y(v) + 4, {align:"right", size:9.5}); });
+    line(c, gb[0], Y(L.c/L.o.svc), gb[2], Y(L.c/L.o.svc), COL.ink, 1, [5,3]);
+    [["off", rgba(COL.muted, .85), 1.2], ["ok", COL.acc, 2]].forEach(function(sr){ c.strokeStyle = sr[1]; c.lineWidth = sr[2]; c.beginPath(); L.sec.forEach(function(b, i){ if(i + 1 > L.t) return; var x = X(i + .5), y = Y(b[sr[0]]); i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke(); c.lineWidth = 1; });
+    txt(c, "초당 요청(회색)과 성공(색), 점선 = 처리 능력", gb[0], gb[1] - 6, {size:9.5});
+    txt(c, clock(L.t), 620, 16, {align:"right", size:11, color:COL.ink});
+  });
+  function clock(t){ var m = Math.floor(t/60), s = Math.floor(t % 60); return "10:" + (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s; }
+  /* 같은 시뮬레이션을 큐 네트워크로 */
+  var netCv = root.querySelector("canvas[data-net]"), anim = 0;
+  var N = {src:[52, 112], room:[150, 112], q:[280, 112], srv:[460, 112], ok:[590, 52], waste:[590, 172], drop:[460, 226], orbit:[280, 222]};
+  function flowEdge(c, pts, rate, col, label, lpos){
+    var on = rate > .05; c.strokeStyle = on ? rgba(col, .35) : COL.soft; c.lineWidth = on ? 1.5 + Math.min(6, Math.log10(1 + rate)*3) : 1.5;
+    c.beginPath(); pts.forEach(function(p, i){ i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]); }); c.stroke(); c.lineWidth = 1;
+    var e = pts[pts.length-1], d = pts[pts.length-2], ang = Math.atan2(e[1]-d[1], e[0]-d[0]);
+    c.fillStyle = on ? col : COL.line; c.beginPath(); c.moveTo(e[0], e[1]); c.lineTo(e[0] - 9*Math.cos(ang - .4), e[1] - 9*Math.sin(ang - .4)); c.lineTo(e[0] - 9*Math.cos(ang + .4), e[1] - 9*Math.sin(ang + .4)); c.fill();
+    if(on){ // 흐름의 크기만큼 촘촘한 점이 움직인다
+      var segs = [], tot = 0; for(var i=1;i<pts.length;i++){ var l = Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]); segs.push(l); tot += l; }
+      var gap = Math.max(7, Math.min(60, 160/Math.sqrt(rate))), off = (anim*40) % gap;
+      c.fillStyle = col;
+      for(var dd=off; dd<tot - 10; dd+=gap){ var k = 0, r = dd; while(k < segs.length - 1 && r > segs[k]){ r -= segs[k]; k++; } var u = r/segs[k];
+        c.beginPath(); c.arc(pts[k][0] + (pts[k+1][0]-pts[k][0])*u, pts[k][1] + (pts[k+1][1]-pts[k][1])*u, 2.4, 0, 7); c.fill(); }
+    }
+    if(label) txt(c, label + " " + (rate >= 10 ? fmt(rate, 0) : fmt(rate, 1)) + "/초", lpos[0], lpos[1], {size:10, color:on ? COL.ink : COL.muted, align:lpos[2] || "center"});
+  }
+  function node(c, xy, w, h, title, val, col, round){
+    c.fillStyle = COL.panel; c.strokeStyle = col; c.lineWidth = 1.6;
+    if(round){ c.beginPath(); c.arc(xy[0], xy[1], w, 0, 7); c.fill(); c.stroke(); }
+    else { c.fillRect(xy[0] - w/2, xy[1] - h/2, w, h); c.strokeRect(xy[0] - w/2 + .5, xy[1] - h/2 + .5, w - 1, h - 1); }
+    c.lineWidth = 1;
+    txt(c, title, xy[0], xy[1] - (round ? w : h/2) - 6, {size:10.5, align:"center", color:COL.ink, weight:500});
+    if(val !== null) txt(c, val, xy[0], xy[1] + 5, {size:13, align:"center", color:COL.ink, weight:500});
+  }
+  var netView = setup(netCv, function(c, W, H){
+    var w = L.win(5), cnt = [0,0,0,0,0,0]; L.st.forEach(function(a){ cnt[a.state]++; });
+    var qn = L.q.length - L.qh, thr = 10*L.c/L.o.svc, room = L.o.room;
+    // 흐름
+    if(room){ flowEdge(c, [[N.src[0]+30, N.src[1]], [N.room[0]-30, N.room[1]]], w.newA/w.span, COL.muted, "도착", [100, N.src[1]-8]);
+              flowEdge(c, [[N.room[0]+30, N.room[1]], [N.q[0]-55, N.q[1]]], w.admit/w.span, COL.c3, "입장", [200, N.q[1]-8]); }
+    else flowEdge(c, [[N.src[0]+30, N.src[1]], [N.q[0]-55, N.q[1]]], w.newA/w.span, COL.muted, "첫 요청", [150, N.src[1]-8]);
+    flowEdge(c, [[N.q[0]+55, N.q[1]], [N.srv[0]-60, N.srv[1]]], (w.deq - w.drop)/w.span, COL.c3, "처리", [N.q[0]+92, N.q[1]+22]);
+    flowEdge(c, [[N.srv[0]+60, N.srv[1]-12], [N.ok[0]-36, N.ok[1]]], w.ok/w.span, COL.acc, "성공", [548, 40, "right"]);
+    flowEdge(c, [[N.srv[0]+60, N.srv[1]+12], [N.waste[0]-36, N.waste[1]]], w.waste/w.span, COL.muted, "헛일", [548, 196, "right"]);
+    flowEdge(c, [[N.q[0]-20, N.q[1]+30], [N.q[0]-20, N.orbit[1]-28]], w.tout/w.span, COL.miss, "시간 초과", [N.q[0]-28, 172, "right"]);
+    flowEdge(c, [[N.q[0]+20, N.orbit[1]-28], [N.q[0]+20, N.q[1]+30]], w.retry/w.span, COL.c2, "재시도", [N.q[0]+28, 172, "left"]);
+    if(w.rej) flowEdge(c, [[N.q[0]-55, N.q[1]+20], [N.orbit[0]-30, N.orbit[1]-6]], w.rej/w.span, COL.miss, "거절", [210, 200]);
+    if(L.o.drop) flowEdge(c, [[N.q[0]+48, N.q[1]+30], [N.drop[0]-30, N.drop[1]-8]], w.drop/w.span, COL.muted, "만료 버림", [N.drop[0]-36, N.drop[1]+26, "right"]);
+    // 노드
+    node(c, N.src, 30, 0, "접속 전", String(cnt[0]), COL.muted, true);
+    if(room) node(c, N.room, 30, 0, "가상 대기실", String(cnt[4]), COL.c3, true);
+    node(c, N.q, 110, 60, "서버 대기열", null, qn > thr ? COL.miss : COL.c2);
+    var fw = Math.min(100, 100*qn/Math.max(thr*2, 1)); c.fillStyle = qn > thr ? rgba(COL.miss, .5) : rgba(COL.c2, .5); c.fillRect(N.q[0]-50, N.q[1]-12, fw, 14);
+    line(c, N.q[0]-50 + 50, N.q[1]-16, N.q[0]-50 + 50, N.q[1]+6, COL.ink, 1); txt(c, qn + "건", N.q[0], N.q[1]+20, {size:12, align:"center", color:COL.ink, weight:500});
+    node(c, N.srv, 120, 60, "작업자 " + L.c + "개", null, COL.c3);
+    var alive = 0, dead = 0; L.inSvc.forEach(function(rq){ if(rq.dead || L.st[rq.s].done >= 0 || L.st[rq.s].att !== rq.att) dead++; else alive++; });
+    for(var k=0;k<L.c;k++){ var bx = N.srv[0]-54 + (k % 12)*9, by = N.srv[1]-22 + Math.floor(k/12)*9; c.fillStyle = k < alive ? COL.c3 : k < alive + dead ? rgba(COL.muted, .6) : COL.soft; c.fillRect(bx, by, 7, 7); }
+    node(c, N.ok, 32, 0, "성공", String(cnt[5]), COL.acc, true);
+    node(c, N.waste, 32, 0, "버려진 응답", String(Math.round(L.wasted/L.o.svc)), COL.muted, true);
+    node(c, N.orbit, 28, 0, "", String(cnt[3]), COL.miss, true); txt(c, "새로고침 대기 (궤도)", N.orbit[0], N.orbit[1] + 44, {size:10.5, align:"center", color:COL.ink, weight:500});
+    if(L.o.drop){ node(c, N.drop, 24, 0, "", String(L.sec.reduce(function(a, b){ return a + b.drop; }, 0)), COL.muted, true); txt(c, "만료 버림", N.drop[0], N.drop[1] + 38, {size:10.5, align:"center", color:COL.ink, weight:500}); }
+  });
+  function netReport(){
+    var w = L.win(10), r = w.deq ? w.tout/Math.max(1, w.deq + w.tout) : 0, lamNew = (w.newA + w.admit*(L.o.room ? 0 : 0))/w.span;
+    var eff = r < .999 ? lamNew/(1 - r) : Infinity;
+    root.querySelector("[data-netout]").innerHTML = "서버 대기열, 최근 10초: 평균 길이 <b>L = " + fmt(w.L, 0) + "</b>, 들어온 비율 λ = " + fmt(w.lam, 1) + "/초, 대기열에 머문 시간 W = " + fmt(w.W, 1) + "초, <b>λW = " + fmt(w.lam*w.W, 0) + "</b>. 대기열을 떠난 요청 중 시간 초과로 되돌아간 비율 r = " + fmt(r, 2) + ".";
+  }
+
+  function report(){
+    var s = L.stats();
+    root.querySelector("[data-out]").innerHTML = clock(L.t) + ". 성공 <b>" + s.ok + "명</b>, 60초 안에 성공 " + fmt(s.w60*100, 0) + "%, 학생 한 명이 보낸 요청 " + fmt(s.amp, 1) + "배, 서버 처리 중 헛일 <b>" + fmt(s.waste*100, 0) + "%</b>." + (L.notice ? " 공지가 나간 상태입니다." : "");
+  }
+  bindRange(root, "[data-c]", function(v){ P.c = v; }, function(v){ return v + "개"; });
+  bindRange(root, "[data-multi]", function(v){ P.multi = v; }, function(v){ return Math.round(v*100) + "%"; });
+  seg(root, '[data-g="mode"]', function(v){ P.room = v === "room"; });
+  root.querySelector("[data-drop]").addEventListener("change", function(e){ P.drop = e.target.checked; L.o.drop = P.drop; L.serve(L.t); report(); });
+  root.querySelector("[data-backoff]").addEventListener("change", function(e){ P.backoff = e.target.checked; L.o.backoff = P.backoff; });
+  root.querySelector('[data-act="more"]').onclick = function(){ L.setC(Math.min(48, L.c + 8)); view.redraw(); report(); };
+  root.querySelector('[data-act="less"]').onclick = function(){ L.setC(Math.max(8, L.c - 8)); view.redraw(); report(); };
+  root.querySelector('[data-act="notice"]').onclick = function(){ L.notice = true; report(); };
+  root.querySelector('[data-act="reset"]').onclick = function(){ reset(); view.redraw(); report(); netReport(); };
+  seg(root, '[data-g="spd"]', function(v){ spd = +v; });
+  var pb = root.querySelector('[data-act="play"]');
+  pb.onclick = function(){ playing = !playing; pb.textContent = playing ? "일시정지" : "재생"; };
+  pb.textContent = playing ? "일시정지" : "재생";
+  inView(root, function(v){ visible = v; });
+  reset(); if(REDUCED) L.run(240); view.redraw(); report(); netReport();
+  var last = performance.now(), rep = 0;
+  (function frame(now){
+    var dt = Math.min(.1, (now - last)/1000); last = now;
+    anim += dt;
+    if(playing && visible && L.t < 240){ L.run(Math.min(240, L.t + dt*spd)); view.redraw(); rep += dt; if(rep > .25){ rep = 0; report(); netReport(); } }
+    if(visible) netView.redraw();
+    requestAnimationFrame(frame);
+  })(last);
+})();
+
+initEqx();
+})();
+</script>
+</body>
+</html>

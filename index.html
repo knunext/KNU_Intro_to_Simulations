@@ -5,17 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>모델링과 시뮬레이션 학습 자료</title>
 <!--
-  링크 수정 위치 (GitHub Pages에 올릴 때 실제 파일명/경로로 바꾸세요)
-    0. 시뮬레이션 101        : simulation-101.html
-    1. 큐잉 이론과 리틀의 법칙 : littles-law.html
-    2. DES (프롬프트 커피점)   : prompt-cafe-des.html
-    3. ABM (생태계)           : abm-ecosystem.html
-    4. 입력 모델링            : input-modeling.html
-    5. 출력 분석과 실험 설계   : output-analysis.html
-    6. 시스템 다이내믹스       : system-dynamics.html
-    7. 연속 시스템 시뮬레이션  : continuous-simulation.html
-    8. 검증, 타당성, 최적화    : verification-optimization.html
-    9. 프로젝트               : simulation-project.html     (아직 페이지 없음, 더미 링크)
+  편별 파일 (사이트 안 실제 파일명)
+    0.   시뮬레이션 101          : ch0_simulation-101.html
+    1.   큐잉 이론과 리틀의 법칙   : ch1_littles_law.html
+    2.   DES (프롬프트 커피점)     : ch2_DES.html
+    2-2. DEVS (2편 심화)          : ch2-2_DEVS.html
+    2-3. 병렬·분산 (2편 심화)     : ch2-3_PDES.html
+    3.   ABM (생태계)             : ch3_ABM.html
+    3-2. LLM 에이전트 (3편 심화)   : ch3-2_LLM-agents.html
+    4.   입력 모델링              : ch4_input-modeling.html
+    5.   출력 분석과 실험 설계     : ch5_output-analysis.html
+    5-2. 분산 감소 (5편 심화)      : ch5-2_variance-reduction.html
+    6.   시스템 다이내믹스         : ch6_system-dynamics.html
+    7.   연속 시스템 시뮬레이션    : ch7_continuous-simulation.html
+    7-2. 하이브리드 (7편 심화)     : ch7-2_hybrid-simulation.html
+    8.   검증, 타당성, 최적화      : ch8_verification-optimization.html
+    9.   프로젝트                 : ch9_simulation-project.html
+    응용 사례 A1 엘리베이터        : case1_elevator.html
+    응용 사례 A2 수강신청 서버     : case2_course-registration.html
+    응용 사례 A3 기숙사 독감       : case3_dorm-flu.html
+    응용 사례 A4 유령 정체         : case4_phantom-jam.html
+  응용 사례 노드는 모서리가 둥근 사각형이고, 색은 그 사례에서 주로 쓰는 기법의 편 색입니다.
+  심화편(2-2처럼 번호에 붙는 편)은 li에 class="sub"를 주면 노드가 작게 그려지고, 색은 본편 색의 짙은 톤(--c2b, --c2c, --c3b, --c5b, --c7b)을 씁니다.
   각 편의 노드 색은 그 편 페이지의 강조색(--acc)과 같습니다.
   아직 없는 편을 "준비 중"으로 넣을 때: li에 data-status="soon", 제목을 span.title-link로, <span class="soon">준비 중</span> 추가
   각 항목 오른쪽의 미니 데모는 맨 아래 <script>에 있으며 외부 라이브러리 없이 동작합니다.
@@ -26,8 +37,8 @@
 <style>
 :root{
   --bg:#F3F5F8; --panel:#FFFFFF; --ink:#17202E; --muted:#5A6577; --line:#D5DBE3; --soft:#E8ECF1;
-  --c0:#6A44B0; --c1:#3557C9; --c2:#C27C00; --c3:#0E7C6B;
-  --c4:#A63D6B; --c5:#1F7A99; --c6:#B4531F; --c7:#4B5BD6; --c8:#4F7A12; --c9:#4A5568; --miss:#C8372D;
+  --c0:#6A44B0; --c1:#3557C9; --c2:#C27C00; --c2b:#8C5A2E; --c2c:#8A6D00; --c3:#0E7C6B; --c3b:#2F8F5B;
+  --c4:#A63D6B; --c5:#1F7A99; --c5b:#2C5F8A; --c6:#B4531F; --c7:#4B5BD6; --c7b:#323C8C; --c8:#4F7A12; --c9:#4A5568; --miss:#C8372D;
   --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --math:"STIX Two Text","Times New Roman",Times,serif;
   color-scheme:light;
@@ -35,15 +46,15 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
-    --c0:#B394F0; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D;
-    --c4:#F08AB5; --c5:#5EC3E3; --c6:#F49A6A; --c7:#98A3FF; --c8:#A8D25E; --c9:#8C97A8; --miss:#EE5D52;
+    --c0:#B394F0; --c1:#7690F2; --c2:#F0A928; --c2b:#DDA56F; --c2c:#E3C04A; --c3:#2DB59D; --c3b:#5FD39A;
+    --c4:#F08AB5; --c5:#5EC3E3; --c5b:#7FB0DE; --c6:#F49A6A; --c7:#98A3FF; --c7b:#A9B2FF; --c8:#A8D25E; --c9:#8C97A8; --miss:#EE5D52;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
-  --c0:#B394F0; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D;
-    --c4:#F08AB5; --c5:#5EC3E3; --c6:#F49A6A; --c7:#98A3FF; --c8:#A8D25E; --c9:#8C97A8; --miss:#EE5D52;
+  --c0:#B394F0; --c1:#7690F2; --c2:#F0A928; --c2b:#DDA56F; --c2c:#E3C04A; --c3:#2DB59D; --c3b:#5FD39A;
+    --c4:#F08AB5; --c5:#5EC3E3; --c5b:#7FB0DE; --c6:#F49A6A; --c7:#98A3FF; --c7b:#A9B2FF; --c8:#A8D25E; --c9:#8C97A8; --miss:#EE5D52;
   color-scheme:dark;
 }
 :root{
@@ -75,6 +86,11 @@ h1{margin:0; font-weight:700; font-size:clamp(34px,6vw,52px); line-height:1.15; 
 .step + .step::before{content:""; position:absolute; left:72px; right:0; top:0; border-top:1px solid var(--line)}
 .step[data-n="0"]{--c:var(--c0)}
 .step[data-n="2"]{--c:var(--c2)}
+.step[data-n="2-2"]{--c:var(--c2b)}
+.step[data-n="2-3"]{--c:var(--c2c)}
+.step[data-n="3-2"]{--c:var(--c3b)}
+.step[data-n="5-2"]{--c:var(--c5b)}
+.step[data-n="7-2"]{--c:var(--c7b)}
 .step[data-n="3"]{--c:var(--c3)}
 .step[data-n="4"]{--c:var(--c4)}
 .step[data-n="5"]{--c:var(--c5)}
@@ -97,6 +113,16 @@ h1{margin:0; font-weight:700; font-size:clamp(34px,6vw,52px); line-height:1.15; 
   background:var(--c); color:var(--panel);
   font:500 24px/1 var(--math);
   position:absolute; left:0; top:26px; z-index:1;
+}
+.step.case .node{border-radius:12px; font-size:18px; letter-spacing:-.02em}
+.step[data-n="A1"]{--c:var(--c2)}
+.step[data-n="A2"]{--c:var(--c1)}
+.step[data-n="A3"]{--c:var(--c6)}
+.step[data-n="A4"]{--c:var(--c3)}
+.step.sub .node{width:40px; height:40px; left:4px; top:30px; font-size:16px; letter-spacing:-.02em}
+.tag{
+  display:inline-block; margin-left:8px; padding:1px 8px; border-radius:4px;
+  font-size:13px; font-weight:500; color:var(--c); background:var(--soft); vertical-align:3px;
 }
 .step[data-status="soon"] .node{background:var(--bg); color:var(--c); border:2px dashed var(--c)}
 .body h2{margin:6px 0 6px; font-size:22px; line-height:1.35; font-weight:700}
@@ -146,6 +172,8 @@ a.title-link:focus-visible{outline:none}
 .compare{margin-top:72px}
 .compare h2{font-size:24px; margin:0 0 8px}
 .compare > p{margin:0 0 20px; color:var(--muted); max-width:36em}
+.compare > p.after{margin:16px 0 0; max-width:44em; font-size:15px}
+.compare > p.after a{color:var(--ink)}
 .scroll{overflow-x:auto; background:var(--panel); border:1px solid var(--line); border-radius:10px}
 table{border-collapse:collapse; width:100%; min-width:760px; font-size:15px; line-height:1.55}
 th,td{padding:12px 14px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line)}
@@ -171,11 +199,11 @@ footer a{color:inherit}
 <header>
   <p class="org">경북대학교 컴퓨터학부 NCSL</p>
   <h1>모델링과 시뮬레이션</h1>
-  <p class="lead">줄 서는 손님에서 시작해, 시간을 사건 단위로 쪼개 보고, 마지막에는 스스로 판단하는 개체들의 세계로 갑니다. 각 페이지에는 브라우저에서 바로 돌려 볼 수 있는 시뮬레이터가 들어 있고, 항목마다 붙은 작은 데모는 그 맛보기입니다. 0~3편에서 기초와 대표 기법을 익히고, 4~8편에서 시뮬레이션을 제대로 쓰기 위한 도구와 다른 모델링 방식을 배운 뒤, 9편 프로젝트로 마무리합니다. 위에서부터 순서대로 보는 것을 권합니다.</p>
+  <p class="lead">줄 서는 손님에서 시작해, 시간을 사건 단위로 쪼개 보고, 마지막에는 스스로 판단하는 개체들의 세계로 갑니다. 각 페이지에는 브라우저에서 바로 돌려 볼 수 있는 시뮬레이터가 들어 있고, 항목마다 붙은 작은 데모는 그 맛보기입니다. 0~3편에서 기초와 대표 기법을 익히고(번호에 -2, -3이 붙은 편은 앞 편을 더 깊이 다루는 심화편이라 건너뛰어도 흐름을 따라갈 수 있습니다), 4~8편에서 시뮬레이션을 제대로 쓰기 위한 도구와 다른 모델링 방식을 배운 뒤, 9편 프로젝트로 마무리합니다. 마지막의 응용 사례 네 편은 배운 기법으로 캠퍼스의 실제 결정 문제를 끝까지 풀어 본 본보기입니다. 위에서부터 순서대로 보는 것을 권합니다.</p>
 </header>
 
 <ol class="path">
-  <li class="group" aria-hidden="false"><b>기초와 세 가지 대표 기법</b>시뮬레이션의 바탕, 그리고 큐잉, DES, ABM</li>
+  <li class="group" aria-hidden="false"><b>기초와 세 가지 대표 기법</b>시뮬레이션의 바탕, 그리고 큐잉, DES, ABM과 그 심화편</li>
 
   <li class="step" data-n="0">
     <div class="node" aria-hidden="true">0</div>
@@ -231,6 +259,42 @@ footer a{color:inherit}
     </figure>
   </li>
 
+  <li class="step sub" data-n="2-2">
+    <div class="node" aria-hidden="true">2-2</div>
+    <div class="body">
+      <h2><a class="title-link" href="ch2-2_DEVS.html">DEVS: 모델을 부품처럼 조립하기</a><span class="tag">2편 심화</span></h2>
+      <p class="desc">같은 프롬프트 커피점을 자기 상태만 아는 부품 넷으로 쪼개고, 포트와 메시지로만 이어 붙입니다. 사건 목록 하나가 모든 것을 쥐던 2편과 무엇이 다른지, 큰 모델에서 왜 이 방식을 쓰는지 봅니다.</p>
+      <p class="has">원자 모델의 일곱 원소와 시간 궤적, 결합 모델과 계층, 추상 시뮬레이터 메시지 추적, Select와 병렬 DEVS, 다른 방식과의 개념 비교, 보행자 버튼 신호등, 100줄 파이썬 커널</p>
+    </div>
+    <figure class="demo" id="d22">
+      <canvas role="img" aria-label="생성기, 대기열, 바리스타 세 부품이 포트로 메시지를 주고받고, 코디네이터가 다음 시각이 가장 이른 부품을 실행하는 DEVS 데모"></canvas>
+      <div class="ctrl">
+        <button type="button" data-act="step">다음 사이클</button>
+        <button type="button" data-act="auto" aria-pressed="true">자동</button>
+      </div>
+      <p class="readout" data-out></p>
+      <p class="hint">부품은 자기 다음 시각 tN만 알고, 코디네이터가 그중 가장 이른 부품을 실행합니다. 메시지는 선을 따라서만 움직입니다.</p>
+    </figure>
+  </li>
+
+  <li class="step sub" data-n="2-3">
+    <div class="node" aria-hidden="true">2-3</div>
+    <div class="body">
+      <h2><a class="title-link" href="ch2-3_PDES.html">병렬·분산 시뮬레이션</a><span class="tag">2편 심화</span></h2>
+      <p class="desc">모델 하나를 여러 코어나 컴퓨터가 나눠 돌리면 시계도 여러 개가 됩니다. 안전할 때까지 기다리는 보수적 방식과 일단 나아갔다 되돌리는 낙관적 방식을 직접 돌려 보고, 국방 M&amp;S의 연동 표준 HLA까지 이어 갑니다.</p>
+      <p class="has">논리 프로세스와 지역 인과성, lookahead와 널 메시지, 교착, Time Warp의 롤백과 GVT, 반복 실행 병렬화, HLA의 페더레이트와 RTI, 파이썬 코드</p>
+    </div>
+    <figure class="demo" id="d23">
+      <canvas role="img" aria-label="논리 프로세스 세 개의 시뮬레이션 시각이 보수적 방식과 낙관적 방식에서 어떻게 나아가는지 보여 주는 데모"></canvas>
+      <div class="ctrl">
+        <div class="seg" data-mode><button type="button" aria-pressed="true" data-v="cons">보수적</button><button type="button" aria-pressed="false" data-v="opt">낙관적</button></div>
+        <button type="button" data-act="reset">처음부터</button>
+      </div>
+      <p class="readout" data-out></p>
+      <p class="hint">LP마다 시계가 따로 갑니다. 기다릴까, 일단 달리고 되돌릴까?</p>
+    </figure>
+  </li>
+
   <li class="step" data-n="3">
     <div class="node" aria-hidden="true">3</div>
     <div class="body">
@@ -246,6 +310,24 @@ footer a{color:inherit}
       </div>
       <p class="readout" data-out></p>
       <p class="hint">격자를 누르면 그 자리에 여우 세 마리가 생깁니다.</p>
+    </figure>
+  </li>
+
+  <li class="step sub" data-n="3-2">
+    <div class="node" aria-hidden="true">3-2</div>
+    <div class="body">
+      <h2><a class="title-link" href="ch3-2_LLM-agents.html">LLM 에이전트와 시뮬레이션</a><span class="tag">3편 심화</span></h2>
+      <p class="desc">에이전트의 판단을 대규모 언어 모델에게 맡기면 행동은 풍부해지지만 시드가 듣지 않고, 실행이 비싸지고, 검증이 어려워집니다. 비용, 재현성, 출력 분석, 타당성을 하나씩 살펴봅니다.</p>
+      <p class="has">에이전트 루프, 사건 기반 호출과 응답 재사용, 기록과 재생, 분산의 두 원천, 프롬프트 민감성, 워게임 사례, 파이썬 에이전트 루프</p>
+    </div>
+    <figure class="demo" id="d32">
+      <canvas role="img" aria-label="같은 세계에서 판단만 LLM 대역에게 맡긴 커피점을 다섯 번 돌린 누적 이탈 손님 그래프"></canvas>
+      <div class="ctrl">
+        <button type="button" data-act="again">다시 다섯 번</button>
+        <button type="button" data-act="replay" aria-pressed="false">응답 기록 재생</button>
+      </div>
+      <p class="readout" data-out></p>
+      <p class="hint">도착과 제조 시간은 시드로 고정했습니다. 판단의 무작위성은 시드로 잡히지 않습니다.</p>
     </figure>
   </li>
 
@@ -292,6 +374,21 @@ footer a{color:inherit}
     </figure>
   </li>
 
+  <li class="step sub" data-n="5-2">
+    <div class="node" aria-hidden="true">5-2</div>
+    <div class="body">
+      <h2><a class="title-link" href="ch5-2_variance-reduction.html">분산 감소와 희귀 사건</a><span class="tag">5편 심화</span></h2>
+      <p class="desc">실행 횟수를 늘리는 대신 실행 하나하나의 흔들림을 줄이는 기법들, 그리고 백만 번에 한 번 일어나는 사건을 백만 번 돌리지 않고 재는 방법을 다룹니다.</p>
+      <p class="has">효율의 척도, 대조 변량, 제어 변량, 층화 표본추출, 희귀 사건의 상대 오차, 중요도 표본추출, 스플리팅, 파이썬 비교</p>
+    </div>
+    <figure class="demo" id="d52">
+      <canvas role="img" aria-label="독립 실행과 대조 변량으로 만든 추정값의 퍼짐 비교"></canvas>
+      <div class="ctrl"><button type="button" data-act="again">다시 뽑기</button></div>
+      <p class="readout" data-out></p>
+      <p class="hint">실행 횟수는 같고, 난수를 U와 1 − U로 짝지어 썼을 뿐입니다.</p>
+    </figure>
+  </li>
+
   <li class="step" data-n="6">
     <div class="node" aria-hidden="true">6</div>
     <div class="body">
@@ -328,6 +425,21 @@ footer a{color:inherit}
       </div>
       <p class="readout" data-out></p>
       <p class="hint">용수철 진동을 30초 계산합니다. 점선 원이 정답이고, 에너지는 그대로여야 합니다.</p>
+    </figure>
+  </li>
+
+  <li class="step sub" data-n="7-2">
+    <div class="node" aria-hidden="true">7-2</div>
+    <div class="body">
+      <h2><a class="title-link" href="ch7-2_hybrid-simulation.html">하이브리드 시뮬레이션</a><span class="tag">7편 심화</span></h2>
+      <p class="desc">연속으로 변하는 상태와 이산 사건이 한 모델에 섞일 때, 상태가 어떤 값에 닿는 순간을 정확히 잡는 법을 배웁니다. 드론 순찰과 충전소로 연습합니다.</p>
+      <p class="has">시간 사건과 상태 사건, 영점 교차와 사건 위치 찾기, 채터링과 히스테리시스, 제노 현상, QSS로 연속 시스템을 DEVS로 옮기기, 파이썬 코드</p>
+    </div>
+    <figure class="demo" id="d72">
+      <canvas role="img" aria-label="배터리가 20%에 닿는 순간을 걸음 끝에서 확인할 때와 걸음 안에서 찾을 때의 비교"></canvas>
+      <div class="ctrl"><label>걸음 Δt <input type="range" min="0.5" max="8" step="0.5" value="4" data-dt> <b data-dtv>4.0분</b></label></div>
+      <p class="readout" data-out></p>
+      <p class="hint">빨간 ✕는 걸음 끝에서 알아챈 순간, 점은 걸음 안에서 찾은 순간입니다.</p>
     </figure>
   </li>
 
@@ -370,6 +482,68 @@ footer a{color:inherit}
     </figure>
   </li>
 
+  <li class="group"><b>응용 사례</b>배운 기법으로 캠퍼스의 결정 문제를 질문부터 결론까지 풀어 봅니다. 9편 프로젝트의 본보기입니다.</li>
+
+  <li class="step case" data-n="A1">
+    <div class="node" aria-hidden="true">A1</div>
+    <div class="body">
+      <h2><a class="title-link" href="case1_elevator.html">엘리베이터: 수업 시작 10분 전</a><span class="tag">DES</span></h2>
+      <p class="desc">8층 강의동의 엘리베이터 두 대로 9시 수업 직전의 대기와 지각을 줄일 배차 규칙을 찾습니다. 부하에 따라 가장 좋은 규칙이 바뀝니다.</p>
+      <p class="has">집합 제어, 구역 나누기, 목적층 예약, 수송 능력 손계산, 공통 난수 비교, 시간에 따라 변하는 도착, 시간대별 규칙 전환</p>
+    </div>
+    <figure class="demo" id="dA1">
+      <canvas role="img" aria-label="도착률에 따른 집합 제어와 구역 나누기의 평균 대기"></canvas>
+      <div class="ctrl"><label>분당 도착 <input type="range" min="4" max="22" step="2" value="12" data-l> <b data-lv>12명</b></label></div>
+      <p class="readout" data-out></p>
+      <p class="hint">엘리베이터 두 대, 아침 상향 피크. 붐빌수록 어느 규칙이 나을까요?</p>
+    </figure>
+  </li>
+
+  <li class="step case" data-n="A2">
+    <div class="node" aria-hidden="true">A2</div>
+    <div class="body">
+      <h2><a class="title-link" href="case2_course-registration.html">수강신청 서버: 10시 정각의 폭주</a><span class="tag">큐잉과 DES</span></h2>
+      <p class="desc">1만 명이 동시에 접속하면 시간 초과와 새로고침이 서버를 무너뜨립니다. 증설, 재시도 방식, 대기열 길이, 가상 대기실을 비교합니다.</p>
+      <p class="has">평균과 몰림, 재시도 되먹임, 준안정 고장, 작업자 수의 절벽, 만료 요청 버리기, 가상 대기실</p>
+    </div>
+    <figure class="demo" id="dA2">
+      <canvas role="img" aria-label="수강신청 오픈 뒤 4분 동안 초마다 들어온 요청과 성공한 응답"></canvas>
+      <div class="ctrl"><div class="seg" data-mode><button type="button" aria-pressed="true" data-v="now">지금 설계</button><button type="button" aria-pressed="false" data-v="drop">만료 요청 버리기</button></div></div>
+      <p class="readout" data-out></p>
+      <p class="hint">같은 서버, 같은 학생 1만 명. 바꾼 것은 한 줄입니다.</p>
+    </figure>
+  </li>
+
+  <li class="step case" data-n="A3">
+    <div class="node" aria-hidden="true">A3</div>
+    <div class="body">
+      <h2><a class="title-link" href="case3_dorm-flu.html">기숙사 독감: 같은 질문, 두 모델</a><span class="tag">SD와 ABM</span></h2>
+      <p class="desc">방과 층으로 나뉜 기숙사의 독감을 SD와 ABM으로 함께 풉니다. 같은 매개변수에서도 두 모델의 답이 갈라지는 이유와 보정의 한계를 봅니다.</p>
+      <p class="has">SEIR, 접촉 구조와 포화, 초기에 꺼지는 유행, SD 보정, 증상자 격리와 휴게실 폐쇄 비교</p>
+    </div>
+    <figure class="demo" id="dA3">
+      <canvas role="img" aria-label="기숙사 독감의 ABM 실행 열두 번과 SD 곡선"></canvas>
+      <div class="ctrl"><div class="seg" data-mode><button type="button" aria-pressed="true" data-v="none">대책 없음</button><button type="button" aria-pressed="false" data-v="floor">층 휴게실 폐쇄</button></div></div>
+      <p class="readout" data-out></p>
+      <p class="hint">가는 선은 ABM 한 번, 점선은 같은 매개변수의 SD입니다.</p>
+    </figure>
+  </li>
+
+  <li class="step case" data-n="A4">
+    <div class="node" aria-hidden="true">A4</div>
+    <div class="body">
+      <h2><a class="title-link" href="case4_phantom-jam.html">유령 정체: 사고 없이 멈추는 길</a><span class="tag">ABM</span></h2>
+      <p class="desc">운전자의 작은 망설임이 모여 뒤로 퍼지는 정체 파도가 되는 과정을 셀룰러 오토마타로 재현하고, 자율주행차의 효과를 따져 봅니다.</p>
+      <p class="has">나겔-슈레켄베르크 모델, 시공간도, 기본 도표, q = kv, 정체 파도의 속도로 타당성 확인, 가정에 기대는 결론</p>
+    </div>
+    <figure class="demo" id="dA4">
+      <canvas role="img" aria-label="고리 도로 위 차들의 시공간도. 정체가 뒤로 퍼지는 모습"></canvas>
+      <div class="ctrl"><label>망설임 p <input type="range" min="0" max="0.5" step="0.05" value="0.25" data-p> <b data-pv>0.25</b></label></div>
+      <p class="readout" data-out></p>
+      <p class="hint">빨간 점이 멈춘 차입니다. 정체는 차와 반대 방향으로 움직입니다.</p>
+    </figure>
+  </li>
+
 </ol>
 <section class="compare" aria-labelledby="cmp">
   <h2 id="cmp">네 방법은 무엇이 다른가</h2>
@@ -394,6 +568,7 @@ footer a{color:inherit}
       </tbody>
     </table>
   </div>
+  <p class="after"><a href="ch2-2_DEVS.html">DEVS(2-2편)</a>를 다섯 번째 열로 넣지 않은 데는 이유가 있습니다. 큐잉, DES, ABM, SD가 세상을 무엇으로 쪼개 보느냐의 차이라면, DEVS는 DES 모델을 포트를 가진 부품으로 적는 명세 방식이라 층위가 다릅니다. 에이전트 하나를 부품으로 만들면 ABM도 DEVS 위에 올릴 수 있습니다.</p>
 </section>
 
 <footer>
@@ -410,7 +585,7 @@ var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 var COL = {};
 function readColors(){
   var s = getComputedStyle(document.documentElement);
-  ["ink","muted","line","soft","panel","miss","c0","c1","c2","c3","c4","c5","c6","c7","c8","c9"].forEach(function(k){ COL[k] = s.getPropertyValue("--"+k).trim(); });
+  ["ink","muted","line","soft","panel","miss","c0","c1","c2","c2b","c2c","c3","c3b","c5b","c7b","c4","c5","c6","c7","c8","c9"].forEach(function(k){ COL[k] = s.getPropertyValue("--"+k).trim(); });
 }
 readColors();
 function rgba(hex, a){
@@ -418,6 +593,7 @@ function rgba(hex, a){
   var n = parseInt(h,16); return "rgba("+(n>>16&255)+","+(n>>8&255)+","+(n&255)+","+a+")";
 }
 function expo(rate){ return -Math.log(1-Math.random())/rate; }
+function mulberryI(seed){ var a = seed >>> 0; return function(){ a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 var FONT = '10px "IBM Plex Sans KR","Apple SD Gothic Neo",sans-serif';
 
 var demos = [];
@@ -627,6 +803,335 @@ makeDemo("d2", {
     var nxt = this.fel[0], nm = function(k){ return k === "A" ? "도착" : "떠남"; };
     this.out.innerHTML = (this.last ? "방금 처리: <b>" + nm(this.last.k) + "</b> @ " + this.last.t.toFixed(2) + ", " : "")
       + "다음: <b>" + nm(nxt.k) + "</b> @ " + nxt.t.toFixed(2) + " <span style='white-space:nowrap'>(사건 리스트 " + this.fel.length + "개)</span>";
+  }
+});
+
+/* ---------- 2-2. DEVS: 부품, 포트, 코디네이터 ---------- */
+makeDemo("d22", {
+  LAM: 0.8, PERIOD: 1.1, ORDER: ["B","Q","G"],
+  NAME: {G:"생성기 G", Q:"대기열 Q", B:"바리스타 B"},
+  X: {G:6, Q:100, B:194},
+  PATH: {GQ:[[66,40],[100,40]], QB:[[160,40],[194,40]], BQ:[[224,62],[224,72],[130,72],[130,62]]},
+  init: function(){
+    var d = this;
+    d.btn("step").onclick = function(){ d.setPlaying(false, "auto", "자동", "자동"); d.step(); };
+    d.btn("auto").onclick = function(){ d.setPlaying(!d.playing, "auto", "자동", "자동"); d.acc = d.PERIOD; };
+    if(REDUCED) d.setPlaying(false, "auto", "자동", "자동");
+    d.reset();
+  },
+  reset: function(){
+    this.clock = 0; this.acc = 0; this.cyc = 0; this.last = null; this.anim = null; this.flash = 0;
+    this.M = {G:{tL:0, tN:expo(this.LAM), n:0}, Q:{tL:0, tN:Infinity, q:[], busy:false}, B:{tL:0, tN:Infinity, job:null}};
+    this.draw && this.draw();
+  },
+  next: function(){
+    var M = this.M, t = Infinity, k;
+    for(k in M) if(M[k].tN < t) t = M[k].tN;
+    for(var i=0;i<this.ORDER.length;i++) if(M[this.ORDER[i]].tN === t) return {who:this.ORDER[i], t:t};
+  },
+  step: function(){
+    var M = this.M, nx = this.next(), t = nx.t, txt, note;
+    this.clock = t; this.cyc++;
+    if(nx.who === "G"){
+      var id = ++M.G.n; M.G.tL = t; M.G.tN = t + expo(this.LAM);
+      M.Q.q.push(id); M.Q.tL = t;
+      if(!M.Q.busy){ M.Q.tN = t; note = "Q: 바리스타가 비어 있어 ta = 0, 같은 시각에 바로 넘깁니다."; }
+      else note = "Q: 바리스타가 바빠 줄에 세웁니다.";
+      txt = "<b>G</b>가 손님 " + id + "번을 내보냄 → Q.in"; this.anim = {e:"GQ", u:0};
+    } else if(nx.who === "Q"){
+      var j = M.Q.q.shift(); M.Q.busy = true; M.Q.tL = t; M.Q.tN = Infinity;
+      M.B.job = j; M.B.tL = t; M.B.tN = t + expo(1);
+      txt = "<b>Q</b>가 손님 " + j + "번을 넘김 → B.in"; note = "B: 제조 시작, 끝나는 시각 tN = " + M.B.tN.toFixed(2); this.anim = {e:"QB", u:0};
+    } else {
+      var done = M.B.job; M.B.job = null; M.B.tL = t; M.B.tN = Infinity;
+      M.Q.busy = false; M.Q.tL = t;
+      if(M.Q.q.length){ M.Q.tN = t; note = "Q: 줄 맨 앞 손님을 ta = 0으로 바로 넘깁니다."; } else note = "Q: 줄이 비어 다음 손님을 기다립니다.";
+      txt = "<b>B</b>가 손님 " + done + "번 완료 → Q.ready"; this.anim = {e:"BQ", u:0};
+    }
+    this.last = {txt:txt, note:note, who:nx.who}; this.flash = 1;
+    if(this.clock > 5000) this.reset();
+  },
+  update: function(dt){ this.acc += dt; if(this.acc >= this.PERIOD){ this.acc = 0; this.step(); } },
+  draw: function(dt){
+    var c = this.ctx, d = this, M = this.M, nx = this.next();
+    dt = dt || 0;
+    c.clearRect(0,0,VW,VH); c.font = FONT; c.textAlign = "left";
+    c.fillStyle = COL.muted; c.fillText("t = " + this.clock.toFixed(2), 6, 11);
+    c.textAlign = "right"; c.fillText("사이클 " + this.cyc, 254, 11); c.textAlign = "left";
+    // 결합 (선)
+    c.strokeStyle = COL.muted; c.lineWidth = 1.2;
+    ["GQ","QB","BQ"].forEach(function(k){
+      var p = d.PATH[k]; c.beginPath(); c.moveTo(p[0][0], p[0][1]);
+      for(var i=1;i<p.length;i++) c.lineTo(p[i][0], p[i][1]); c.stroke();
+    });
+    c.lineWidth = 1;
+    c.fillStyle = COL.muted; c.fillText("ready", 134, 70);
+    // 부품 상자
+    ["G","Q","B"].forEach(function(k){
+      var x = d.X[k], y = 18, m = M[k], imm = nx && nx.who === k;
+      c.fillStyle = COL.panel; c.fillRect(x, y, 60, 44);
+      c.strokeStyle = imm ? COL.c2b : rgba(COL.ink, .7); c.lineWidth = imm ? 2.2 : 1;
+      c.strokeRect(x + .5, y + .5, 59, 43); c.lineWidth = 1;
+      c.fillStyle = COL.ink; c.font = '500 9.5px "IBM Plex Sans KR","Apple SD Gothic Neo",sans-serif'; c.fillText(d.NAME[k], x + 5, y + 12);
+      c.font = FONT; c.fillStyle = COL.muted;
+      if(k === "G") c.fillText("다음 " + (m.n + 1) + "번", x + 5, y + 25);
+      if(k === "Q"){
+        if(m.q.length === 0) c.fillText("빈 줄", x + 5, y + 25);
+        for(var i=0;i<Math.min(m.q.length, 6);i++){ c.fillStyle = COL.c2b; c.fillRect(x + 6 + i*8, y + 18, 6, 6); }
+        if(m.q.length > 6){ c.fillStyle = COL.muted; c.fillText("+" + (m.q.length - 6), x + 52, y + 25); }
+      }
+      if(k === "B") c.fillText(m.job ? m.job + "번 제조" : "쉬는 중", x + 5, y + 25);
+      // σ 막대
+      c.fillStyle = COL.soft; c.fillRect(x + 5, y + 33, 50, 4);
+      if(isFinite(m.tN)){
+        var span = m.tN - m.tL, f = span > 0 ? Math.max(0, Math.min(1, (m.tN - d.clock)/span)) : 0;
+        c.fillStyle = COL.c2b; c.fillRect(x + 5, y + 33, 50*f, 4);
+      } else { c.fillStyle = COL.muted; c.fillText("∞", x + 46, y + 25); }
+      // 포트
+      c.fillStyle = COL.ink;
+      if(k !== "G") c.fillRect(x - 2, 38, 4, 4);
+      if(k !== "B") c.fillRect(x + 58, 38, 4, 4);
+      if(k === "B") c.fillRect(222, 60, 4, 4);
+      if(k === "Q") c.fillRect(128, 60, 4, 4);
+    });
+    // 움직이는 메시지
+    if(this.anim){
+      this.anim.u += dt / 0.5;
+      if(REDUCED) this.anim.u = 1;
+      var p = this.PATH[this.anim.e], L = 0, seg = [];
+      for(var i=1;i<p.length;i++){ var l = Math.hypot(p[i][0]-p[i-1][0], p[i][1]-p[i-1][1]); seg.push(l); L += l; }
+      var s = Math.min(1, this.anim.u) * L, q = 0;
+      while(q < seg.length - 1 && s > seg[q]){ s -= seg[q]; q++; }
+      var a = p[q], b = p[q+1], r = seg[q] ? s/seg[q] : 0;
+      c.fillStyle = COL.c1; c.beginPath(); c.arc(a[0] + (b[0]-a[0])*r, a[1] + (b[1]-a[1])*r, 3.4, 0, 7); c.fill();
+      if(this.anim.u >= 1.4) this.anim = null;
+    }
+    // 코디네이터가 보는 tN
+    c.fillStyle = COL.muted; c.font = FONT; c.fillText("코디네이터가 보는 다음 시각 tN", 6, 93);
+    ["G","Q","B"].forEach(function(k, i){
+      var x = 6 + i*84, y = 99, imm = nx && nx.who === k, v = M[k].tN;
+      c.fillStyle = imm ? rgba(COL.c2b, .16) : COL.soft; c.fillRect(x, y, 78, 20);
+      if(imm){ c.strokeStyle = COL.c2b; c.strokeRect(x + .5, y + .5, 77, 19); }
+      c.fillStyle = COL.ink; c.fillText(k + "   " + (isFinite(v) ? v.toFixed(2) : "∞"), x + 6, y + 14);
+      if(imm){ c.fillStyle = COL.c2b; c.textAlign = "right"; c.fillText("다음", x + 73, y + 14); c.textAlign = "left"; }
+    });
+    c.fillStyle = COL.c1; c.beginPath(); c.arc(9, VH - 9.5, 2.6, 0, 7); c.fill();
+    c.fillStyle = COL.muted; c.fillText("메시지   막대 = 남은 시간 σ   ∞ = 입력을 기다림", 15, VH - 6);
+    this.flash = Math.max(0, this.flash - dt*1.5);
+    this.out.innerHTML = this.last ? "방금: " + this.last.txt + "<br>" + this.last.note
+      : "‘다음 사이클’을 누르면 코디네이터가 tN이 가장 이른 부품을 실행합니다.";
+  }
+});
+
+/* ---------- 2-3. 병렬·분산: LP 시계 경주 ---------- */
+makeDemo("d23", {
+  SP:[1.0, .8, .45], L:.6,
+  init: function(){
+    var d = this; d.mode = "cons";
+    segPick(d.fig, "[data-mode]", function(v){ d.mode = v; d.reset(); });
+    d.btn("reset").onclick = function(){ d.reset(); };
+    d.reset();
+  },
+  reset: function(){ this.c = [0,0,0]; this.rb = 0; this.wait = 0; this.flash = [0,0,0]; this.acc = 0; this.draw && this.draw(); },
+  update: function(dt){
+    var d = this, T = 40;
+    if(Math.min.apply(null, d.c) >= T){ d.acc += dt; if(d.acc > 2) d.reset(); return; }
+    for(var i=0;i<3;i++){
+      var step = d.SP[i]*dt*4;
+      if(d.mode === "cons"){
+        var others = Math.min.apply(null, d.c.filter(function(_, j){ return j !== i; }));
+        var lim = Math.min(T, others + d.L);
+        if(d.c[i] + step > lim){ if(d.c[i] < lim) d.c[i] = lim; else d.wait += dt; } else d.c[i] += step;
+      } else {
+        d.c[i] = Math.min(T, d.c[i] + step);
+      }
+      d.flash[i] = Math.max(0, d.flash[i] - dt*2);
+    }
+    if(d.mode === "opt" && Math.random() < dt*1.6){ // 느린 LP가 보낸 메시지가 도착
+      var ts = d.c[2] + d.L, to = Math.random() < .5 ? 0 : 1;
+      if(d.c[to] > ts){ d.c[to] = ts; d.rb++; d.flash[to] = 1; }
+    }
+  },
+  draw: function(){
+    var c = this.ctx, d = this, x0 = 70, x1 = 252, T = 40, X = function(v){ return x0 + v/T*(x1-x0); };
+    c.clearRect(0,0,VW,VH); c.font = FONT;
+    var names = ["LP 1","LP 2","LP 3 (느림)"];
+    for(var i=0;i<3;i++){
+      var y = 22 + i*30;
+      c.fillStyle = COL.soft; c.fillRect(x0, y, x1-x0, 14);
+      c.fillStyle = d.flash[i] > 0 ? rgba(COL.miss, .4 + .6*d.flash[i]) : COL.c2c; c.fillRect(x0, y, X(d.c[i]) - x0, 14);
+      c.fillStyle = COL.ink; c.fillText(names[i], 4, y + 11);
+    }
+    var g = Math.min.apply(null, d.c), gx = X(g);
+    c.strokeStyle = COL.ink; c.setLineDash([3,2]); c.beginPath(); c.moveTo(gx+.5, 14); c.lineTo(gx+.5, 106); c.stroke(); c.setLineDash([]);
+    c.fillStyle = COL.ink; c.textAlign = "center"; c.fillText(d.mode === "opt" ? "GVT" : "가장 느린 시계", Math.max(gx, 100), 118); c.textAlign = "left";
+    c.fillStyle = COL.muted; c.fillText("막대 = LP마다의 시뮬레이션 시각", 6, VH - 6);
+    this.out.innerHTML = d.mode === "cons"
+      ? "보수적: 앞선 LP는 가장 느린 시계 + lookahead에서 <b>기다립니다</b>. 기다린 시간 " + d.wait.toFixed(1) + "초."
+      : "낙관적: 일단 달리다가 과거 메시지를 받으면 <b>롤백</b>합니다. 롤백 " + d.rb + "번.";
+  }
+});
+
+/* ---------- 3-2. LLM 에이전트: 같은 세계, 다섯 번 ---------- */
+makeDemo("d32", {
+  still:true,
+  init: function(){
+    var d = this; d.replay = false;
+    d.btn("again").onclick = function(){ d.seed++; d.draw(); };
+    d.btn("replay").onclick = function(){ d.replay = !d.replay; d.btn("replay").setAttribute("aria-pressed", d.replay ? "true" : "false"); d.draw(); };
+    d.seed = 1; d.draw();
+  },
+  runs: function(){
+    var R = [], world = mulberryI(42), arr = [], t = 0;
+    while(t < 120){ t += -Math.log(1 - world())/1.2; arr.push({t:t, s:-Math.log(1 - world())}); }
+    for(var k=0;k<5;k++){
+      var dec = this.replay ? mulberryI(777) : mulberryI(this.seed*1000 + k), free = 0, q = [], left = 0, cum = [[0,0]];
+      arr.forEach(function(a){
+        q = q.filter(function(e){ return e > a.t; });
+        var qn = q.length, p = 1/(1 + Math.exp(-(qn - 5)/.8));
+        if(dec() < p){ left++; cum.push([a.t, left]); return; }
+        var st = Math.max(a.t, free); free = st + a.s; q.push(free);
+      });
+      cum.push([120, left]); R.push(cum);
+    }
+    return R;
+  },
+  draw: function(){
+    var c = this.ctx, R = this.runs(), x0 = 24, x1 = 250, y0 = 120, y1 = 14, top = 1;
+    R.forEach(function(r){ top = Math.max(top, r[r.length-1][1]); }); top = Math.ceil(top*1.15);
+    var X = function(t){ return x0 + t/120*(x1-x0); }, Y = function(v){ return y0 - v/top*(y0-y1); };
+    c.clearRect(0,0,VW,VH); c.font = FONT;
+    c.strokeStyle = COL.line; c.beginPath(); c.moveTo(x0+.5, y1); c.lineTo(x0+.5, y0+.5); c.lineTo(x1, y0+.5); c.stroke();
+    var cols = [COL.c3b, COL.c3, COL.c1, COL.c2, COL.c6];
+    R.forEach(function(r, k){ c.strokeStyle = cols[k]; c.lineWidth = 1.4; c.beginPath(); r.forEach(function(p, i){ var x = X(p[0]), y = Y(i ? r[i-1][1] : 0); if(i){ c.lineTo(x, y); c.lineTo(x, Y(p[1])); } else c.moveTo(x, Y(0)); }); c.stroke(); c.lineWidth = 1; });
+    c.fillStyle = COL.muted; c.fillText("떠난 손님 (누적)", x0 + 4, y1 + 8); c.fillText("120분", x1 - 26, y0 + 13);
+    var ends = R.map(function(r){ return r[r.length-1][1]; });
+    this.out.innerHTML = (this.replay ? "기록한 응답을 재생: " : "같은 도착, 같은 제조 시간: ") + "떠난 손님 <b>" + ends.join(", ") + "명</b>." + (this.replay ? " 다섯 번 모두 같습니다." : " 판단만 매번 달라집니다.");
+  }
+});
+
+/* ---------- 5-2. 분산 감소: 같은 예산, 두 가지 난수 사용 ---------- */
+makeDemo("d52", {
+  still:true,
+  init: function(){ var d = this; d.seed = 3; d.btn("again").onclick = function(){ d.seed++; d.draw(); }; d.draw(); },
+  est: function(r, anti){
+    function day(us){ var w = 0, tot = 0; for(var i=0;i<30;i++){ var g = -Math.log(1-us[2*i])/.8, s = -Math.log(1-us[2*i+1]); tot += w; w = Math.max(0, w + s - g); } return tot/30; }
+    var sum = 0;
+    for(var k=0;k<5;k++){
+      var us = []; for(var j=0;j<60;j++) us.push(r());
+      if(anti) sum += (day(us) + day(us.map(function(u){ return 1 - u; })))/2;
+      else { var us2 = []; for(j=0;j<60;j++) us2.push(r()); sum += (day(us) + day(us2))/2; }
+    }
+    return sum/5;
+  },
+  draw: function(){
+    var c = this.ctx, r = mulberryI(this.seed), A = [], B = [], i;
+    for(i=0;i<150;i++){ A.push(this.est(r, false)); B.push(this.est(r, true)); }
+    var lo = 0, hi = 6, x0 = 70, x1 = 250, X = function(v){ return x0 + (Math.min(hi, Math.max(lo, v)) - lo)/(hi-lo)*(x1-x0); };
+    c.clearRect(0,0,VW,VH); c.font = FONT;
+    function sd(a){ var m = a.reduce(function(s, v){ return s + v; }, 0)/a.length, v = 0; a.forEach(function(x){ v += (x-m)*(x-m); }); return Math.sqrt(v/(a.length-1)); }
+    [[A, "독립 10번", 34, COL.muted], [B, "대조 변량 5쌍", 84, COL.c5b]].forEach(function(g){
+      c.fillStyle = COL.ink; c.fillText(g[1], 4, g[2] + 3);
+      g[0].forEach(function(v, k){ c.fillStyle = rgba(g[3], .55); c.fillRect(X(v) - 1, g[2] - 12 + (k % 10)*2.4, 2.2, 2.2); });
+    });
+    c.strokeStyle = COL.line; c.beginPath(); c.moveTo(x0, 118.5); c.lineTo(x1, 118.5); c.stroke();
+    c.fillStyle = COL.muted; c.textAlign = "center"; for(i=0;i<=6;i+=2) c.fillText(i, X(i), 130); c.textAlign = "left";
+    c.fillText("평균 대기 추정값 (분)", x1 - 96, VH - 6);
+    this.out.innerHTML = "점 하나가 실행 10번으로 만든 추정값 하나입니다. 표준편차 <b>" + sd(A).toFixed(2) + "</b> → <b>" + sd(B).toFixed(2) + "</b>.";
+  }
+});
+
+/* ---------- 7-2. 하이브리드: 상태 사건 언제 알아채나 ---------- */
+makeDemo("d72", {
+  still:true,
+  init: function(){
+    var d = this, r = d.fig.querySelector("[data-dt]"), rv = d.fig.querySelector("[data-dtv]");
+    d.dt = +r.value; r.oninput = function(){ d.dt = +r.value; rv.textContent = d.dt.toFixed(1) + "분"; d.draw(); };
+    d.draw();
+  },
+  draw: function(){
+    var c = this.ctx, dt = this.dt, TH = 20, x0 = 24, x1 = 250, y0 = 118, y1 = 12;
+    function B(t){ return 100 - 1.2*t + 1.8*(Math.cos(t/3) - 1); }
+    var X = function(t){ return x0 + t/80*(x1-x0); }, Y = function(v){ return y0 - v/100*(y0-y1); };
+    var a = 0, b = 80; for(var i=0;i<60;i++){ var m = (a+b)/2; if(B(m) > TH) a = m; else b = m; } var tc = (a+b)/2;
+    var t = 0, v = 100, tn, vn;
+    for(;;){ var rate = -(1.2 + .6*Math.sin(t/3)); vn = v + dt*rate; tn = t + dt; if(vn <= TH) break; t = tn; v = vn; }
+    var tl = t + (v - TH)/(v - vn)*dt;
+    c.clearRect(0,0,VW,VH); c.font = FONT;
+    c.strokeStyle = COL.line; c.beginPath(); c.moveTo(x0+.5, y1); c.lineTo(x0+.5, y0+.5); c.lineTo(x1, y0+.5); c.stroke();
+    c.strokeStyle = rgba(COL.miss, .7); c.setLineDash([3,3]); c.beginPath(); c.moveTo(x0, Y(TH)); c.lineTo(x1, Y(TH)); c.stroke(); c.setLineDash([]);
+    c.strokeStyle = COL.muted; c.lineWidth = 1.4; c.beginPath(); for(var s=0;s<=80;s+=.5){ s ? c.lineTo(X(s), Y(B(s))) : c.moveTo(X(s), Y(B(s))); } c.stroke(); c.lineWidth = 1;
+    c.strokeStyle = COL.miss; c.lineWidth = 2; c.beginPath(); c.moveTo(X(tn)-4, Y(vn)-4); c.lineTo(X(tn)+4, Y(vn)+4); c.moveTo(X(tn)+4, Y(vn)-4); c.lineTo(X(tn)-4, Y(vn)+4); c.stroke(); c.lineWidth = 1;
+    c.fillStyle = COL.c7b; c.beginPath(); c.arc(X(tl), Y(TH), 3.6, 0, 7); c.fill();
+    c.fillStyle = COL.muted; c.fillText("배터리 (%)", x0 + 4, y1 + 8); c.fillText("20%", x1 - 18, Y(TH) - 4); c.fillText("80분", x1 - 22, y0 + 13);
+    this.out.innerHTML = "정확한 시각 " + tc.toFixed(1) + "분. 걸음 끝 확인 <b>" + tn.toFixed(1) + "분</b>(배터리 " + vn.toFixed(1) + "%), 걸음 안에서 찾기 <b>" + tl.toFixed(1) + "분</b>.";
+  }
+});
+
+/* ---------- 응용 사례 미니 데모 (A1~A3는 미리 계산한 결과) ---------- */
+var CASE = {"ele":{"lam":[4,6,8,10,12,14,16,18,20,22],"look":[3.6,5.2,6.4,8.7,11.3,16.9,40.7,93.8,181.1,267.4],"zone":[8,10.2,12.8,13.7,16.8,18.6,22.6,34.4,61.2,103.2]},"reg":{"now":{"off":[3146,1116,877,723,502,478,376,304,265,237,175,154,736,982,808,615,534,432,381,338,279,256,222,729,1012,850,649,535,478,428,353,321,271,301,724,1026,860,674,550,522,428,361,335,300,303,755,980,894,686,547,517,448,380,337,307,334,709,1042,858,705,570,520,455,363,356,336,327,756,993,866,683,595,527,453,389,349,332,354,740,1001,855,706,573,524,482,376,336,349,352,743,956,901,685,597,525,469,389,328,353,367,723,977,906,683,593,514,482,371,355,332,394,747,953,872,703,565,537,475,376,355,333,415,725,924,893,699,582,532,481,379,348,333,450,683,950,864,702,602,531,483,365,359,356,419,720,928,841,719,604,524,472,374,371,341,414,729,944,830,715,605,505,472,380,361,380,398,722,952,815,712,623,514,461,400,355,367,442,685,941,837,693,632,502,471,380,380,349,452,696,942,834,696,618,496,596,635,640,719,859,1241,1764,2283,2564,2841,2943,2901,2923,2885,2888,2841,2825,2833,2895,2865,2856,2872,2830,2834,2913,2894,2889,2849,2896,2839,2834,2933,2911,2838,2896,2920,2900,2974,2934,2904,2868,2836,2912,2861,2857,2862],"ok":[321,334,342,299,302,304,341,315,291,313,355,161,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"w60":37},"drop":{"off":[3146,1116,877,723,502,478,376,304,265,237,175,154,548,663,460,271,208,117,72,70,46,62,42,36,117,155,50,20,25,44,31,26,29,29,22,16,21,20,22,18,12,14,18,11,9,15,8,5,12,9,6,9,8,9,13,6,6,7,2,4,9,5,2,10,4,6,5,2,5,7,5,4,4,5,2,5,2,3,1,3,1,1,2,1,1,5,1,1,0,0,3,1,1,1,1,1,1,0,2,0,0,2,1,0,0,0,1,0,0,2,0,1,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,1,1,0,1,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],"ok":[321,334,342,299,302,304,341,315,291,313,355,314,341,343,353,325,321,344,310,327,323,326,322,310,343,304,315,303,329,80,33,25,29,28,24,15,20,21,22,19,11,14,19,11,9,15,8,5,12,9,6,9,7,9,14,6,6,6,3,3,10,5,2,9,5,6,4,3,5,7,5,4,4,5,2,4,3,2,2,2,2,1,2,1,1,5,1,1,0,0,2,2,1,1,0,2,1,0,2,0,0,2,1,0,0,0,1,0,0,2,0,1,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,1,1,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],"w60":100}},"flu":{"none":{"abm":[[2,2,3,3,6,6,6,5,4,7,6,9,8,15,13,13,13,16,22,23,26,27,28,29,33,34,34,36,42,44,45,39,44,49,55,54,51,59,64,63,57,60,53,46,45,44,44,42,44,39,40,34,34,27,21,20,18,21,15,11,10,11,10,10,10,8,7,3,6,6,6,6,7,5,6,4,3,3,3,5,3,4,1,2,2,3,3,2,2,2,2,3,3,1,2,2,2,0,1,1,2,1,1,1,1,1,2,1,3,2,2,2,2,1,2,1,0,0,0,0],[1,2,2,2,2,2,4,3,3,3,3,3,1,3,3,3,2,4,4,1,3,4,6,7,7,11,11,16,13,18,21,23,18,26,25,25,27,34,34,40,37,38,35,35,43,39,42,42,44,45,41,43,50,47,44,44,43,35,39,36,35,32,39,35,27,28,26,23,23,23,21,19,17,16,16,14,13,12,7,7,6,6,6,7,6,6,7,6,5,1,2,2,2,1,1,1,0,1,2,2,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,1,1,1,2,2,3,4,3,3,1,2,1,1,2,2,2,1,1,2,2,5,5,6,7,6,6,10,9,8,11,12,15,14,14,12,17,19,18,16,18,19,19,21,22,25,28,32,40,37,41,37,40,51,49,48,59,59,54,59,57,56,56,52,55,53,51,47,44,42,39,34,32,31,24,24,16,18,16,13,14,13,14,13,12,10,8,7,6,4,4,4,2,2,1,1,1,2,2,1,3,3,2,2,2,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,2,3,4,3,5,8,11,11,11,16,17,18,22,27,29,27,31,32,29,33,32,44,48,59,54,51,52,52,54,51,58,48,50,47,50,48,46,48,44,43,40,37,41,34,38,36,31,26,25,30,23,22,21,16,15,14,10,7,8,8,7,6,5,4,4,3,1,1,2,1,2,2,3,3,3,3,2,3,3,2,2,1,1,0,1,1,1,1,1,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,2,3,3,5,4,4,4,5,5,4,3,7,10,8,9,8,10,9,11,12,13,15,15,14,16,19,17,16,22,31,28,33,32,30,30,37,37,42,43,38,45,50,54,59,57,57,51,49,53,57,45,43,45,39,33,32,27,22,20,16,14,17,14,16,18,13,9,11,7,8,6,7,5,5,6,4,3,2,2,2,1,1,1,0,0,1,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,2,1,3,3,3,3,3,4,5,6,8,6,5,9,11,11,15,17,18,23,19,27,28,36,39,47,44,50,54,56,51,50,51,53,55,59,59,58,59,63,58,57,61,65,59,48,55,48,42,38,29,29,25,20,21,19,16,13,12,10,12,12,13,9,9,9,5,4,4,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,2,3,3,6,7,9,14,18,20,19,18,18,19,25,31,31,36,45,40,49,53,51,64,69,74,79,81,83,80,73,80,88,79,78,72,67,69,63,60,56,54,55,44,44,39,35,32,24,16,14,14,12,10,6,5,4,4,4,1,2,2,2,2,3,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,2,3,3,3,3,3,5,4,4,3,3,3,2,4,6,9,5,8,8,10,9,9,7,9,11,12,10,11,10,12,13,13,15,12,15,20,24,24,30,36,37,30,39,47,43,40,40,46,49,44,38,40,35,42,38,41,40,33,38,38,44,35,32,27,25,21,26,27,23,21,22,20,21,20,14,12,10,12,13,14,10,10,9,7,7,7,7,4,4,6,4,5,3,3,5,6,5,3,4,4,1,0,1,2,2,2,2,2,2,2,2,1,1,1,1,0,0,0,0],[2,3,2,3,2,2,3,5,4,6,6,7,10,12,13,14,13,13,16,16,19,21,20,22,21,21,23,26,25,28,36,38,33,44,52,57,62,67,59,53,51,66,62,67,63,65,63,65,72,65,49,42,41,32,24,21,20,15,16,15,13,12,12,9,8,5,5,5,4,3,3,2,3,4,4,3,4,3,4,4,3,3,3,2,1,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,3,4,5,4,7,8,8,8,9,10,17,15,15,15,10,14,15,13,14,16,15,14,14,22,24,24,32,30,31,32,30,40,43,33,40,30,34,35,41,33,37,42,44,44,34,29,34,30,31,26,25,27,25,26,24,22,22,16,15,17,15,18,19,18,18,11,12,10,7,8,8,6,4,5,1,2,4,6,5,3,1,1,1,1,1,1,2,1,1,1,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,4,4,5,7,8,5,4,8,8,9,10,11,8,10,14,14,15,18,19,23,20,24,24,28,25,26,30,29,30,33,36,34,39,40,45,43,41,43,48,40,35,37,42,34,35,35,40,31,39,34,34,30,21,23,23,24,21,20,16,13,11,12,10,11,12,7,6,6,6,4,6,6,6,3,1,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],"sd":[1.5,1.7,1.9,2.2,2.6,3,3.4,4,4.6,5.3,6.1,7,8.1,9.3,10.6,12.2,13.9,15.9,18,20.5,23.2,26.1,29.3,32.8,36.5,40.3,44.3,48.4,52.5,56.4,60.2,63.6,66.6,69,70.9,72,72.4,72,70.9,69.2,66.8,63.9,60.6,57,53.2,49.3,45.3,41.5,37.7,34.1,30.7,27.6,24.7,22,19.5,17.3,15.3,13.5,11.9,10.5,9.2,8.1,7.1,6.2,5.4,4.7,4.1,3.6,3.1,2.7,2.4,2.1,1.8,1.6,1.4,1.2,1,0.9,0.8,0.7,0.6,0.5,0.5,0.4,0.3,0.3,0.3,0.2,0.2,0.2,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},"floor":{"abm":[[2,2,2,2,3,3,3,3,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,2,2,2,2,2,3,3,1,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,1,1,1,1,1,1,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,2,3,3,2,1,2,2,2,1,2,3,3,5,5,6,7,8,6,6,7,6,8,6,7,6,5,6,5,5,6,5,7,8,6,5,6,7,9,10,8,5,7,6,5,2,3,4,4,1,3,2,2,4,4,2,3,3,2,1,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,1,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,2,1,3,3,2,2,2,1,2,2,2,3,3,2,3,3,4,6,6,5,4,4,2,5,3,4,5,7,8,9,12,13,16,16,17,13,15,12,12,14,11,10,10,10,12,10,10,11,12,16,16,14,14,14,13,12,13,13,15,15,15,11,10,10,12,13,16,13,14,12,12,12,13,15,15,11,11,11,7,7,6,8,9,8,7,7,6,4,3,2,2,2,1,0,1,1,3,2,2,2,2,2,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,2,2,2,3,4,3,4,4,5,5,5,7,6,7,8,7,8,6,7,5,4,2,2,4,2,1,2,1,1,2,3,2,2,2,1,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,2,3,3,3,2,2,3,1,1,1,1,1,1,2,2,2,2,1,1,1,2,2,2,2,2,0,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,2,2,2,2,5,5,6,4,4,3,2,2,2,1,1,1,0,1,1,1,1,1,0,1,1,1,1,2,2,3,3,3,2,2,3,4,4,5,7,7,9,7,7,3,4,4,4,6,6,6,5,7,7,10,11,13,13,14,11,13,13,15,15,16,15,16,14,12,13,15,14,16,16,18,17,18,16,18,17,20,21,20,20,18,22,20,20,20,22,18,22,19,18,15,11,7,6,6,5,8,6,4,4,7,5,3,3,4,3,4,3,3,4,4,3,3,3,4,4],[2,2,3,3,2,2,2,3,4,6,5,6,4,5,6,4,5,3,5,6,5,4,5,8,8,9,8,5,8,8,8,8,10,10,11,8,9,9,6,8,11,7,6,5,7,7,5,5,6,5,4,4,5,6,6,5,4,5,5,6,7,6,6,6,8,7,9,9,7,6,7,5,2,5,6,6,7,7,5,5,5,4,4,4,5,5,5,9,9,8,8,9,8,9,6,3,4,4,5,5,4,3,4,4,4,4,8,7,7,7,7,8,9,10,10,8,5,9,11,15],[2,3,3,4,5,6,4,4,2,3,2,2,2,1,1,1,0,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],"sd":[1.5,1.5,1.5,1.6,1.7,1.7,1.8,1.9,2,2.1,2.2,2.3,2.5,2.6,2.7,2.8,3,3.1,3.3,3.4,3.6,3.8,3.9,4.1,4.3,4.5,4.7,4.9,5.1,5.3,5.6,5.8,6.1,6.3,6.6,6.8,7.1,7.4,7.6,7.9,8.2,8.5,8.8,9.1,9.4,9.7,10,10.3,10.6,10.9,11.2,11.5,11.8,12,12.3,12.6,12.8,13.1,13.3,13.5,13.7,13.9,14.1,14.3,14.4,14.5,14.6,14.7,14.8,14.8,14.9,14.9,14.9,14.8,14.8,14.7,14.6,14.5,14.4,14.2,14,13.9,13.7,13.5,13.2,13,12.8,12.5,12.2,12,11.7,11.4,11.1,10.8,10.5,10.2,9.9,9.6,9.3,9,8.7,8.4,8.2,7.9,7.6,7.3,7.1,6.8,6.5,6.3,6,5.8,5.6,5.3,5.1,4.9,4.7,4.5,4.3,4.1]}}};
+makeDemo("dA1", {
+  still:true,
+  init: function(){ var d = this, r = d.fig.querySelector("[data-l]"), rv = d.fig.querySelector("[data-lv]"); d.l = +r.value; r.oninput = function(){ d.l = +r.value; rv.textContent = d.l + "명"; d.draw(); }; d.draw(); },
+  draw: function(){
+    var c = this.ctx, E = CASE.ele, x0 = 26, x1 = 250, y0 = 118, y1 = 12, X = function(l){ return x0 + (l - 4)/18*(x1 - x0); }, Y = function(v){ return y0 - Math.min(v, 150)/150*(y0 - y1); };
+    c.clearRect(0,0,VW,VH); c.font = FONT;
+    c.strokeStyle = COL.line; c.beginPath(); c.moveTo(x0+.5, y1); c.lineTo(x0+.5, y0+.5); c.lineTo(x1, y0+.5); c.stroke();
+    [["look", COL.miss], ["zone", COL.c3]].forEach(function(a){ c.strokeStyle = a[1]; c.lineWidth = 1.8; c.beginPath(); E.lam.forEach(function(l, i){ i ? c.lineTo(X(l), Y(E[a[0]][i])) : c.moveTo(X(l), Y(E[a[0]][i])); }); c.stroke(); c.lineWidth = 1; });
+    var i = E.lam.indexOf(this.l); c.strokeStyle = COL.muted; c.setLineDash([2,2]); c.beginPath(); c.moveTo(X(this.l)+.5, y1); c.lineTo(X(this.l)+.5, y0); c.stroke(); c.setLineDash([]);
+    c.fillStyle = COL.muted; c.fillText("평균 대기 (초)", x0 + 4, y1 + 8); c.fillText("분당 도착", x1 - 44, y0 + 13);
+    c.fillStyle = COL.miss; c.fillText("집합 제어", x0 + 6, VH - 6); c.fillStyle = COL.c3; c.fillText("구역 나누기", x0 + 70, VH - 6);
+    var a = E.look[i], b = E.zone[i];
+    this.out.innerHTML = "분당 " + this.l + "명: 집합 제어 <b>" + a.toFixed(0) + "초</b>, 구역 나누기 <b>" + b.toFixed(0) + "초</b>. " + (a < b ? "한산할 때는 집합 제어가 낫습니다." : "붐빌 때는 구역 나누기가 낫습니다.");
+  }
+});
+makeDemo("dA2", {
+  still:true,
+  init: function(){ var d = this; d.mode = "now"; segPick(d.fig, "[data-mode]", function(v){ d.mode = v; d.draw(); }); d.draw(); },
+  draw: function(){
+    var c = this.ctx, R = CASE.reg[this.mode], x0 = 26, x1 = 250, y0 = 118, y1 = 12, X = function(t){ return x0 + t/240*(x1 - x0); }, Y = function(v){ return y0 - Math.log10(Math.max(1, v))/4*(y0 - y1); };
+    c.clearRect(0,0,VW,VH); c.font = FONT;
+    c.strokeStyle = COL.line; c.beginPath(); c.moveTo(x0+.5, y1); c.lineTo(x0+.5, y0+.5); c.lineTo(x1, y0+.5); c.stroke();
+    c.strokeStyle = COL.ink; c.setLineDash([4,3]); c.beginPath(); c.moveTo(x0, Y(320)); c.lineTo(x1, Y(320)); c.stroke(); c.setLineDash([]);
+    [["off", rgba(COL.muted, .8)], ["ok", COL.c1]].forEach(function(a){ c.strokeStyle = a[1]; c.lineWidth = a[0] === "ok" ? 1.8 : 1.1; c.beginPath(); R[a[0]].forEach(function(v, t){ t ? c.lineTo(X(t), Y(v)) : c.moveTo(X(t), Y(v)); }); c.stroke(); c.lineWidth = 1; });
+    c.fillStyle = COL.muted; c.fillText("초당 요청 (로그)", x0 + 4, y1 + 8); c.fillText("처리 능력", x1 - 42, Y(320) - 3); c.fillText("4분", x1 - 16, y0 + 13);
+    c.fillStyle = COL.c1; c.fillText("학생에게 간 응답", x0 + 6, VH - 6); c.fillStyle = COL.muted; c.fillText("들어온 요청", x0 + 92, VH - 6);
+    this.out.innerHTML = "60초 안에 성공한 학생 <b>" + R.w60 + "%</b>." + (this.mode === "now" ? " 서버는 바쁜데 응답은 거의 나가지 않습니다." : " 시간이 지난 요청을 버리기만 해도 모두 성공합니다.");
+  }
+});
+makeDemo("dA3", {
+  still:true,
+  init: function(){ var d = this; d.mode = "none"; segPick(d.fig, "[data-mode]", function(v){ d.mode = v; d.draw(); }); d.draw(); },
+  draw: function(){
+    var c = this.ctx, F = CASE.flu[this.mode], x0 = 26, x1 = 250, y0 = 118, y1 = 12, top = 90, X = function(t){ return x0 + t/120*(x1 - x0); }, Y = function(v){ return y0 - Math.min(v, top)/top*(y0 - y1); };
+    c.clearRect(0,0,VW,VH); c.font = FONT;
+    c.strokeStyle = COL.line; c.beginPath(); c.moveTo(x0+.5, y1); c.lineTo(x0+.5, y0+.5); c.lineTo(x1, y0+.5); c.stroke();
+    F.abm.forEach(function(r){ c.strokeStyle = rgba(COL.c6, .45); c.beginPath(); r.forEach(function(v, t){ t ? c.lineTo(X(t), Y(v)) : c.moveTo(X(t), Y(v)); }); c.stroke(); });
+    c.strokeStyle = COL.ink; c.lineWidth = 1.8; c.setLineDash([5,3]); c.beginPath(); F.sd.forEach(function(v, t){ t ? c.lineTo(X(t), Y(v)) : c.moveTo(X(t), Y(v)); }); c.stroke(); c.setLineDash([]); c.lineWidth = 1;
+    c.fillStyle = COL.muted; c.fillText("앓는 사람 (600명 중)", x0 + 4, y1 + 8); c.fillText("120일", x1 - 26, y0 + 13);
+    var small = F.abm.filter(function(r){ return Math.max.apply(null, r) < 5; }).length;
+    this.out.innerHTML = "ABM 12번 중 <b>" + small + "번</b>은 초기에 꺼졌습니다. SD는 언제나 한 줄" + (this.mode === "none" ? "이고, 정점도 더 높고 이릅니다." : "이고, 폐쇄 효과를 훨씬 작게 봅니다.");
+  }
+});
+makeDemo("dA4", {
+  L:100, ROWS:56,
+  init: function(){ var d = this, r = d.fig.querySelector("[data-p]"), rv = d.fig.querySelector("[data-pv]"); d.p = +r.value; r.oninput = function(){ d.p = +r.value; rv.textContent = d.p.toFixed(2); d.reset(); }; d.reset(); },
+  reset: function(){ var L = this.L, n = 22, cells = []; for(var i=0;i<L;i++) cells.push(i); for(i=L-1;i>0;i--){ var j = Math.floor(Math.random()*(i+1)), t = cells[i]; cells[i] = cells[j]; cells[j] = t; }
+    this.x = cells.slice(0, n).sort(function(a, b){ return a - b; }); this.v = this.x.map(function(){ return 0; }); this.rows = []; this.acc = 0; for(var k=0;k<this.ROWS;k++) this.step(); this.draw && this.draw(); },
+  step: function(){ var L = this.L, x = this.x, v = this.v, n = x.length, nv = [], i;
+    for(i=0;i<n;i++){ var gap = (x[(i+1)%n] - x[i] - 1 + L) % L, s = Math.min(v[i] + 1, 3, gap); if(s > 0 && Math.random() < this.p) s--; nv.push(s); }
+    for(i=0;i<n;i++){ v[i] = nv[i]; x[i] = (x[i] + v[i]) % L; }
+    var o = x.map(function(_, i){ return i; }).sort(function(a, b){ return x[a] - x[b]; }); this.x = o.map(function(i){ return x[i]; }); this.v = o.map(function(i){ return v[i]; });
+    var row = new Int8Array(L).fill(-1); for(i=0;i<n;i++) row[this.x[i]] = this.v[i]; this.rows.push(row); if(this.rows.length > this.ROWS) this.rows.shift(); },
+  update: function(dt){ this.acc += dt; while(this.acc > .08){ this.acc -= .08; this.step(); } },
+  draw: function(){
+    var c = this.ctx, L = this.L, cw = 240/L, rh = 2, x0 = 10, y0 = 8, cols = [COL.miss, COL.c2, rgba(COL.c3, .8), rgba(COL.ink, .3)];
+    c.clearRect(0,0,VW,VH); c.font = FONT;
+    c.fillStyle = COL.soft; c.fillRect(x0, y0, 240, this.ROWS*rh);
+    this.rows.forEach(function(row, k){ for(var i=0;i<L;i++) if(row[i] >= 0){ c.fillStyle = cols[row[i]]; c.fillRect(x0 + i*cw, y0 + k*rh, cw, rh); } });
+    c.fillStyle = COL.muted; c.fillText("위치 →  (아래로 갈수록 나중)", x0, VH - 6);
+    var stop = this.v.filter(function(s){ return s === 0; }).length;
+    this.out.innerHTML = "차 22대 중 지금 멈춘 차 <b>" + stop + "대</b>. p = 0이면 정체가 곧 사라집니다.";
   }
 });
 

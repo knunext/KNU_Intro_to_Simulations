@@ -218,13 +218,57 @@ details.code>summary{cursor:pointer;font-weight:700;margin-bottom:8px}
 .pilebar span:last-child{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--muted)}
 footer.wrap{padding:48px 20px 56px;color:var(--muted);font-size:.86rem}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* ---- 4~9편과 같은 머리말, 목표, 이전/다음 (양식 통일) ---- */
+:root{--hz-acc:#0E7C6B}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--hz-acc:#2DB59D} }
+:root[data-theme="dark"]{--hz-acc:#2DB59D}
+.hz-series{margin:0 0 10px; color:var(--muted); font-size:15px}
+.hz-n{font-family:"STIX Two Text","Times New Roman",serif; font-weight:500; color:var(--hz-acc); margin-right:.45em}
+.hz-goals{display:grid; grid-template-columns:1.4fr 1fr; gap:24px; margin:28px 0 24px; max-width:980px}
+.hz-goals > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px}
+.hz-goals h2{font-size:15px; margin:0 0 6px}
+.hz-goals ul{margin:0; padding-left:1.1em; font-size:15px; line-height:1.65}
+.hz-goals .pre a{display:inline-block; margin:2px 6px 2px 0; font-size:14px; text-decoration:none; padding:2px 9px; border-radius:5px; background:var(--soft); color:var(--ink)}
+.hz-goals .pre a:hover{background:var(--hz-acc); color:var(--panel)}
+.hz-goals .pre p{font-size:14.5px; color:var(--muted); margin:6px 0 0}
+.hz-link{max-width:42em; margin:16px 0; padding:12px 18px 12px 16px; border-left:3px solid var(--hz-acc); background:var(--panel); border-radius:0 8px 8px 0; font-size:15.5px}
+.hz-link p{margin:0}
+.hz-link b{color:var(--hz-acc); margin-right:8px}
+.hz-pager-wrap{margin-top:64px}
+.hz-subs{margin:0 0 12px; font-size:15px; color:var(--muted)}
+.hz-subs a{color:var(--ink)}
+.hz-pager{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+.hz-pager a{display:block; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; text-decoration:none; color:var(--ink)}
+.hz-pager a:hover{border-color:var(--hz-acc)}
+.hz-pager span{display:block; font-size:13.5px; color:var(--muted)}
+.hz-pager b{font-size:17px}
+.hz-pager .next{text-align:right}
+footer a{color:inherit}
+@media (max-width:760px){ .hz-goals, .hz-pager{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
 <header class="wrap hero">
-  <p class="back"><a href="https://claude.ai/artifact/LA2eEFvcoDh2P8qvxyAy5B">앞 편: 프롬프트 커피점에서 배우는 이산사건 시뮬레이션</a></p>
+  <p class="back"><a href="index.html">모델링과 시뮬레이션 목차</a></p>
+  <p class="hz-series">모델링과 시뮬레이션, 3편</p>
   <h1>여우와 토끼와 풀로 배우는<br>에이전트 기반 모델링</h1>
   <p class="lede">커피점 모델에서 손님은 줄에 서서 차례를 기다리는 존재였습니다. 이번에는 모든 개체가 주변을 보고 스스로 움직입니다. 풀은 자라서 씨를 퍼뜨리고, 토끼는 풀을 뜯다가 여우가 보이면 달아나고, 여우는 토끼를 쫓습니다. 개체마다 몇 줄씩 적어 준 규칙만으로, 아무도 짜 넣지 않은 개체수의 파도가 생겨나는 과정을 직접 확인합니다.</p>
+  <div class="hz-goals">
+    <div>
+      <h2>이 편을 마치면</h2>
+      <ul>
+        <li>에이전트, 환경, 행동 규칙, 스케줄로 ABM을 설명하고 코드 구조로 옮길 수 있습니다.</li>
+        <li>개체 규칙 몇 줄에서 개체수의 출렁임 같은 전체 패턴이 생기는 창발을 관찰하고 설명할 수 있습니다.</li>
+        <li>갱신 순서, 무작위, 개체 차이가 결과에 주는 영향을 실험으로 확인할 수 있습니다.</li>
+        <li>몬테카를로 반복으로 결과를 분포로 말하고, 민감한 매개변수를 찾을 수 있습니다.</li>
+      </ul>
+    </div>
+    <div class="pre">
+      <h2>먼저 보면 좋은 것</h2>
+      <a href="ch0_simulation-101.html#s2-3">0편 2.3 분포</a><a href="ch2_DES.html">2편 DES</a>
+      <p>2편 커피점의 손님은 줄에 서서 기다리기만 했습니다. 이번에는 개체가 스스로 판단합니다.</p>
+    </div>
+  </div>
   <ol class="ladder" id="ladder"></ol>
   <div class="plan">
     <p class="panelh" style="margin:0 0 8px">수업 진행 예시 (3회)</p>
@@ -239,7 +283,7 @@ footer.wrap{padding:48px 20px 56px;color:var(--muted);font-size:.86rem}
 
 <section class="wrap" id="abm">
   <div class="prose">
-    <h2>에이전트 기반 모델링이란</h2>
+    <h2><span class="hz-n">1</span>에이전트 기반 모델링이란</h2>
     <p>에이전트 기반 모델(agent-based model, ABM)은 시스템을 이루는 개체 하나하나를 프로그램 속 행위자, 즉 에이전트로 만듭니다. 에이전트마다 자기 상태와 행동 규칙을 주고, 모두를 한꺼번에 돌립니다. 전체가 어떻게 움직여야 하는지는 어디에도 적지 않습니다. 전체의 모습은 개체들이 규칙대로 움직이고 서로 부딪힌 결과로 나중에 드러납니다.</p>
     <p>앞 편의 커피점과 비교하면 차이가 분명합니다. 커피점의 손님은 도착해서 줄을 서고, 차례가 되면 서비스를 받고 떠났습니다. 무엇을 할지는 시스템(대기열과 점원)이 정했습니다. 이번 생태계의 토끼는 매 순간 스스로 판단합니다. 배가 고픈가, 근처에 풀이 있는가, 여우가 보이는가. 같은 상황에서도 토끼마다 체질이 달라 결정이 달라집니다.</p>
     <h3>같은 생태계를 보는 세 가지 방법</h3>
@@ -277,7 +321,7 @@ footer.wrap{padding:48px 20px 56px;color:var(--muted);font-size:.86rem}
 
 <section class="wrap" id="anatomy">
   <div class="prose">
-    <h2>에이전트를 코드로 보면</h2>
+    <h2><span class="hz-n">2</span>에이전트를 코드로 보면</h2>
     <p>ABM은 객체 지향 프로그램과 거의 그대로 대응합니다. 에이전트는 상태를 가진 객체이고, 규칙은 그 객체의 <code>step()</code> 메서드이며, 스케줄은 바깥을 도는 루프입니다. 이 페이지의 모든 모델은 아래 틀을 따릅니다.</p>
   </div>
   <div class="bench" style="max-width:860px">
@@ -350,7 +394,7 @@ world = <span class="f">World</span>()                               <span class
 
 <section class="wrap" id="schelling">
   <div class="prose">
-    <h2>워밍업 1: 셸링의 분리 모델</h2>
+    <h2><span class="hz-n">3</span>워밍업 1: 셸링의 분리 모델</h2>
     <p>경제학자 토머스 셸링이 1971년에 발표한 모델입니다. 동전과 바둑판으로도 돌릴 수 있을 만큼 단순한데, 개인의 작은 선호가 집단에서 얼마나 크게 증폭되는지 보여 줘서 ABM의 출발점으로 자주 소개됩니다. 셸링은 2005년 노벨 경제학상을 받았습니다.</p>
     <p>파랑과 노랑 두 종류의 주민이 격자 마을에 섞여 살고, 몇몇 칸은 빈집입니다. 주민에게 규칙은 하나뿐입니다.</p>
   </div>
@@ -407,7 +451,7 @@ world = <span class="f">World</span>()                               <span class
 
 <section class="wrap" id="ants">
   <div class="prose">
-    <h2>워밍업 2: 개미 길 만들기</h2>
+    <h2><span class="hz-n">4</span>워밍업 2: 개미 길 만들기</h2>
     <p>개미는 지도도 없고 대장도 없지만, 먹이까지 이어지는 길을 함께 만들어 냅니다. 비결은 페로몬입니다. 먹이를 물고 집으로 돌아가는 개미가 땅에 냄새를 남기고, 먹이를 찾는 개미는 그 냄새를 따라갑니다. 개미끼리 직접 말을 주고받지 않고 <b>환경에 흔적을 남겨 간접적으로 소통</b>하는 방식을 스티그머지(stigmergy)라고 합니다. 셸링 모델의 주민이 이웃을 직접 보았다면, 개미는 땅을 통해서만 서로에게 영향을 줍니다.</p>
   </div>
   <div class="rules">
@@ -488,7 +532,7 @@ world = <span class="f">World</span>()                               <span class
 
 <section class="wrap" id="model">
   <div class="prose">
-    <h2>모델: 격자 위의 작은 섬</h2>
+    <h2><span class="hz-n">5</span>모델: 격자 위의 작은 섬</h2>
     <p>섬은 가로 64칸, 세로 42칸의 격자입니다. 칸마다 풀의 상태가 하나 있고, 동물은 한 칸에 최대 한 마리만 설 수 있습니다. 동물은 한 걸음에 상하좌우 중 한 칸으로 움직이고, 거리는 맨해튼 거리 |Δ<span class="m">x</span>| + |Δ<span class="m">y</span>|로 잽니다. 그래서 "거리 3 이내"는 원이 아니라 마름모 모양이 됩니다.</p>
   </div>
   <div class="bench" style="max-width:760px">
@@ -601,7 +645,7 @@ world = <span class="f">World</span>()                               <span class
 
 <section class="wrap" id="sim">
   <div class="prose">
-    <h2>시뮬레이터</h2>
+    <h2><span class="hz-n">6</span>시뮬레이터</h2>
     <p>위의 단계 버튼이나 아래 칩으로 모델을 한 단계씩 쌓아 올리거나, 맨 아래 값들을 직접 바꿔 보세요. 지도에서 동물을 누르면 그 개체를 따라가며 상태와 지금 따르는 규칙을 보여 줍니다.</p>
   </div>
   <div class="chips" id="stageChips" role="group" aria-label="단계 선택"></div>
@@ -659,7 +703,7 @@ world = <span class="f">World</span>()                               <span class
 
 <section class="wrap" id="emerge">
   <div class="prose">
-    <h2>무엇이 생겨났나: 창발</h2>
+    <h2><span class="hz-n">7</span>무엇이 생겨났나: 창발</h2>
     <p>4단계(기본 설정)를 몇 백 틱 돌려 놓고 그래프를 보세요. 규칙 어디에도 없던 현상들이 보입니다.</p>
     <h3>개체수의 파도와 시차</h3>
     <p>풀이 늘면 토끼가 늘고, 토끼가 늘면 조금 늦게 여우가 늘고, 여우가 늘면 토끼가 줄고, 토끼가 줄면 여우가 굶어 줄고, 그 사이 풀이 다시 번집니다. 세 곡선의 꼭대기가 풀, 토끼, 여우 순서로 조금씩 밀려 있습니다. 기본 설정에서 한 바퀴는 대략 200틱 남짓입니다.</p>
@@ -681,7 +725,7 @@ world = <span class="f">World</span>()                               <span class
 
 <section class="wrap" id="mc">
   <div class="prose">
-    <h2>한 번 돌려서는 모른다: 몬테카를로</h2>
+    <h2><span class="hz-n">8</span>한 번 돌려서는 모른다: 몬테카를로</h2>
     <p>앞 편에서 DES 결과를 씨앗만 바꿔 여러 번 돌리고(반복) 신뢰구간을 만들었습니다. ABM에서는 이 일이 훨씬 중요합니다. 커피점에서는 반복마다 평균 대기시간이 조금씩 달랐을 뿐이지만, 이 생태계에서는 결과가 질적으로 갈립니다. 어떤 씨앗에서는 공존하고 어떤 씨앗에서는 여우가 사라집니다.</p>
     <p>"1000틱 안에 여우가 사라질 확률은 얼마인가"는 한 번 돌려서는 답할 수 없는 질문입니다. 같은 설정으로 씨앗만 바꿔 많이 돌리고 결과의 분포를 봅니다. 무작위 표본을 많이 뽑아 확률이나 분포를 어림하는 방법을 통틀어 몬테카를로 방법이라고 합니다.</p>
     <h3>비율에도 신뢰구간이 있다</h3>
@@ -718,7 +762,7 @@ world = <span class="f">World</span>()                               <span class
 
 <section class="wrap" id="lab">
   <div class="prose">
-    <h2>실험 과제</h2>
+    <h2><span class="hz-n">9</span>실험 과제</h2>
     <p>각 실험은 기본 설정에서 한 가지만 바꿉니다. 먼저 결과를 예상해서 적어 두고, 시뮬레이터로 한두 번 본 다음, 몬테카를로로 기본 설정과 비교하세요. 한 번 돌린 결과로 결론을 내리지 않는 것이 이 과제의 요점입니다.</p>
   </div>
   <div class="labgrid" id="labgrid"></div>
@@ -726,7 +770,7 @@ world = <span class="f">World</span>()                               <span class
 
 <section class="wrap" id="code">
   <div class="prose">
-    <h2>직접 짜 보기</h2>
+    <h2><span class="hz-n">10</span>직접 짜 보기</h2>
     <p>같은 모델을 Python 표준 라이브러리만으로 짠 버전입니다. 화면 버전보다 조금 단순합니다. 토끼는 풀을 찾아가지 않고 무작위로 걷다가 풀을 만나면 먹고, 형질 유전과 짝 찾기는 뺐습니다. 대신 구조가 그대로 보입니다. <code>Animal</code>이 상태를 갖고, <code>Rabbit.step()</code>과 <code>Fox.step()</code>이 규칙이며, <code>World.step()</code>이 스케줄입니다.</p>
   </div>
   <details class="code" open>
@@ -742,7 +786,7 @@ world = <span class="f">World</span>()                               <span class
 
 <section class="wrap" id="next">
   <div class="prose">
-    <h2>다음 단계</h2>
+    <h2><span class="hz-n">11</span>다음 단계</h2>
     <h3>모델을 남에게 설명하기</h3>
     <p>ABM은 규칙이 코드 속에 흩어지기 쉬워서, 같은 모델을 다른 사람이 다시 만들기 어렵습니다. 그래서 생태학 쪽에서 ODD(Overview, Design concepts, Details)라는 표준 서술 형식이 만들어졌습니다. 목적, 개체와 상태, 스케줄을 먼저 쓰고, 창발과 상호작용과 무작위 같은 설계 개념을 정리한 다음, 세부 규칙과 초기값을 적습니다. 이 페이지의 <a href="#model">모델</a> 절이 그 순서를 느슨하게 따랐습니다.</p>
     <h3>검증과 보정</h3>
@@ -751,10 +795,21 @@ world = <span class="f">World</span>()                               <span class
     <p>매개변수가 스무 개가 넘으면 어떤 값이 결과를 크게 좌우하는지 알아야 합니다. 실험 과제에서 보듯 여우 시야는 2에서 4로만 바꿔도 결과가 뒤집히지만, 개체 차이 CV는 0에서 30%까지 바꿔도 공존 비율이 크게 달라지지 않습니다. 중요한 매개변수일수록 현실에서 정확히 재야 합니다.</p>
     <h3>커피점으로 돌아가기</h3>
     <p>앞 편의 손님도 에이전트로 만들 수 있습니다. 줄을 보고 들어올지 정하는 데서 그치지 않고, 기다리다 지쳐 떠나고, 친구가 서 있는 줄에 합류하고, 어제 오래 기다렸으면 오늘은 다른 카페로 가는 손님입니다. 실제로는 대기열과 자원은 DES로, 손님의 판단은 에이전트로 짜는 혼합 모델을 많이 씁니다.</p>
+    <h3>판단을 LLM에게 맡기면</h3>
+    <p>규칙 몇 줄 대신 대규모 언어 모델(LLM)에게 "이 손님이라면 어떻게 할까"를 묻는 에이전트도 늘고 있습니다. 행동이 풍부해지는 대신 시드가 듣지 않고, 실행 비용이 커지고, 검증이 어려워집니다. 심화편 <a href="ch3-2_LLM-agents.html">3-2편 LLM 에이전트와 시뮬레이션</a>에서 다룹니다.</p>
+    <h3>같은 섬을 식 두 줄로</h3>
+    <p>개체 하나하나 대신 여우와 토끼의 "수"만 따라가면 <a href="ch6_system-dynamics.html">6편 시스템 다이내믹스</a>의 모델이 됩니다. 그 전에 <a href="ch4_input-modeling.html">4편 입력 모델링</a>과 <a href="ch5_output-analysis.html">5편 출력 분석</a>에서 이 편의 분포와 반복 실행을 제대로 다루는 법을 배웁니다.</p>
   </div>
 </section>
 
-<footer class="wrap">경북대학교 컴퓨터학부 M&amp;S 학습 자료. 시뮬레이션의 모든 수치는 학습용 가정이며 실제 생태계의 값이 아닙니다.</footer>
+<nav class="wrap hz-pager-wrap" aria-label="이전 다음 편">
+  <p class="hz-subs">이 편의 심화편: <a href="ch3-2_LLM-agents.html">3-2 LLM 에이전트와 시뮬레이션</a></p>
+  <div class="hz-pager">
+    <a href="ch2_DES.html"><span>이전 편</span><b>2. 이산사건 시뮬레이션</b></a>
+    <a class="next" href="ch4_input-modeling.html"><span>다음 편</span><b>4. 입력 모델링</b></a>
+  </div>
+</nav>
+<footer class="wrap"><a href="https://sites.google.com/view/knunextcom">Next-generation Computing Systems Lab</a>, 경북대학교 컴퓨터학부. 시뮬레이션의 모든 수치는 학습용 가정이며 실제 생태계의 값이 아닙니다.</footer>
 <script>
 'use strict';
 /* ================= engine ================= */

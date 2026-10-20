@@ -10,7 +10,7 @@
 <style>
 :root{
   --bg:#F3F5F8; --panel:#FFFFFF; --ink:#17202E; --muted:#5A6577; --line:#D5DBE3; --soft:#E8ECF1;
-  --acc:#7A5230; --c1:#3557C9; --c2:#C27C00; --c3:#0E7C6B; --miss:#C8372D;
+  --acc:#4A5568; --c1:#3557C9; --c2:#C27C00; --c3:#0E7C6B; --miss:#C8372D;
   --t1:#2E62D0; --t2:#C2410C; --t3:#0E8A6B; --t4:#8B3FD9; --t5:#B91C5C;
   --k-kw:#8A3FA8; --k-fn:#2457C5; --k-str:#2E7D32; --k-num:#B5560F; --k-com:#7A8494; --k-bi:#0F7C86;
   --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
@@ -21,7 +21,7 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
-    --acc:#D7A97C; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+    --acc:#8C97A8; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
     --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
     --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
     color-scheme:dark;
@@ -29,7 +29,7 @@
 }
 :root[data-theme="dark"]{
   --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
-  --acc:#D7A97C; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+  --acc:#8C97A8; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
   --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
   --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
   color-scheme:dark;
@@ -203,6 +203,8 @@ footer a{color:inherit}
   .widget, .eqx{padding:14px 12px 12px; margin-left:-6px; margin-right:-6px}
   .ctrl input[type=range]{width:120px}
 }
+.subs{margin:72px 0 -56px; font-size:15px; color:var(--muted)}
+.subs a{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -276,7 +278,7 @@ footer a{color:inherit}
     </div>
     <div class="pre">
       <h2>먼저 보면 좋은 것</h2>
-      <a href="simulation-101.html#s1-5">0편 1.5 연구 과정</a><a href="input-modeling.html">4편 입력 모델링</a><a href="output-analysis.html">5편 출력 분석</a><a href="verification-optimization.html">8편 검증과 타당성</a>
+      <a href="ch0_simulation-101.html#s1-5">0편 1.5 연구 과정</a><a href="ch4_input-modeling.html">4편 입력 모델링</a><a href="ch5_output-analysis.html">5편 출력 분석</a><a href="ch8_verification-optimization.html">8편 검증과 타당성</a>
       <p>새 이론은 거의 없습니다. 앞의 편들을 하나의 흐름으로 묶어, 실제 문제에 적용하는 순서를 익히는 편입니다.</p>
     </div>
   </div>
@@ -664,13 +666,13 @@ slots = {}
     <table>
       <thead><tr><th>단계</th><th>주로 쓰는 것</th><th>참고할 편</th></tr></thead>
       <tbody>
-        <tr><td>1. 질문 정하기</td><td>결정, 대안, 조건, 지표, 기준</td><td>이 편 2.2절, <a href="simulation-101.html#s1-1">0편 1.1</a></td></tr>
-        <tr><td>2. 개념 모델</td><td>경계, 사건, 자원, 패러다임 선택</td><td><a href="littles-law.html">1편</a>, <a href="prompt-cafe-des.html">2편</a>, <a href="abm-ecosystem.html">3편</a>, <a href="system-dynamics.html">6편</a>, <a href="continuous-simulation.html">7편</a></td></tr>
-        <tr><td>3. 데이터 모으기</td><td>관측 수, 분포 선택, 적합도, 시간대별 도착</td><td>이 편 2.5절, <a href="input-modeling.html">4편</a></td></tr>
-        <tr><td>4. 프로그램 짜기</td><td>사건 리스트, 역변환법, 에이전트의 step()</td><td><a href="simulation-101.html#s2-5">0편 2.5</a>, <a href="prompt-cafe-des.html">2편</a>, <a href="abm-ecosystem.html">3편</a></td></tr>
-        <tr><td>5. 검증과 타당성 확인</td><td>어림 계산, 리틀의 법칙, 보정과 확인용 데이터</td><td>이 편 2.4절, <a href="verification-optimization.html">8편</a></td></tr>
-        <tr><td>6. 실험하기</td><td>반복 횟수, 공통 난수, 요인 설계</td><td><a href="output-analysis.html">5편</a></td></tr>
-        <tr><td>7. 분석과 결정</td><td>신뢰구간, 민감도, 최적화</td><td><a href="output-analysis.html">5편</a>, <a href="verification-optimization.html">8편</a></td></tr>
+        <tr><td>1. 질문 정하기</td><td>결정, 대안, 조건, 지표, 기준</td><td>이 편 2.2절, <a href="ch0_simulation-101.html#s1-1">0편 1.1</a></td></tr>
+        <tr><td>2. 개념 모델</td><td>경계, 사건, 자원, 패러다임 선택</td><td><a href="ch1_littles_law.html">1편</a>, <a href="ch2_DES.html">2편</a>, <a href="ch3_ABM.html">3편</a>, <a href="ch6_system-dynamics.html">6편</a>, <a href="ch7_continuous-simulation.html">7편</a></td></tr>
+        <tr><td>3. 데이터 모으기</td><td>관측 수, 분포 선택, 적합도, 시간대별 도착</td><td>이 편 2.5절, <a href="ch4_input-modeling.html">4편</a></td></tr>
+        <tr><td>4. 프로그램 짜기</td><td>사건 리스트, 역변환법, 에이전트의 step()</td><td><a href="ch0_simulation-101.html#s2-5">0편 2.5</a>, <a href="ch2_DES.html">2편</a>, <a href="ch3_ABM.html">3편</a></td></tr>
+        <tr><td>5. 검증과 타당성 확인</td><td>어림 계산, 리틀의 법칙, 보정과 확인용 데이터</td><td>이 편 2.4절, <a href="ch8_verification-optimization.html">8편</a></td></tr>
+        <tr><td>6. 실험하기</td><td>반복 횟수, 공통 난수, 요인 설계</td><td><a href="ch5_output-analysis.html">5편</a></td></tr>
+        <tr><td>7. 분석과 결정</td><td>신뢰구간, 민감도, 최적화</td><td><a href="ch5_output-analysis.html">5편</a>, <a href="ch8_verification-optimization.html">8편</a></td></tr>
       </tbody>
     </table>
   </div>
@@ -703,9 +705,10 @@ slots = {}
   </div>
 </section>
 
+<p class="subs">응용 사례: <a href="case1_elevator.html">A1 엘리베이터</a>, <a href="case2_course-registration.html">A2 수강신청 서버</a>, <a href="case3_dorm-flu.html">A3 기숙사 독감</a>, <a href="case4_phantom-jam.html">A4 유령 정체</a>. 이 편의 일곱 단계를 끝까지 밟아 본 본보기입니다.</p>
 <nav class="pager" aria-label="이전 다음 편">
-  <a href="verification-optimization.html"><span>이전 편</span><b>8. 검증, 타당성, 최적화</b></a>
-  <a class="next" href="index.html"><span>처음으로</span><b>모델링과 시뮬레이션 목차</b></a>
+  <a href="ch8_verification-optimization.html"><span>이전 편</span><b>8. 검증, 타당성, 최적화</b></a>
+  <a class="next" href="case1_elevator.html"><span>다음: 응용 사례</span><b>A1. 엘리베이터</b></a>
 </nav>
 <footer><a href="https://sites.google.com/view/knunextcom">Next-generation Computing Systems Lab</a>, 경북대학교 컴퓨터학부</footer>
 </div>

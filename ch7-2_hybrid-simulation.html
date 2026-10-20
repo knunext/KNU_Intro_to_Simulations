@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>하이브리드 시뮬레이션</title>
+<!--
+  모델링과 시뮬레이션 학습 자료 — 7-2편 (7편 심화): 하이브리드 시뮬레이션
+  파일명: ch7-2_hybrid-simulation.html, 강조색 --acc는 메인 페이지의 --c7b와 같습니다.
+  데모는 외부 라이브러리 없이 맨 아래 <script>에서 동작합니다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F8; --panel:#FFFFFF; --ink:#17202E; --muted:#5A6577; --line:#D5DBE3; --soft:#E8ECF1;
+  --acc:#323C8C; --c1:#3557C9; --c2:#C27C00; --c3:#0E7C6B; --miss:#C8372D;
+  --t1:#2E62D0; --t2:#C2410C; --t3:#0E8A6B; --t4:#8B3FD9; --t5:#B91C5C;
+  --k-kw:#8A3FA8; --k-fn:#2457C5; --k-str:#2E7D32; --k-num:#B5560F; --k-com:#7A8494; --k-bi:#0F7C86;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --math:"STIX Two Text","Times New Roman",Times,serif;
+  --code:"D2Coding","Consolas","SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+    --acc:#A9B2FF; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+    --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+    --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+  --acc:#A9B2FF; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+  --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+  --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+  color-scheme:dark;
+}
+:root{box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 16px); scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+body{margin:0; background:var(--bg); color:var(--ink); font:400 17px/1.75 var(--sans); -webkit-font-smoothing:antialiased; word-break:keep-all; overflow-wrap:break-word}
+a{color:var(--acc)}
+.wrap{max-width:980px; margin:0 auto; padding:40px 24px 48px}
+.prose{max-width:42em}
+p{margin:0 0 1em}
+code{font-family:var(--code); font-size:.9em; background:var(--soft); padding:1px 5px; border-radius:4px}
+
+/* 머리말 */
+.back{font-size:15px; margin:0 0 36px}
+.back a{color:var(--muted)}
+.series{margin:0 0 10px; color:var(--muted); font-size:15px}
+h1{margin:0; font-weight:700; font-size:clamp(34px,6vw,54px); line-height:1.12; letter-spacing:-0.02em}
+h1 .n{font-family:var(--math); font-weight:500; color:var(--acc); margin-right:.2em}
+.lead{margin:18px 0 0; color:var(--muted); max-width:38em; font-size:18px}
+.goals{display:grid; grid-template-columns:1.4fr 1fr; gap:24px; margin:32px 0 0}
+.goals > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px}
+.goals h2{font-size:15px; margin:0 0 6px}
+.goals ul{margin:0; padding-left:1.1em; font-size:15px; line-height:1.65}
+.goals .pre a{display:inline-block; margin:2px 6px 2px 0; font-size:14px; text-decoration:none; padding:2px 9px; border-radius:5px; background:var(--soft); color:var(--ink)}
+.goals .pre a:hover{background:var(--acc); color:var(--panel)}
+.goals .pre p{font-size:14.5px; color:var(--muted); margin:6px 0 0}
+.toc{margin:28px 0 0; display:grid; grid-template-columns:repeat(4,1fr); gap:0 24px; border-top:2px solid var(--ink); padding-top:16px}
+.toc h2{font-size:15px; margin:0 0 6px}
+.toc h2 a{color:var(--ink); text-decoration:none}
+.toc ol{list-style:none; margin:0; padding:0; font-size:14px; line-height:1.65}
+.toc ol a{color:var(--muted); text-decoration:none}
+.toc a:hover{color:var(--acc); text-decoration:underline}
+
+/* 장, 절 */
+.chap{margin-top:88px}
+.chap > h2{display:flex; align-items:baseline; gap:16px; font-size:clamp(28px,4.4vw,38px); line-height:1.2; margin:0 0 12px; letter-spacing:-0.01em}
+.chap > h2 .n{font:500 1.5em/1 var(--math); color:var(--acc)}
+.chap > .intro{color:var(--muted); font-size:18px; max-width:40em; margin-bottom:8px}
+h3{font-size:22px; line-height:1.35; margin:56px 0 12px}
+h3 .n{font:500 1em var(--math); color:var(--acc); margin-right:10px}
+h4{font-size:17px; margin:24px 0 6px}
+.m{font-family:var(--math); font-style:italic; font-size:1.08em; white-space:nowrap}
+.mr{font-family:var(--math); font-size:1.08em; white-space:nowrap}
+.note{max-width:42em; margin:20px 0; padding:14px 18px; border-radius:8px; background:var(--soft); font-size:15.5px; line-height:1.7}
+.note > :last-child{margin-bottom:0}
+.link-note{max-width:42em; margin:20px 0; padding:12px 18px 12px 16px; border-left:3px solid var(--acc); background:var(--panel); border-radius:0 8px 8px 0; font-size:15.5px}
+.link-note > :last-child{margin-bottom:0}
+.link-note .k{font-weight:700; color:var(--acc); margin-right:6px}
+dl.terms{display:grid; grid-template-columns:auto 1fr; gap:6px 18px; max-width:42em; margin:0; font-size:15.5px}
+dl.terms dt{font-weight:700}
+dl.terms dd{margin:0; color:var(--muted)}
+.cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:20px 0}
+.cards.two{grid-template-columns:1fr 1fr}
+.cards > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; font-size:15.5px}
+.cards h4{margin:0 0 6px}
+.cards p{margin:0}
+ol.steps{list-style:none; margin:20px 0; padding:0; counter-reset:s; max-width:44em}
+ol.steps > li{counter-increment:s; position:relative; padding:0 0 14px 44px}
+ol.steps > li::before{content:counter(s); position:absolute; left:0; top:-2px; width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font:500 17px/1 var(--math); background:var(--acc); color:var(--panel)}
+ol.steps > li b{display:block}
+
+/* 사례 연구 머리 */
+.case{margin:56px 0 0; padding-top:18px; border-top:1px solid var(--line)}
+.case h3{margin-top:0}
+.lvl{display:inline-block; font-size:13px; font-weight:500; padding:1px 8px; border-radius:4px; margin-left:8px; vertical-align:3px; background:var(--soft); color:var(--muted)}
+.lvl.real{background:var(--acc); color:var(--panel)}
+
+/* 수식 탐색기 */
+.eqx{margin:28px 0; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px 16px}
+.eqx > .cap{margin:0 0 4px; font-size:14px; color:var(--muted)}
+.eq-big{font-family:var(--math); font-size:clamp(24px,3.6vw,36px); line-height:1.6; padding:12px 0 14px; overflow-x:auto; white-space:nowrap; text-align:center}
+.eq-big .t{--tc:var(--ink); border-bottom:3px solid var(--tc); padding:0 3px; border-radius:4px; cursor:pointer; transition:background .15s}
+.eq-big .t:hover, .eqx[data-on] .eq-big .t.on{background:color-mix(in srgb, var(--tc) 22%, transparent)}
+.eqx[data-on] .eq-big .t:not(.on){opacity:.4}
+.eq-big .op{color:var(--muted); padding:0 .12em}
+.eq-big sub, .eq-big sup{font-size:.6em}
+.eq-big .frac{display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; line-height:1.15; margin:0 .1em}
+.eq-big .frac > span:first-child{border-bottom:2px solid currentColor; padding:0 .15em .05em}
+.eq-big .frac > span:last-child{padding:.08em .15em 0}
+.t[data-c="1"]{--tc:var(--t1)} .t[data-c="2"]{--tc:var(--t2)} .t[data-c="3"]{--tc:var(--t3)} .t[data-c="4"]{--tc:var(--t4)} .t[data-c="5"]{--tc:var(--t5)}
+.eq-terms{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; margin:4px 0 0}
+.eq-terms button{
+  --tc:var(--ink); text-align:left; font:400 14px/1.5 var(--sans); color:var(--ink); background:var(--bg);
+  border:1px solid var(--line); border-left:4px solid var(--tc); border-radius:6px; padding:8px 10px; cursor:pointer;
+}
+.eq-terms button b{display:block; font-family:var(--math); font-size:17px; font-weight:500; color:var(--tc)}
+.eq-terms button[aria-pressed="true"]{background:color-mix(in srgb, var(--tc) 14%, var(--panel)); border-color:var(--tc)}
+.eq-terms button:focus-visible{outline:2px solid var(--tc); outline-offset:2px}
+.eq-detail{margin:12px 0 0; padding:12px 14px; border-radius:8px; background:var(--soft); font-size:15px; min-height:3em}
+.eq-detail:empty{display:none}
+.eq-live{margin-top:14px; padding-top:12px; border-top:1px dashed var(--line)}
+.eq-live .sub{font-size:14px; color:var(--muted); margin:0 0 6px}
+.eqx canvas{display:block; width:100%; height:auto; margin-top:8px}
+.hat{position:relative; display:inline-block}
+.hat::after{content:"ˆ"; position:absolute; left:50%; top:-.42em; transform:translateX(-45%); font-style:normal}
+.lim{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; line-height:1; margin:0 .08em; font-size:1.3em}
+.lim small{font-size:.34em; line-height:1.15}
+.eq-num{font-family:var(--math); font-size:22px; text-align:center; margin:10px 0 2px; overflow-x:auto; white-space:nowrap}
+.eq-num .t{border-bottom:2px solid var(--tc); padding:0 2px}
+
+/* 위젯 */
+.widget{margin:24px 0 28px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px 14px}
+.widget > h4{margin:0 0 2px; font-size:16px}
+.widget > .sub{margin:0 0 12px; color:var(--muted); font-size:14.5px}
+.widget canvas{display:block; width:100%; height:auto; touch-action:manipulation}
+.ctrl, .eq-live .ctrl{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin-top:12px; font-size:14px}
+.ctrl button, .seg button{font:500 14px/1 var(--sans); color:var(--ink); background:var(--soft); border:1px solid var(--line); border-radius:7px; padding:8px 12px; cursor:pointer}
+.ctrl button:hover, .seg button:hover{border-color:var(--acc)}
+.ctrl button.primary{background:var(--acc); border-color:var(--acc); color:var(--panel)}
+.ctrl button:disabled{opacity:.5; cursor:default}
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+.seg{display:inline-flex; flex-wrap:wrap; gap:4px}
+.seg button[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--panel)}
+.ctrl label{display:inline-flex; align-items:center; gap:8px; color:var(--muted)}
+.ctrl label b, .ctrl label output{color:var(--ink); font-weight:500; min-width:2.8em; font-variant-numeric:tabular-nums}
+.ctrl input[type=range]{width:150px; accent-color:var(--acc)}
+.ctrl input[type=checkbox]{accent-color:var(--acc); width:16px; height:16px}
+.ctrl select{font:400 14px var(--sans); color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px 8px}
+textarea.data{width:100%; min-height:90px; font:400 13.5px/1.5 var(--code); color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px; resize:vertical}
+.readout{margin:12px 0 0; font-size:14.5px; line-height:1.6; color:var(--muted); font-variant-numeric:tabular-nums}
+.readout b{color:var(--ink); font-weight:500}
+.readout .good{color:var(--c3); font-weight:500}
+.readout .bad{color:var(--miss); font-weight:500}
+.split{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+
+/* 표 */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:15px; line-height:1.55}
+th,td{padding:9px 12px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line)}
+thead th{font-weight:700; color:var(--muted); font-size:14px}
+tbody tr:last-child th, tbody tr:last-child td{border-bottom:0}
+table.num td{font-variant-numeric:tabular-nums}
+.tbl{background:var(--panel); border:1px solid var(--line); border-radius:10px; margin:20px 0; max-width:46em}
+
+/* 연습 문제 */
+.ex{max-width:44em; margin:16px 0}
+.ex details{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 16px; margin:0 0 8px}
+.ex summary{cursor:pointer; font-weight:500}
+.ex summary::marker{color:var(--acc)}
+.ex details > div{margin-top:8px; color:var(--muted); font-size:15.5px}
+.ex details > div > :last-child{margin-bottom:0}
+
+/* 코드 */
+pre.code{margin:20px 0; padding:16px 18px; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow-x:auto; font:400 14px/1.65 var(--code); tab-size:4; max-width:46em}
+pre.code code{background:none; padding:0; font-size:1em}
+pre.code .kw{color:var(--k-kw); font-weight:500}
+pre.code .fn{color:var(--k-fn)}
+pre.code .bi{color:var(--k-bi)}
+pre.code .str{color:var(--k-str)}
+pre.code .num{color:var(--k-num)}
+pre.code .com{color:var(--k-com); font-style:italic}
+.code-cap{font-size:14px; color:var(--muted); margin:-12px 0 20px}
+
+/* 이전 / 다음 */
+.pager{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:72px}
+.pager a{display:block; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; text-decoration:none; color:var(--ink)}
+.pager a:hover{border-color:var(--acc)}
+.pager span{display:block; font-size:13.5px; color:var(--muted)}
+.pager b{font-size:17px}
+.pager .next{text-align:right}
+footer{margin-top:40px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:14px}
+footer a{color:inherit}
+
+@media (max-width:760px){
+  .wrap{padding:28px 18px 40px}
+  .toc{grid-template-columns:1fr 1fr; gap:14px}
+  .goals, .cards, .cards.two, .split, .pager{grid-template-columns:1fr}
+  .widget, .eqx{padding:14px 12px 12px; margin-left:-6px; margin-right:-6px}
+  .ctrl input[type=range]{width:120px}
+}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="back"><a href="index.html">모델링과 시뮬레이션 목차</a></p>
+<header>
+  <p class="series">모델링과 시뮬레이션, 7-2편 (7편 심화)</p>
+  <h1><span class="n">7-2</span>하이브리드 시뮬레이션</h1>
+  <p class="lead">드론의 배터리는 매끄럽게 줄어들지만, 충전소 앞의 줄은 한 대씩 늘고 줄어듭니다. 연속으로 변하는 상태와 이산 사건이 한 모델에 섞이면, 7편의 적분기와 2편의 사건 목록을 함께 돌려야 합니다. 이 편의 핵심 질문은 하나입니다. 상태가 어떤 값에 닿는 순간을 어떻게 정확히 잡을까?</p>
+  <div class="goals">
+    <div>
+      <h2>이 편을 마치면</h2>
+      <ul>
+        <li>시간 사건과 상태 사건을 구분하고, 상태 사건을 영점 교차 함수로 적을 수 있습니다.</li>
+        <li>적분 걸음 안에서 사건 시각을 찾는 방법과, 찾지 않으면 생기는 오차를 설명할 수 있습니다.</li>
+        <li>채터링과 제노 현상이 왜 생기는지 알고, 히스테리시스나 최소 유지 시간으로 다룰 수 있습니다.</li>
+        <li>연속 부분을 사건 사이에서 풀어 하이브리드 모델을 사건 기반으로 돌리고, QSS가 연속 시스템을 DEVS로 옮기는 방식을 설명할 수 있습니다.</li>
+      </ul>
+    </div>
+    <div class="pre">
+      <h2>먼저 보면 좋은 것</h2>
+      <a href="ch7_continuous-simulation.html">7편 연속 시스템</a><a href="ch2_DES.html">2편 DES</a><a href="ch2-2_DEVS.html">2-2편 DEVS</a>
+      <p>7편의 오일러 한 걸음, 2편의 미래 사건 목록, 2-2편의 ta(s)가 이 편에서 만납니다.</p>
+    </div>
+  </div>
+  <nav class="toc" aria-label="목차">
+    <div><h2><a href="#ch1">1. 왜 섞이는가</a></h2><ol><li><a href="#s1-1">연속과 이산이 함께 있는 시스템</a></li><li><a href="#s1-2">두 시계를 맞추기</a></li></ol></div>
+    <div><h2><a href="#ch2">2. 이론</a></h2><ol><li><a href="#s2-1">시간 사건과 상태 사건</a></li><li><a href="#s2-2">사건 위치 찾기</a></li><li><a href="#s2-3">사건 뒤에 다시 출발하기</a></li><li><a href="#s2-4">채터링과 제노</a></li><li><a href="#s2-5">연속 시스템을 DEVS로: QSS</a></li></ol></div>
+    <div><h2><a href="#ch3">3. 예제와 사례 연구</a></h2><ol><li><a href="#s3-1">드론 순찰과 충전소</a></li><li><a href="#s3-2">파이썬으로 확인하기</a></li><li><a href="#s3-3">하이브리드가 필요한 곳</a></li></ol></div>
+    <div><h2><a href="#ch4">4. 연결과 정리</a></h2><ol><li><a href="#s4-1">앞뒤 편과의 연결</a></li><li><a href="#s4-2">요약</a></li><li><a href="#s4-3">연습 문제</a></li></ol></div>
+  </nav>
+</header>
+
+<!-- ===================== 1 ===================== -->
+<section class="chap" id="ch1">
+  <h2><span class="n">1</span>왜 섞이는가</h2>
+  <p class="intro">대부분의 실제 시스템은 연속도 이산도 아닌, 둘의 조합입니다.</p>
+
+  <h3 id="s1-1"><span class="n">1.1</span>연속과 이산이 함께 있는 시스템</h3>
+  <div class="cards two">
+    <div><h4>드론과 충전소</h4><p>배터리 잔량은 비행 중 연속으로 줄고, 25%에 닿으면 충전소 대기열이라는 이산 세계로 넘어갑니다. 이 편 3.1절의 예제입니다.</p></div>
+    <div><h4>온도 조절기</h4><p>방의 온도는 미분방정식을 따르고, 난방기는 켜짐과 꺼짐 두 상태만 있습니다. 전환 순간이 온도에 따라 정해집니다.</p></div>
+    <div><h4>튀는 공</h4><p>7편에서 본 공은 떨어지는 동안 연속이고, 바닥에 닿는 순간 속도의 부호가 바뀌는 이산 사건을 겪습니다.</p></div>
+    <div><h4>연료와 보급</h4><p>차량의 연료와 탄약은 운행하며 연속으로 줄고, 보급은 수송대가 도착하는 이산 사건으로 채워집니다. 교전 시뮬레이션의 군수 모델이 이런 꼴입니다.</p></div>
+  </div>
+
+  <h3 id="s1-2"><span class="n">1.2</span>두 시계를 맞추기</h3>
+  <div class="prose">
+    <p>7편의 연속 시뮬레이션은 시간을 Δ<span class="m">t</span>씩 일정하게 보냈고, 2편의 이산사건 시뮬레이션은 다음 사건 시각으로 건너뛰었습니다. 둘을 한 모델에 넣으면, 적분기가 걸음을 내딛는 동안 그 사이 어딘가에서 사건이 일어날 수 있습니다. 미리 예약된 사건이라면 그 시각에서 걸음을 끊으면 됩니다. 문제는 "배터리가 25%가 되는 순간"처럼 언제 일어날지 상태를 계산해 봐야 아는 사건입니다. 이 사건을 걸음 끝에서야 알아채면 늦고, 그 늦음이 결과를 바꿉니다.</p>
+  </div>
+</section>
+
+<!-- ===================== 2 ===================== -->
+<section class="chap" id="ch2">
+  <h2><span class="n">2</span>이론</h2>
+  <p class="intro">하이브리드 시뮬레이터는 적분하고, 사건을 찾고, 상태를 바꾸고, 다시 적분하는 일을 되풀이합니다.</p>
+
+  <h3 id="s2-1"><span class="n">2.1</span>시간 사건과 상태 사건</h3>
+  <dl class="terms">
+    <dt>시간 사건</dt><dd>일어날 시각을 미리 아는 사건입니다. 바람 세기가 바뀌는 예보 시각, 6분에 입력이 바뀌는 실험, 정해진 배차 시각. 사건 목록에 넣어 두고, 적분 걸음을 그 시각에서 끊습니다.</dd>
+    <dt>상태 사건</dt><dd>상태가 어떤 조건을 만족하는 순간 일어나는 사건입니다. 배터리가 25%가 됨, 공이 바닥에 닿음, 온도가 설정값 아래로 내려감. 영점 교차 함수 <span class="m">g</span>(<span class="m">x</span>, <span class="m">t</span>)를 정해 두고, 그 부호가 바뀌는 순간을 찾습니다. 배터리라면 <span class="m">g</span> = <span class="m">B</span> − 25입니다.</dd>
+  </dl>
+  <div class="prose">
+    <p>상태 사건의 시각은 상태를 풀어 봐야 압니다. 그런데 상태는 그 사이의 시간 사건(바람이 바뀜)에 따라 달라집니다. 그래서 시간 사건이 일어날 때마다 다음 상태 사건 시각을 다시 계산해야 합니다. 2-2편의 신호등에서 버튼이 눌릴 때마다 σ를 다시 정한 것과 같은 일입니다.</p>
+  </div>
+
+  <h3 id="s2-2"><span class="n">2.2</span>사건 위치 찾기</h3>
+  <div class="prose">
+    <p>가장 쉬운 방법은 매 걸음 끝에서 <span class="m">g</span>의 부호를 확인하는 것입니다. 부호가 바뀌었으면 그 걸음 안 어딘가에서 사건이 일어났다는 뜻이지만, 걸음 끝 시각을 사건 시각으로 써 버리면 최대 Δ<span class="m">t</span>만큼 늦고 배터리는 이미 25% 아래에 있습니다. 제대로 하려면 걸음 안에서 <span class="m">g</span> = 0인 시각을 찾고, 그 시각까지만 적분한 상태로 되돌아가 사건을 처리합니다. 오일러 한 걸음은 직선이라 선형 보간으로 정확히 찾을 수 있고, RK4처럼 걸음 안이 곡선인 적분기에서는 이분법이나 걸음 안을 보간하는 출력(dense output)을 씁니다.</p>
+  </div>
+  <div class="widget" id="w-loc">
+    <h4>배터리 20%를 언제 알아채나</h4>
+    <p class="sub">회색 곡선이 정확한 배터리 잔량, 점이 오일러 걸음입니다. 빨간 ✕는 걸음 끝에서 확인한 시각, 색 점은 걸음 안에서 찾은 시각입니다.</p>
+    <canvas data-w="640" data-h="240" role="img" aria-label="배터리 잔량 곡선과 오일러 걸음, 두 가지 사건 탐지 시각"></canvas>
+    <div class="ctrl"><label>걸음 Δt (분) <input type="range" min="0.5" max="8" step="0.5" value="4" data-dt> <b></b></label></div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>걸음 안에서 위치를 찾으면 사건 시각의 오차는 적분 자체의 오차만 남습니다. 걸음 끝에서 확인하는 방식은 그 위에 최대 Δ<span class="m">t</span>의 늦음을 더합니다. 더 나쁜 경우도 있습니다. 걸음 사이에 <span class="m">g</span>가 0을 두 번 지나 원래 부호로 돌아오면, 걸음 끝만 보는 방식은 사건을 아예 놓칩니다. 짧은 순간만 문턱을 넘는 신호가 그렇습니다.</p>
+  </div>
+
+  <h3 id="s2-3"><span class="n">2.3</span>사건 뒤에 다시 출발하기</h3>
+  <ol class="steps">
+    <li><b>사건 시각까지 적분</b>찾은 시각 <span class="m">t</span>*에서의 상태를 구합니다.</li>
+    <li><b>상태를 바꾸기</b>배터리 모드를 "비행"에서 "대기"로, 공의 속도를 −<span class="m">ev</span>로 바꾸는 식입니다. 상태가 불연속으로 뛸 수 있습니다.</li>
+    <li><b>식을 바꾸기</b>모드가 바뀌면 미분방정식도 바뀝니다. 충전 중인 배터리는 늘어나는 식을 따릅니다.</li>
+    <li><b>적분기를 다시 시작</b>이전 걸음의 정보를 쓰는 적분기(다단계법)는 사건 직후에 처음부터 다시 시작해야 합니다. 불연속을 건너 이전 값을 쓰면 오차가 커집니다.</li>
+  </ol>
+
+  <h3 id="s2-4"><span class="n">2.4</span>채터링과 제노</h3>
+  <div class="prose">
+    <p>설정값 21°C에서 정확히 켜고 끄는 온도 조절기를 생각해 봅시다. 온도가 21°C 아래로 내려가면 켜지고, 한 걸음 뒤 21°C를 넘으면 꺼지고, 다시 한 걸음 뒤 내려가면 켜집니다. 전환이 매 걸음 일어나는 이 현상을 채터링(chattering)이라 합니다. 실제 난방기가 이렇게 움직이면 금방 망가지고, 시뮬레이션에서는 전환 횟수가 Δ<span class="m">t</span>에 따라 마음대로 바뀝니다. 즉 결과가 모델이 아니라 적분 걸음에서 나옵니다.</p>
+  </div>
+  <div class="widget" id="w-thermo">
+    <h4>온도 조절기와 히스테리시스</h4>
+    <p class="sub">켜지는 온도는 21 − δ, 꺼지는 온도는 21 + δ입니다. 띠 δ가 0이면 설정값 한 점에서 켜고 끕니다. 아래 띠는 난방기가 켜진 구간입니다.</p>
+    <canvas data-w="640" data-h="246" role="img" aria-label="실내 온도와 난방기 켜짐 구간"></canvas>
+    <div class="ctrl">
+      <label>띠 δ (°C) <input type="range" min="0" max="1" step="0.05" value="0" data-band> <b></b></label>
+      <span>적분 걸음</span><div class="seg" data-g="dt"><button type="button" aria-pressed="true" data-v="0.01">0.01분</button><button type="button" aria-pressed="false" data-v="0.05">0.05분</button><button type="button" aria-pressed="false" data-v="0.2">0.2분</button></div>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>δ = 0에서 걸음을 바꿔 보면 전환 횟수가 걸음에 반비례해 바뀝니다. 걸음을 20배 줄이면 60분 동안의 전환이 272번에서 5,421번으로 늘어납니다. 띠를 넣으면 사정이 달라집니다. δ = 0.5일 때는 같은 걸음 범위에서 69번에서 87번 사이에 머물고, 걸음을 줄일수록 모델이 정하는 값으로 모입니다. 난방기가 켜져 있는 비율은 어느 경우든 거의 그대로입니다. 실제 온도 조절기에 히스테리시스가 들어 있는 이유와 같습니다. 띠 대신 "한 번 바뀌면 최소 몇 분은 유지"하는 최소 유지 시간을 두는 방법도 있습니다.</p>
+    <p>제노(Zeno) 현상은 더 극단적입니다. 튀는 공의 반발 계수가 1보다 작으면 튀는 간격이 등비수열로 줄어, 무한히 많은 충돌이 유한한 시간 안에 일어납니다. 사건 기반 시뮬레이터는 그 시각을 영영 넘지 못합니다. 속도가 어느 값보다 작아지면 "공이 멈춤" 모드로 바꾸는 식으로 모델을 고쳐서 다룹니다. 시뮬레이터가 멈추는 것은 버그가 아니라 모델이 현실의 무언가(공은 결국 멈춘다)를 빠뜨렸다는 신호입니다.</p>
+  </div>
+
+  <h3 id="s2-5"><span class="n">2.5</span>연속 시스템을 DEVS로: QSS</h3>
+  <div class="prose">
+    <p>시간을 일정하게 쪼개는 대신 상태를 일정하게 쪼갤 수도 있습니다. 양자화 상태 시스템(QSS, quantized state system) 방식은 상태 <span class="m">x</span>가 정해진 크기 Δ<span class="m">Q</span>만큼 변할 때만 사건을 만듭니다. 다음 사건까지의 시간은 Δ<span class="m">Q</span> ÷ |기울기|로 바로 계산되므로, 변수 하나가 곧 ta(<span class="m">s</span>) = Δ<span class="m">Q</span>/|d<span class="m">x</span>/d<span class="m">t</span>|인 DEVS 원자 모델이 됩니다. 연속 부품과 이산 부품을 같은 DEVS 시뮬레이터에서 돌릴 수 있게 되는 셈입니다.</p>
+  </div>
+  <div class="widget" id="w-qss">
+    <h4>시간을 쪼갤까, 상태를 쪼갤까</h4>
+    <p class="sub">d<span class="m">x</span>/d<span class="m">t</span> = −0.5<span class="m">x</span> + <span class="m">u</span>(<span class="m">t</span>), 입력 <span class="m">u</span>는 6분에 2에서 0.2로 바뀝니다. 아래쪽 눈금은 QSS가 사건을 만든 시각입니다.</p>
+    <canvas data-w="640" data-h="250" role="img" aria-label="정확한 해와 QSS, 고정 간격 오일러의 비교"></canvas>
+    <div class="ctrl">
+      <label>양자 ΔQ <input type="range" min="0.05" max="0.5" step="0.05" value="0.2" data-dq> <b></b></label>
+      <label>오일러 걸음 Δt <input type="range" min="0.1" max="1" step="0.1" value="0.5" data-dt> <b></b></label>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>QSS는 상태가 빨리 변하는 곳에서 사건을 촘촘히, 거의 변하지 않는 곳에서는 드물게 만듭니다. 오차는 대략 Δ<span class="m">Q</span> 이하로 묶입니다. 6분에 입력이 바뀌는 것은 시간 사건이라 양쪽 모두 정확히 그 시각에서 기울기를 바꿨습니다. 오일러는 그 시각에서 걸음을 끊었고, QSS는 그 시각에 다음 사건 시각을 다시 계산했습니다. 변수가 수천 개인데 대부분이 조용한 모델, 예를 들어 전력망이나 넓은 지역의 열 확산에서 QSS가 유리합니다.</p>
+  </div>
+</section>
+
+<!-- ===================== 3 ===================== -->
+<section class="chap" id="ch3">
+  <h2><span class="n">3</span>예제와 사례 연구</h2>
+  <p class="intro">연속 부분을 사건 사이에서 풀 수 있으면, 하이브리드 모델도 사건 기반으로 정확히 돌아갑니다.</p>
+
+  <h3 id="s3-1"><span class="n">3.1</span>드론 순찰과 충전소</h3>
+  <div class="prose">
+    <p>드론 여러 대가 캠퍼스 상공을 순찰합니다. 비행 중 배터리는 분당 1 × (1 + 0.5<span class="m">w</span>)%씩 줄고, 바람 세기 <span class="m">w</span>(0, 1, 2)는 평균 5분마다 바뀝니다. 배터리가 θ에 닿으면 충전소로 가서 충전기가 비기를 기다리고, 분당 4%씩 충전해 100%가 되면 다시 나갑니다. 바람이 바뀌는 시각 사이에는 소모율이 일정하므로, θ에 닿는 시각은 (<span class="m">B</span> − θ)/소모율로 정확히 풀립니다. 바람이 바뀔 때마다 모든 비행 중 드론의 다음 상태 사건 시각을 다시 계산하면, 적분 걸음 없이도 연속 부분이 정확합니다.</p>
+  </div>
+  <div class="widget" id="w-drone">
+    <h4>드론 8시간 운용</h4>
+    <p class="sub">선 하나가 드론 하나의 배터리입니다. 아래 띠는 바람 세기, 그 아래 계단은 충전기를 기다리는 드론 수입니다.</p>
+    <canvas data-w="640" data-h="300" role="img" aria-label="드론별 배터리 잔량, 바람 세기, 충전 대기 드론 수의 시간 변화"></canvas>
+    <div class="ctrl">
+      <label>충전기 <input type="range" min="1" max="4" step="1" value="2" data-c> <b></b></label>
+      <label>드론 <input type="range" min="4" max="12" step="1" value="8" data-n> <b></b></label>
+      <label>복귀 기준 θ <input type="range" min="15" max="40" step="5" value="25" data-th> <b></b></label>
+      <button type="button" data-act="new">다른 바람</button>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>충전기를 한 대에서 두 대로 늘리면 순찰 비율이 크게 오르지만, 세 대째의 효과는 훨씬 작습니다. 1편의 M/M/c에서 본 것처럼, 충전소도 결국 큐이기 때문입니다. 복귀 기준 θ는 생각보다 결과를 덜 바꿉니다. θ를 높이면 더 자주 충전하지만 한 번에 덜 충전하므로 충전 시간의 합은 비슷합니다. 대신 θ는 안전 여유입니다. 1분 간격으로 배터리를 확인하는 시뮬레이터였다면 θ에 닿은 것을 평균 0.8%p쯤 늦게, 바람이 셀 때는 2%p 가까이 늦게 알아챘을 것입니다. θ가 15%처럼 낮을 때 그 늦음은 실제로는 추락 위험입니다.</p>
+  </div>
+
+  <h3 id="s3-2"><span class="n">3.2</span>파이썬으로 확인하기</h3>
+  <div class="prose">
+    <p>같은 모델을 파이썬으로 옮겼습니다. 적분기도 사건 목록도 따로 없고, "다음 상태 사건까지 남은 시간"과 "다음 시간 사건까지 남은 시간" 중 짧은 쪽으로 건너뛰는 루프 하나가 전부입니다. 연속 부분이 사건 사이에서 풀리기 때문에 가능한 구조입니다.</p>
+  </div>
+<pre class="code"><code><span class="com"># drone_hybrid.py : 드론 순찰과 충전소. 연속(배터리)과 이산(바람, 충전 대기열)이 섞인 모델</span>
+<span class="kw">import</span> heapq, random
+
+<span class="kw">def</span> <span class="fn">run</span>(n_drones=<span class="num">8</span>, chargers=<span class="num">2</span>, theta=<span class="num">25.0</span>, T=<span class="num">480.0</span>, seed=<span class="num">4</span>):
+    rng = random.Random(seed)
+    wind_times, t = [], <span class="num">0.0</span>
+    <span class="kw">while</span> <span class="kw">True</span>:                                   <span class="com"># 시간 사건: 바람 세기가 바뀌는 시각</span>
+        t += rng.expovariate(<span class="num">1</span> / <span class="num">5</span>)
+        <span class="kw">if</span> t &gt; T: <span class="kw">break</span>
+        wind_times.append((t, rng.randrange(<span class="num">3</span>)))
+    B = [<span class="num">60</span> + <span class="num">40</span> * rng.random() <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(n_drones)]
+    mode = [<span class="str">&quot;fly&quot;</span>] * n_drones                     <span class="com"># fly, wait, charge</span>
+    wind, now, free, queue, waits, survey = <span class="num">1</span>, <span class="num">0.0</span>, chargers, [], [], <span class="num">0.0</span>
+    <span class="kw">def</span> <span class="fn">rate</span>(i):                                  <span class="com"># 배터리 변화율 (%/분)</span>
+        <span class="kw">return</span> {<span class="str">&quot;fly&quot;</span>: -(<span class="num">1</span> + <span class="num">0.5</span> * wind), <span class="str">&quot;charge&quot;</span>: <span class="num">4.0</span>, <span class="str">&quot;wait&quot;</span>: <span class="num">0.0</span>}[mode[i]]
+    <span class="kw">def</span> <span class="fn">state_event</span>(i):                           <span class="com"># 상태 사건까지 남은 시간을 풀어서 구한다</span>
+        r = rate(i)
+        <span class="kw">if</span> mode[i] == <span class="str">&quot;fly&quot;</span>:    <span class="kw">return</span> (B[i] - theta) / -r
+        <span class="kw">if</span> mode[i] == <span class="str">&quot;charge&quot;</span>: <span class="kw">return</span> (<span class="num">100</span> - B[i]) / r
+        <span class="kw">return</span> <span class="bi">float</span>(<span class="str">&quot;inf&quot;</span>)
+    <span class="kw">while</span> <span class="kw">True</span>:
+        dt_state, who = <span class="bi">min</span>((state_event(i), i) <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n_drones))
+        dt_wind = wind_times[<span class="num">0</span>][<span class="num">0</span>] - now <span class="kw">if</span> wind_times <span class="kw">else</span> <span class="bi">float</span>(<span class="str">&quot;inf&quot;</span>)
+        dt = <span class="bi">min</span>(dt_state, dt_wind, T - now)
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n_drones):                 <span class="com"># 사건 사이에서는 연속 부분을 그대로 적분</span>
+            <span class="kw">if</span> mode[i] == <span class="str">&quot;fly&quot;</span>: survey += dt
+            B[i] += rate(i) * dt
+        now += dt
+        <span class="kw">if</span> now &gt;= T: <span class="kw">break</span>
+        <span class="kw">if</span> dt == dt_wind:
+            wind = wind_times.pop(<span class="num">0</span>)[<span class="num">1</span>]           <span class="com"># 소모율이 바뀌었으니 다음 상태 사건도 바뀐다</span>
+        <span class="kw">elif</span> mode[who] == <span class="str">&quot;fly&quot;</span>:                  <span class="com"># 배터리가 θ에 닿음: 충전소로</span>
+            B[who] = theta
+            <span class="kw">if</span> free: free -= <span class="num">1</span>; mode[who] = <span class="str">&quot;charge&quot;</span>; waits.append(<span class="num">0.0</span>)
+            <span class="kw">else</span>:    mode[who] = <span class="str">&quot;wait&quot;</span>; queue.append((who, now))
+        <span class="kw">else</span>:                                     <span class="com"># 충전 끝: 다시 순찰</span>
+            B[who], mode[who] = <span class="num">100.0</span>, <span class="str">&quot;fly&quot;</span>
+            <span class="kw">if</span> queue:
+                j, t0 = queue.pop(<span class="num">0</span>); mode[j] = <span class="str">&quot;charge&quot;</span>; waits.append(now - t0)
+            <span class="kw">else</span>: free += <span class="num">1</span>
+    <span class="kw">return</span> survey / (n_drones * T), <span class="bi">sum</span>(waits) / <span class="bi">len</span>(waits)
+
+<span class="kw">for</span> c <span class="kw">in</span> (<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>):
+    cover, wait = run(chargers=c)
+    <span class="bi">print</span>(<span class="str">f&quot;</span><span class="str">충전기 </span>{c}<span class="str">대: 순찰 비율 </span>{cover:<span class="str">.1%</span>}<span class="str">, 평균 충전 대기 </span>{wait:<span class="str">.1f</span>}<span class="str">분</span><span class="str">&quot;</span>)</code></pre>
+  <pre class="code"><code>충전기 1대: 순찰 비율 37.0%, 평균 충전 대기 71.0분
+충전기 2대: 순찰 비율 66.3%, 평균 충전 대기 7.6분
+충전기 3대: 순찰 비율 72.3%, 평균 충전 대기 1.0분</code></pre>
+  <p class="code-cap">시드 4로 한 번 돌린 결과입니다. 위 위젯과 난수 생성기가 달라 숫자는 조금 다르지만 경향은 같습니다. 결론을 내려면 5편처럼 반복 실행으로 구간을 만듭니다.</p>
+  <div class="note"><p>소모율이 바람에 따라 매끄럽게 변하는 식이라면 (<span class="m">B</span> − θ)/소모율 같은 닫힌 해가 없습니다. 그때는 7편의 적분기로 걸음을 나아가되, 2.2절처럼 걸음마다 <span class="m">g</span> = <span class="m">B</span> − θ의 부호를 확인하고 바뀐 걸음 안에서 시각을 찾습니다. 루프의 모양은 같고, "남은 시간을 푸는" 부분만 "찾는" 부분으로 바뀝니다.</p></div>
+
+  <h3 id="s3-3"><span class="n">3.3</span>하이브리드가 필요한 곳</h3>
+  <div class="cards">
+    <div><h4>군수와 보급</h4><p>연료, 탄약, 배터리가 임무 중 연속으로 줄고, 보급 차량의 도착과 재보급 줄이 이산 사건입니다. 바닥나는 순간을 늦게 잡으면 임무 가능 시간을 과대평가합니다.</p></div>
+    <div><h4>전력망</h4><p>발전기와 부하는 미분방정식을 따르고, 차단기 동작과 계통 전환은 사건입니다. 보호 계전기가 언제 동작하는지가 상태 사건입니다.</p></div>
+    <div><h4>약물 투여</h4><p>혈중 농도는 연속으로 줄고, 투약은 일정에 따른 시간 사건이며, 농도가 기준 아래로 내려가면 추가 투약하는 규칙은 상태 사건입니다.</p></div>
+  </div>
+  <div class="prose">
+    <p>Modelica 같은 물리 모델링 언어와 그 시뮬레이터는 영점 교차 함수를 따로 선언하게 해 사건 위치 찾기를 자동으로 해 줍니다. 직접 짤 때는 이 편의 네 단계(적분, 찾기, 바꾸기, 다시 시작)를 루프로 적으면 됩니다.</p>
+  </div>
+</section>
+
+<!-- ===================== 4 ===================== -->
+<section class="chap" id="ch4">
+  <h2><span class="n">4</span>연결과 정리</h2>
+
+  <h3 id="s4-1"><span class="n">4.1</span>앞뒤 편과의 연결</h3>
+  <div class="link-note"><p><span class="k">7편에서</span>적분기의 오차와 안정성, 충돌과 전환을 다뤘습니다. 이 편은 그 전환이 언제 일어나는지를 정확히 잡는 문제입니다.</p></div>
+  <div class="link-note"><p><span class="k">2편과 2-2편에서</span>사건 목록과 ta(<span class="m">s</span>)가 여기서도 쓰입니다. 상태 사건의 시각을 미리 풀 수 있으면 그것은 그냥 예약된 사건이고, 시간 사건이 끼어들 때마다 다시 계산하는 것은 DEVS의 외부 전이와 같습니다.</p></div>
+  <div class="link-note"><p><span class="k">1편으로</span>충전소처럼 하이브리드 모델 안에도 큐가 숨어 있습니다. 충전기 수를 정할 때 1편의 풀링과 가동률이 그대로 쓰입니다.</p></div>
+  <div class="link-note"><p><span class="k">8편으로</span>사건 탐지 방식과 적분 걸음을 바꿔도 결론이 같은지 확인하는 것이 하이브리드 모델 검증의 첫 단계입니다. 결과가 걸음에 따라 바뀌면 채터링이나 놓친 사건을 의심합니다.</p></div>
+
+  <h3 id="s4-2"><span class="n">4.2</span>요약</h3>
+  <dl class="terms">
+    <dt>두 사건</dt><dd>시간 사건은 미리 예약하고 걸음을 끊는다. 상태 사건은 영점 교차 함수 <span class="m">g</span>의 부호 변화로 찾는다.</dd>
+    <dt>위치 찾기</dt><dd>걸음 끝에서 확인만 하면 최대 Δ<span class="m">t</span> 늦고, 짧은 교차는 놓친다. 걸음 안에서 보간이나 이분법으로 찾는다.</dd>
+    <dt>다시 출발</dt><dd>사건 시각까지 적분, 상태와 식을 바꾸고, 적분기를 다시 시작한다.</dd>
+    <dt>채터링, 제노</dt><dd>결과가 걸음에 따라 바뀌면 모델 문제다. 히스테리시스, 최소 유지 시간, 멈춤 모드로 고친다.</dd>
+    <dt>QSS</dt><dd>상태를 Δ<span class="m">Q</span>씩 쪼개면 변수 하나가 DEVS 원자 모델이 된다. 조용한 변수가 많은 모델에 유리하다.</dd>
+    <dt>사건 기반 하이브리드</dt><dd>사건 사이에서 연속 부분이 풀리면, 다음 상태 사건 시각을 계산해 예약하는 것으로 충분하다.</dd>
+  </dl>
+
+  <h3 id="s4-3"><span class="n">4.3</span>연습 문제</h3>
+  <div class="ex">
+    <details><summary>1. 배터리가 분당 2%씩 줄고 1분 간격으로 확인합니다. 복귀 기준 20%에 닿은 것을 늦게 알아챌 때, 최악의 경우 몇 %에서 알아챌까요?</summary><div><p>한 걸음 동안 최대 2%가 줄므로 최악이면 18%에서 알아챕니다. 평균으로는 걸음의 절반만큼 늦어 19% 근처입니다. 바람처럼 소모율이 커지는 조건에서는 더 늦습니다.</p></div></details>
+    <details><summary>2. 2.4절 위젯에서 δ = 0, 걸음 0.01분일 때 60분 동안 전환이 5천 번 넘게 일어납니다. 걸음을 0.001분으로 줄이면 전환 횟수는 어떻게 될까요?</summary><div><p>대략 10배로 늘어 5만 번 남짓이 됩니다. 채터링은 매 걸음 전환하는 것이라 걸음 수에 비례합니다. 걸음을 줄여도 결과가 수렴하지 않는다는 것이 모델에 히스테리시스가 빠졌다는 증거입니다.</p></div></details>
+    <details><summary>3. 반발 계수 0.8인 공을 1m에서 떨어뜨렸습니다. 첫 충돌까지 약 0.45초가 걸린다면, 공이 멈추기까지 걸리는 전체 시간은 대략 얼마일까요?</summary><div><p>충돌마다 다음 비행 시간은 0.8배가 되고, 첫 충돌 뒤 첫 비행은 올라갔다 내려오므로 2 × 0.45 × 0.8초입니다. 전체는 0.45 + 2 × 0.45 × (0.8 + 0.8² + …) = 0.45 + 0.9 × 0.8/0.2 = 0.45 + 3.6 ≈ 4.05초입니다. 충돌은 무한히 많지만 시간은 유한합니다. 이것이 제노 현상입니다.</p></div></details>
+    <details><summary>4. 3.1절 모델에서 바람이 매끄럽게 변해 소모율이 1 + 0.5 sin(t/10)이라면, 파이썬 코드의 어느 부분을 어떻게 바꿔야 할까요?</summary><div><p><code>state_event</code>가 닫힌 해로 남은 시간을 줄 수 없습니다. 대신 짧은 걸음으로 적분하며 걸음마다 <code>B − θ</code>의 부호를 확인하고, 부호가 바뀐 걸음 안에서 이분법으로 시각을 찾습니다. 바람의 시간 사건 목록은 필요 없어지고, 충전 중인 드론은 소모율과 상관없으므로 지금처럼 풀어서 예약할 수 있습니다.</p></div></details>
+  </div>
+</section>
+
+<nav class="pager" aria-label="이전 다음 편">
+  <a href="ch7_continuous-simulation.html"><span>이전 편</span><b>7. 연속 시스템 시뮬레이션</b></a>
+  <a class="next" href="ch8_verification-optimization.html"><span>다음 편</span><b>8. 검증, 타당성, 최적화</b></a>
+</nav>
+<footer><a href="https://sites.google.com/view/knunextcom">Next-generation Computing Systems Lab</a>, 경북대학교 컴퓨터학부</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ===== 공통 도구: 색, 캔버스, 난수, 통계, 수식 탐색기 ===== */
+var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+var COL = {};
+function readColors(){
+  var s = getComputedStyle(document.documentElement);
+  ["ink","muted","line","soft","panel","bg","acc","c1","c2","c3","miss","t1","t2","t3","t4","t5"].forEach(function(k){ COL[k] = s.getPropertyValue("--"+k).trim(); });
+}
+readColors();
+function rgba(hex, a){
+  var h = hex.replace("#",""); if(h.length===3) h = h.replace(/(.)/g,"$1$1");
+  var n = parseInt(h,16); return "rgba("+(n>>16&255)+","+(n>>8&255)+","+(n&255)+","+a+")";
+}
+function F(size, weight){ return (weight||400)+" "+size+'px "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif'; }
+function txt(c, s, x, y, o){
+  o = o || {}; c.font = o.font || F(o.size||11, o.weight); c.fillStyle = o.color || COL.muted;
+  c.textAlign = o.align || "left"; c.textBaseline = o.base || "alphabetic"; c.fillText(s, x, y);
+  c.textAlign = "left"; c.textBaseline = "alphabetic";
+}
+function line(c, x0, y0, x1, y1, col, w, dash){
+  c.strokeStyle = col; c.lineWidth = w||1; c.setLineDash(dash||[]);
+  c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.setLineDash([]); c.lineWidth = 1;
+}
+function dot(c, x, y, r, col){ c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+function fmt(v, d){ if(!isFinite(v)) return "∞"; return (+v).toFixed(d===undefined?2:d); }
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+var CANVASES = [];
+function setup(rootOrCanvas, draw){
+  var cv = rootOrCanvas.tagName === "CANVAS" ? rootOrCanvas : rootOrCanvas.querySelector("canvas");
+  var c = cv.getContext("2d"), W = +cv.dataset.w, H = +cv.dataset.h;
+  cv.style.aspectRatio = W + " / " + H;
+  var o = {cv:cv, c:c, W:W, H:H};
+  o.redraw = function(){ c.clearRect(0,0,W,H); draw(c, W, H); };
+  o.fit = function(){
+    var w = cv.clientWidth || W, d = window.devicePixelRatio || 1;
+    cv.width = Math.round(w*d); cv.height = Math.round(w*H/W*d);
+    c.setTransform(cv.width/W, 0, 0, cv.height/H, 0, 0); o.redraw();
+  };
+  o.toLocal = function(ev){ var r = cv.getBoundingClientRect(); return {x:(ev.clientX-r.left)/r.width*W, y:(ev.clientY-r.top)/r.height*H}; };
+  new ResizeObserver(o.fit).observe(cv);
+  CANVASES.push(o);
+  return o;
+}
+function seg(root, sel, onPick){
+  var g = typeof sel === "string" ? root.querySelector(sel) : sel;
+  g.addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    g.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x===b ? "true" : "false"); });
+    onPick(b.dataset.v, b);
+  });
+}
+function bindRange(root, sel, onChange, fmtFn){
+  var inp = root.querySelector(sel), out = inp.parentElement.querySelector("b,output");
+  function u(){ if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value; onChange(+inp.value); }
+  inp.addEventListener("input", u); if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value;
+  return inp;
+}
+
+/* 축과 눈금 */
+function scale(box, xr, yr){
+  return {box:box, xr:xr, yr:yr,
+    X:function(v){ return box[0] + (v-xr[0])/(xr[1]-xr[0])*(box[2]-box[0]); },
+    Y:function(v){ return box[3] - (v-yr[0])/(yr[1]-yr[0])*(box[3]-box[1]); }};
+}
+function axes(c, s, o){
+  o = o || {}; var b = s.box;
+  (o.yt||[]).forEach(function(v){ var y = s.Y(v); line(c, b[0], y+.5, b[2], y+.5, COL.soft); txt(c, o.fy ? o.fy(v) : v, b[0]-6, y+4, {align:"right", size:10}); });
+  line(c, b[0], b[3]+.5, b[2], b[3]+.5, COL.line);
+  line(c, b[0]+.5, b[1], b[0]+.5, b[3], COL.line);
+  (o.xt||[]).forEach(function(v){ var x = s.X(v); line(c, x+.5, b[3], x+.5, b[3]+4, COL.line); txt(c, o.fx ? o.fx(v) : v, x, b[3]+15, {align:"center", size:10}); });
+  if(o.xl) txt(c, o.xl, b[2], b[3]+28, {align:"right", size:10});
+  if(o.yl) txt(c, o.yl, b[0], b[1]-6, {size:10});
+}
+function path(c, s, pts, col, w, dash){
+  var bx = s.box; c.save(); c.beginPath(); c.rect(bx[0]-1, bx[1]-3, bx[2]-bx[0]+2, bx[3]-bx[1]+4); c.clip();
+  c.strokeStyle = col; c.lineWidth = w||1.6; c.setLineDash(dash||[]); c.beginPath();
+  var started = false;
+  pts.forEach(function(p){ if(p == null || !isFinite(p[1])){ started = false; return; }
+    var x = s.X(p[0]), y = clamp(s.Y(p[1]), s.box[1]-2, s.box[3]+2); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; });
+  c.stroke(); c.setLineDash([]); c.lineWidth = 1; c.restore();
+}
+function ticks(a, b, n){
+  var span = b - a, step = Math.pow(10, Math.floor(Math.log10(span/n))), err = span/n/step;
+  step *= err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1;
+  var out = [], v = Math.ceil(a/step)*step;
+  for(; v <= b + 1e-9; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+
+/* 난수: 재현 가능한 생성기와 분포 */
+function mulberry(seed){ var a = seed >>> 0; return function(){ a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function U(r){ return (r || Math.random)(); }
+function expo(mean, r){ return -mean*Math.log(1-U(r)); }
+function normal(r){ var u = 1-U(r), v = U(r); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gammaRV(k, theta, r){
+  if(k < 1){ return gammaRV(k+1, theta, r)*Math.pow(U(r), 1/k); }
+  var d = k - 1/3, cc = 1/Math.sqrt(9*d);
+  while(true){ var x, v; do { x = normal(r); v = 1 + cc*x; } while(v <= 0);
+    v = v*v*v; var u = U(r);
+    if(u < 1 - .0331*x*x*x*x || Math.log(u) < .5*x*x + d*(1 - v + Math.log(v))) return d*v*theta; }
+}
+function lognormRV(mu, s, r){ return Math.exp(mu + s*normal(r)); }
+function poissonRV(lam, r){ var L = Math.exp(-lam), k = 0, p = 1; do { k++; p *= U(r); } while(p > L); return k-1; }
+
+/* 통계 */
+function mean(a){ var s = 0; for(var i=0;i<a.length;i++) s += a[i]; return s/a.length; }
+function sd(a){ var m = mean(a), s = 0; for(var i=0;i<a.length;i++) s += (a[i]-m)*(a[i]-m); return Math.sqrt(s/(a.length-1)); }
+function quantile(sorted, p){ var i = (sorted.length-1)*p, lo = Math.floor(i), hi = Math.ceil(i); return sorted[lo] + (sorted[hi]-sorted[lo])*(i-lo); }
+function normInv(p){ // Acklam 근사
+  var a=[-39.6968302866538,220.946098424521,-275.928510446969,138.357751867269,-30.6647980661472,2.50662827745924],
+      b=[-54.4760987982241,161.585836858041,-155.698979859887,66.8013118877197,-13.2806815528857],
+      cc=[-.00778489400243029,-.322396458041136,-2.40075827716184,-2.54973253934373,4.37466414146497,2.93816398269878],
+      d=[.00778469570904146,.32246712907004,2.445134137143,3.75440866190742], q, r;
+  if(p < .02425){ q = Math.sqrt(-2*Math.log(p)); return (((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if(p > .97575){ q = Math.sqrt(-2*Math.log(1-p)); return -(((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  q = p - .5; r = q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+function normCdf(x){ var t = 1/(1+.2316419*Math.abs(x)), y = .3989423*Math.exp(-x*x/2)*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return x > 0 ? 1-y : y; }
+function tcrit(df, conf){ // 양측 신뢰수준 conf의 t 임계값 (Cornish-Fisher 근사)
+  var z = normInv(1 - (1-(conf||.95))/2), z3 = z*z*z, z5 = z3*z*z, z7 = z5*z*z;
+  return z + (z3+z)/(4*df) + (5*z5+16*z3+3*z)/(96*df*df) + (3*z7+19*z5+17*z3-15*z)/(384*df*df*df);
+}
+
+/* 수식 탐색기: 항을 누르면 강조하고 설명을 보여 준다. EQ[id](값) 이 실시간 계산을 맡는다. */
+var EQ = {}, EQRUN = {};
+function refreshEq(id){ if(EQRUN[id]) EQRUN[id](); }
+function initEqx(){
+  document.querySelectorAll(".eqx").forEach(function(box){
+    var detail = box.querySelector(".eq-detail"), btns = box.querySelectorAll(".eq-terms button");
+    function pick(t){
+      var same = box.dataset.on === t;
+      if(same || !t){ delete box.dataset.on; } else box.dataset.on = t;
+      box.querySelectorAll(".eq-big .t").forEach(function(s){ s.classList.toggle("on", !same && s.dataset.t === t); });
+      btns.forEach(function(b){ b.setAttribute("aria-pressed", !same && b.dataset.t === t ? "true" : "false"); });
+      if(detail){ var src = box.querySelector('template[data-t="'+t+'"]'); detail.innerHTML = !same && src ? src.innerHTML : ""; }
+    }
+    btns.forEach(function(b){
+      var t = box.querySelector('.eq-big .t[data-t="'+b.dataset.t+'"]'); if(t) b.dataset.c = t.dataset.c;
+      b.style.setProperty("--tc", "var(--t"+(b.dataset.c||1)+")");
+      b.addEventListener("click", function(){ pick(b.dataset.t); });
+    });
+    box.querySelectorAll(".eq-big .t").forEach(function(s){ s.tabIndex = 0; s.setAttribute("role","button");
+      s.addEventListener("click", function(){ pick(s.dataset.t); });
+      s.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pick(s.dataset.t); } }); });
+    var fn = EQ[box.id];
+    if(fn){
+      var vars = box.querySelectorAll("[data-var]");
+      var run = function(){
+        var v = {}; vars.forEach(function(i){ v[i.dataset.var] = i.type === "checkbox" ? i.checked : +i.value;
+          var o = i.parentElement.querySelector("b"); if(o) o.textContent = i.dataset.fmt ? fmt(+i.value, +i.dataset.fmt) : i.value; });
+        var res = fn(v, box) || {};
+        Object.keys(res).forEach(function(k){ box.querySelectorAll('[data-o="'+k+'"]').forEach(function(el){ el.innerHTML = res[k]; }); });
+      };
+      vars.forEach(function(i){ i.addEventListener("input", run); });
+      EQRUN[box.id] = run; run();
+    }
+  });
+}
+function onTheme(){ readColors(); CANVASES.forEach(function(o){ o.redraw(); }); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onTheme);
+new MutationObserver(onTheme).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+
+/* 감마 함수와 분포 함수 */
+function lgamma(x){
+  var g = 7, cf = [0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(x < .5) return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*x))) - lgamma(1-x);
+  x -= 1; var a = cf[0], t = x + g + .5;
+  for(var i=1;i<g+2;i++) a += cf[i]/(x+i);
+  return .5*Math.log(2*Math.PI) + (x+.5)*Math.log(t) - t + Math.log(a);
+}
+function gammaP(a, x){ // 정규화된 하부 불완전 감마 함수
+  if(x <= 0) return 0;
+  var gln = lgamma(a);
+  if(x < a + 1){ var ap = a, sum = 1/a, del = sum; for(var n=0;n<300;n++){ ap++; del *= x/ap; sum += del; if(Math.abs(del) < Math.abs(sum)*1e-12) break; } return sum*Math.exp(-x + a*Math.log(x) - gln); }
+  var b = x + 1 - a, c = 1e300, d = 1/b, h = d;
+  for(var i=1;i<300;i++){ var an = -i*(i-a); b += 2; d = an*d + b; if(Math.abs(d) < 1e-300) d = 1e-300; c = b + an/c; if(Math.abs(c) < 1e-300) c = 1e-300; d = 1/d; var del2 = d*c; h *= del2; if(Math.abs(del2-1) < 1e-12) break; }
+  return 1 - Math.exp(-x + a*Math.log(x) - gln)*h;
+}
+function gammaPdf(x, k, th){ if(x <= 0) return (k < 1 && x === 0) ? Infinity : 0; return Math.exp((k-1)*Math.log(x) - x/th - lgamma(k) - k*Math.log(th)); }
+function chi2crit(df, z){ z = z || 1.6449; var a = 2/(9*df); return df*Math.pow(1 - a + z*Math.sqrt(a), 3); }
+function seededSample(seed, n, gen){ var r = mulberry(seed), out = []; for(var i=0;i<n;i++) out.push(gen(r)); return out; }
+
+
+/* ===== 7-2편 하이브리드 시뮬레이션 ===== */
+/* ---------- 하이브리드 시뮬레이션 엔진 (이 페이지의 데모가 공유) ---------- */
+/* 2.2 배터리: B(t) = 100 − 1.2t + 1.8(cos(t/3) − 1), 소모율 1.2 + 0.6 sin(t/3) %/분 */
+function batExact(t){ return 100 - 1.2*t + 1.8*(Math.cos(t/3) - 1); }
+function batRate(t){ return -(1.2 + 0.6*Math.sin(t/3)); }
+function batCross(th){ var a = 0, b = 200; for(var i=0;i<80;i++){ var m = (a+b)/2; if(batExact(m) > th) a = m; else b = m; } return (a+b)/2; }
+function batEuler(dt, th, mode){ // mode: naive | lin | bis
+  var t = 0, B = 100, pts = [[0, 100]];
+  for(;;){
+    var B2 = B + dt*batRate(t), t2 = t + dt;
+    if(B2 <= th){
+      if(mode === "naive"){ pts.push([t2, B2]); return {t:t2, B:B2, pts:pts}; }
+      if(mode === "lin"){ var f = (B - th)/(B - B2), tc = t + f*dt; pts.push([tc, th]); return {t:tc, B:th, pts:pts}; }
+      var a = 0, b = dt; // 같은 오일러 한 걸음을 더 짧게 다시 밟아 본다
+      for(var i=0;i<40;i++){ var m = (a+b)/2; if(B + m*batRate(t) > th) a = m; else b = m; }
+      var tb = t + (a+b)/2; pts.push([tb, B + (a+b)/2*batRate(t)]); return {t:tb, B:B + (a+b)/2*batRate(t), pts:pts};
+    }
+    t = t2; B = B2; pts.push([t, B]);
+    if(t > 300) return {t:NaN, B:NaN, pts:pts};
+  }
+}
+/* 2.4 온도 조절기: dT/dt = −k(T − Tout) + h·u, u ∈ {0,1}. 띠 δ가 0이면 설정값에서 바로 전환 */
+function thermo(o){
+  var T = o.T0, u = 0, t = 0, pts = [], sw = 0, onTime = 0;
+  for(var n=0; t < o.tEnd; n++){
+    if(u === 0 && T < o.set - o.band){ u = 1; sw++; }
+    else if(u === 1 && T > o.set + o.band){ u = 0; sw++; }
+    if(n % o.every === 0) pts.push([t, T, u]);
+    T += o.dt*(-o.k*(T - o.Tout) + o.h*u); onTime += u*o.dt; t += o.dt;
+  }
+  pts.push([t, T, u]);
+  return {pts:pts, sw:sw, duty:onTime/o.tEnd};
+}
+/* 2.5 QSS1과 고정 간격 오일러: dx/dt = −0.5x + u(t), u = 2 (t < 6), 0.2 (t ≥ 6), x(0) = 0 */
+function qssU(t){ return t < 6 ? 2 : 0.2; }
+function qssExact(t){ if(t < 6) return 4*(1 - Math.exp(-0.5*t)); var x6 = 4*(1 - Math.exp(-3)); return 0.4 + (x6 - 0.4)*Math.exp(-0.5*(t - 6)); }
+function qssRun(dq, tEnd){
+  var t = 0, x = 0, q = 0, ev = 0, pts = [[0, 0, 0]], err = 0;
+  for(var g=0; g<100000; g++){
+    var d = -0.5*q + qssU(t), tn;
+    if(Math.abs(d) < 1e-12) tn = Infinity; else tn = t + (d > 0 ? (q + dq - x) : (x - (q - dq)))/Math.abs(d);
+    var tu = t < 6 ? 6 : Infinity, nt = Math.min(tn, tu, tEnd);
+    x += d*(nt - t); t = nt;
+    if(nt === tEnd){ pts.push([t, x, q]); break; }
+    if(nt === tn){ q = d > 0 ? q + dq : q - dq; x = q; ev++; }
+    // 입력이 바뀌는 시각에는 q를 그대로 두고 기울기만 새로 계산한다
+    pts.push([t, x, q]); err = Math.max(err, Math.abs(x - qssExact(t)));
+  }
+  for(var s=0;s<=200;s++){ var tt = s*tEnd/200, k = 0; while(k+1 < pts.length && pts[k+1][0] <= tt) k++; var xx = pts[k][1] + (-0.5*pts[k][2] + qssU(pts[k][0]))*(tt - pts[k][0]); err = Math.max(err, Math.abs(xx - qssExact(tt))); }
+  return {pts:pts, ev:ev, err:err};
+}
+function eulerRun(dt, tEnd){
+  var t = 0, x = 0, pts = [[0, 0]], err = 0, n = 0;
+  while(t < tEnd - 1e-12){ var h = Math.min(dt, tEnd - t, t < 6 - 1e-12 ? 6 - t : Infinity); x += h*(-0.5*x + qssU(t)); t += h; if(Math.abs(t - 6) < 1e-9) t = 6; n++; pts.push([t, x]); err = Math.max(err, Math.abs(x - qssExact(t))); }
+  return {pts:pts, steps:n, err:err};
+}
+/* 3.1 드론 순찰과 충전소. 바람 세기가 바뀌는 시각(시간 사건)에 소모율이 바뀌고,
+   배터리가 θ에 닿는 시각(상태 사건)과 100%가 되는 시각을 그때마다 다시 계산한다. */
+function droneRun(o){
+  var r = mulberry(o.seed), wind = [], t = 0;
+  for(;;){ t += expo(5, r); if(t > o.T) break; wind.push({t:t, w:Math.floor(r()*3)}); }
+  var w = 1, D = [], q = [], free = o.c, sumWait = 0, nWait = 0, survey = 0, late = [], trace = [];
+  for(var i=0;i<o.N;i++) D.push({B:60 + 40*r(), mode:"fly", t:0, wq:0, tr:[[0, 0]]});
+  D.forEach(function(d){ d.tr[0][1] = d.B; });
+  function rate(d){ return d.mode === "fly" ? -o.r0*(1 + 0.5*w) : d.mode === "chg" ? o.chg : 0; }
+  function nextState(d, now){ var rr = rate(d); if(d.mode === "fly") return now + (d.B - o.th)/(-rr); if(d.mode === "chg") return now + (100 - d.B)/rr; return Infinity; }
+  var now = 0, wi = 0;
+  for(var g=0; g<200000; g++){
+    var best = Infinity, who = -1;
+    D.forEach(function(d, i){ var tn = nextState(d, now); if(tn < best){ best = tn; who = i; } });
+    var tw = wi < wind.length ? wind[wi].t : Infinity, tnext = Math.min(best, tw, o.T);
+    D.forEach(function(d){ var rr = rate(d); if(d.mode === "fly") survey += tnext - now; d.B += rr*(tnext - now); });
+    now = tnext;
+    if(now >= o.T){ D.forEach(function(d){ d.tr.push([now, d.B]); }); break; }
+    if(tnext === tw){ D.forEach(function(d){ if(d.mode === "fly"){ d.tr.push([now, d.B]); } }); w = wind[wi].w; wi++; continue; }
+    var d = D[who]; d.tr.push([now, d.B]);
+    if(d.mode === "fly"){ // 상태 사건: θ에 닿음
+      d.B = o.th;
+      if(o.dtCheck){ var grid = Math.ceil(now/o.dtCheck)*o.dtCheck; late.push(-rate(d)*(grid - now)); }
+      if(free > 0){ free--; d.mode = "chg"; nWait++; } else { d.mode = "wait"; d.wq = now; q.push(who); }
+    } else { // 충전 끝
+      d.B = 100; d.mode = "fly";
+      if(q.length){ var j = q.shift(), e = D[j]; e.mode = "chg"; sumWait += now - e.wq; nWait++; e.tr.push([now, e.B]); } else free++;
+    }
+  }
+  var lateMean = late.length ? late.reduce(function(a, b){ return a + b; }, 0)/late.length : 0;
+  return {D:D, wind:wind, cover:survey/(o.N*o.T), wait:nWait ? sumWait/nWait : 0, n:nWait, late:lateMean, lateMax:late.length ? Math.max.apply(null, late) : 0};
+}
+
+
+/* ---------- 2.2 사건 위치 찾기 ---------- */
+(function(){
+  var root = document.getElementById("w-loc"); if(!root) return;
+  var dt = 4, TH = 20, tc = batCross(TH);
+  var view = setup(root, function(c, W, H){
+    var s = scale([52, 16, 620, 206], [0, 80], [0, 100]);
+    axes(c, s, {xt:[0,10,20,30,40,50,60,70,80], yt:[0,20,40,60,80,100], xl:"시각 (분)", yl:"배터리 (%)"});
+    line(c, s.X(0), s.Y(TH)+.5, s.X(80), s.Y(TH)+.5, COL.miss, 1, [4,3]); txt(c, "20%", s.X(80) - 2, s.Y(TH) - 5, {align:"right", size:10, color:COL.miss});
+    var ex = []; for(var t=0;t<=80;t+=.25) ex.push([t, batExact(t)]); path(c, s, ex, COL.muted, 1.6);
+    var nv = batEuler(dt, TH, "naive"), li = batEuler(dt, TH, "lin");
+    path(c, s, nv.pts, rgba(COL.acc, .7), 1.4);
+    nv.pts.forEach(function(p, i){ if(i < nv.pts.length - 1) dot(c, s.X(p[0]), s.Y(p[1]), 2.8, COL.acc); });
+    var x = s.X(nv.t), y = s.Y(nv.B); c.strokeStyle = COL.miss; c.lineWidth = 2; c.beginPath(); c.moveTo(x-5, y-5); c.lineTo(x+5, y+5); c.moveTo(x+5, y-5); c.lineTo(x-5, y+5); c.stroke(); c.lineWidth = 1;
+    dot(c, s.X(li.t), s.Y(li.B), 5, COL.acc); dot(c, s.X(tc), s.Y(TH), 3, COL.ink);
+  });
+  function report(){
+    var nv = batEuler(dt, TH, "naive"), li = batEuler(dt, TH, "lin");
+    root.querySelector("[data-out]").innerHTML = "정확한 시각 <b>" + fmt(tc, 2) + "분</b>. 걸음 끝에서 확인: <b>" + fmt(nv.t, 2) + "분</b>(" + fmt(nv.t - tc, 2) + "분 늦음, 그때 배터리 " + fmt(nv.B, 1) + "%). 걸음 안에서 찾기: <b>" + fmt(li.t, 2) + "분</b>(오차 " + fmt(li.t - tc, 2) + "분, 남은 것은 오일러 적분 자체의 오차).";
+  }
+  bindRange(root, "[data-dt]", function(v){ dt = v; view.redraw(); report(); }, function(v){ return fmt(v, 1); });
+  report();
+})();
+
+/* ---------- 2.4 온도 조절기 ---------- */
+(function(){
+  var root = document.getElementById("w-thermo"); if(!root) return;
+  var band = 0, dt = .01;
+  function run(){ return thermo({T0:18, set:21, band:band, k:.1, Tout:5, h:3, dt:dt, tEnd:60, every:Math.max(1, Math.round(.02/dt))}); }
+  var view = setup(root, function(c, W, H){
+    var r = run(), s = scale([52, 14, 620, 176], [0, 60], [17.5, 22.5]);
+    axes(c, s, {xt:[0,10,20,30,40,50,60], yt:[18,19,20,21,22], xl:"시각 (분)", yl:"온도 (°C)"});
+    if(band > 0){ c.fillStyle = rgba(COL.acc, .08); c.fillRect(s.X(0), s.Y(21 + band), s.X(60) - s.X(0), s.Y(21 - band) - s.Y(21 + band)); }
+    line(c, s.X(0), s.Y(21)+.5, s.X(60), s.Y(21)+.5, COL.muted, 1, [3,3]);
+    path(c, s, r.pts.map(function(p){ return [p[0], p[1]]; }), COL.acc, 1.6);
+    var y0 = 214, prev = null;
+    c.fillStyle = rgba(COL.c2, .85);
+    r.pts.forEach(function(p, i){ if(i && p[2]){ var a = s.X(r.pts[i-1][0]), b = s.X(p[0]); c.fillRect(a, y0, Math.max(.6, b - a), 10); } });
+    txt(c, "난방 켜짐", 52, y0 + 26, {size:10});
+  });
+  function report(){
+    var r = run();
+    root.querySelector("[data-out]").innerHTML = "60분 동안 전환 <b>" + r.sw + "번</b>, 난방이 켜져 있던 비율 " + fmt(r.duty*100, 1) + "%." + (band === 0 ? " 띠가 없으면 전환 횟수가 걸음에 따라 달라집니다. 걸음을 바꿔 보세요." : " 띠가 있으면 걸음을 바꿔도 전환 횟수가 크게 달라지지 않고, 걸음을 줄일수록 한 값으로 모입니다.");
+  }
+  bindRange(root, "[data-band]", function(v){ band = v; view.redraw(); report(); }, function(v){ return fmt(v, 2); });
+  seg(root, '[data-g="dt"]', function(v){ dt = +v; view.redraw(); report(); });
+  report();
+})();
+
+/* ---------- 2.5 QSS ---------- */
+(function(){
+  var root = document.getElementById("w-qss"); if(!root) return;
+  var dq = .2, dt = .5;
+  var view = setup(root, function(c, W, H){
+    var q = qssRun(dq, 20), e = eulerRun(dt, 20), s = scale([52, 14, 620, 196], [0, 20], [0, 4.2]);
+    axes(c, s, {xt:[0,2,4,6,8,10,12,14,16,18,20], yt:[0,1,2,3,4], xl:"시각", yl:"x"});
+    line(c, s.X(6)+.5, s.box[1], s.X(6)+.5, s.box[3], COL.line, 1, [2,3]); txt(c, "입력이 바뀜", s.X(6) + 4, s.box[1] + 10, {size:10});
+    var ex = []; for(var t=0;t<=20;t+=.05) ex.push([t, qssExact(t)]); path(c, s, ex, COL.muted, 3);
+    var qp = []; q.pts.forEach(function(p, i){ if(i){ qp.push([p[0], q.pts[i-1][2]]); } qp.push([p[0], p[2]]); }); path(c, s, qp, COL.acc, 1.6);
+    e.pts.forEach(function(p){ dot(c, s.X(p[0]), s.Y(p[1]), 2.4, COL.c2); });
+    q.pts.forEach(function(p, i){ if(i && p[0] < 20 && Math.abs(p[0] - 6) > 1e-9) line(c, s.X(p[0])+.5, 208, s.X(p[0])+.5, 218, COL.acc, 1); });
+    txt(c, "QSS 사건", 52, 234, {size:10, color:COL.acc}); txt(c, "회색: 정확한 해, 계단: QSS의 양자화 상태, 주황 점: 오일러", 620, 234, {size:10, align:"right"});
+  });
+  function report(){
+    var q = qssRun(dq, 20), e = eulerRun(dt, 20);
+    root.querySelector("[data-out]").innerHTML = "QSS: 사건 <b>" + q.ev + "개</b>, 최대 오차 " + fmt(q.err, 3) + ". 오일러: 걸음 <b>" + e.steps + "개</b>, 최대 오차 " + fmt(e.err, 3) + ". QSS 사건은 6분 직후 x가 빨리 변할 때 몰리고, 값이 거의 멈춘 뒤에는 드뭅니다.";
+  }
+  bindRange(root, "[data-dq]", function(v){ dq = v; view.redraw(); report(); }, function(v){ return fmt(v, 2); });
+  bindRange(root, "[data-dt]", function(v){ dt = v; view.redraw(); report(); }, function(v){ return fmt(v, 1); });
+  report();
+})();
+
+/* ---------- 3.1 드론과 충전소 ---------- */
+(function(){
+  var root = document.getElementById("w-drone"); if(!root) return;
+  var P = {c:2, N:8, th:25, seed:4};
+  function run(){ return droneRun({seed:P.seed, N:P.N, c:P.c, T:480, r0:1, th:P.th, chg:4, dtCheck:1}); }
+  var view = setup(root, function(c, W, H){
+    var r = run(), s = scale([52, 12, 620, 186], [0, 480], [0, 100]);
+    axes(c, s, {xt:[0,60,120,180,240,300,360,420,480], yt:[0,25,50,75,100], fx:function(v){ return (v/60) + "시간"; }, yl:"배터리 (%)"});
+    line(c, s.X(0), s.Y(P.th)+.5, s.X(480), s.Y(P.th)+.5, COL.miss, 1, [4,3]);
+    r.D.forEach(function(d, i){ path(c, s, d.tr, rgba(i % 2 ? COL.acc : COL.c1, .55), 1.1); });
+    // 바람
+    var y0 = 214, wt = [[0, 1]].concat(r.wind.map(function(w){ return [w.t, w.w]; }));
+    wt.forEach(function(w, i){ var a = s.X(w[0]), b = s.X(i + 1 < wt.length ? wt[i+1][0] : 480); c.fillStyle = rgba(COL.c2, .2 + .3*w[1]); c.fillRect(a, y0, b - a, 10); });
+    txt(c, "바람", 46, y0 + 9, {size:10, align:"right"});
+    // 충전 대기 수
+    var ev = [];
+    r.D.forEach(function(d){ for(var k=1;k<d.tr.length;k++){ /* 대기 구간 = 배터리가 θ에 머문 구간 */ if(Math.abs(d.tr[k-1][1] - P.th) < 1e-9 && Math.abs(d.tr[k][1] - P.th) < 1e-9 && d.tr[k][0] > d.tr[k-1][0]){ ev.push([d.tr[k-1][0], 1]); ev.push([d.tr[k][0], -1]); } } });
+    ev.sort(function(a, b){ return a[0] - b[0] || a[1] - b[1]; });
+    var mx = 1, n = 0; ev.forEach(function(e){ n += e[1]; mx = Math.max(mx, n); });
+    var s2 = scale([52, 236, 620, 288], [0, 480], [0, Math.max(2, mx)]);
+    line(c, 52, 288.5, 620, 288.5, COL.line); txt(c, "대기", 46, 266, {size:10, align:"right"}); txt(c, String(Math.max(2, mx)), 46, 242, {size:9, align:"right"});
+    var pts = [[0, 0]]; n = 0; ev.forEach(function(e){ pts.push([e[0], n]); n += e[1]; pts.push([e[0], n]); }); pts.push([480, n]);
+    path(c, s2, pts, COL.miss, 1.4);
+  });
+  function report(){
+    var r = run();
+    root.querySelector("[data-out]").innerHTML = "순찰 비율 <b>" + fmt(r.cover*100, 1) + "%</b>, 평균 충전 대기 <b>" + fmt(r.wait, 1) + "분</b>, 충전 " + r.n + "번. 배터리를 1분 간격으로만 확인했다면 θ에 닿은 것을 평균 " + fmt(r.late, 2) + "%p, 최대 " + fmt(r.lateMax, 2) + "%p 늦게 알아챘을 것입니다.";
+  }
+  [["c","c"],["n","N"],["th","th"]].forEach(function(k){ bindRange(root, "[data-" + k[0] + "]", function(v){ P[k[1]] = v; view.redraw(); report(); }, k[0] === "th" ? function(v){ return v + "%"; } : null); });
+  root.querySelector('[data-act="new"]').onclick = function(){ P.seed++; view.redraw(); report(); };
+  report();
+})();
+
+initEqx();
+})();
+</script>
+</body>
+</html>

@@ -203,6 +203,8 @@ footer a{color:inherit}
   .widget, .eqx{padding:14px 12px 12px; margin-left:-6px; margin-right:-6px}
   .ctrl input[type=range]{width:120px}
 }
+.subs{margin:72px 0 -56px; font-size:15px; color:var(--muted)}
+.subs a{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -224,7 +226,7 @@ footer a{color:inherit}
     </div>
     <div class="pre">
       <h2>먼저 보면 좋은 것</h2>
-      <a href="simulation-101.html#s3-2">0편 3.2 시간 진행 방식</a><a href="system-dynamics.html#s2-1">6편 2.1 오일러 한 걸음</a><a href="system-dynamics.html#s2-3">6편 2.3 Δt의 함정</a>
+      <a href="ch0_simulation-101.html#s3-2">0편 3.2 시간 진행 방식</a><a href="ch6_system-dynamics.html#s2-1">6편 2.1 오일러 한 걸음</a><a href="ch6_system-dynamics.html#s2-3">6편 2.3 Δt의 함정</a>
       <p>고등학교 물리의 “속도는 위치의 변화율, 가속도는 속도의 변화율”이면 충분합니다. 미분을 몰라도 “Δt 동안의 변화”로 읽으면 됩니다.</p>
     </div>
   </div>
@@ -505,6 +507,8 @@ real = fly(<span class="num">3</span>, <span class="num">0.5</span>, <span class
     </table>
   </div>
 
+  <div class="link-note"><p><span class="k">심화편 7-2로</span>연속으로 변하는 상태와 대기열 같은 이산 사건이 한 모델에 섞이면, 상태가 어떤 값에 닿는 순간을 정확히 잡아야 합니다. <a href="ch7-2_hybrid-simulation.html">7-2편 하이브리드 시뮬레이션</a>에서 드론 배송과 충전소로 다룹니다.</p></div>
+
   <h3 id="s4-2"><span class="n">4.2</span>앞뒤 편과의 연결</h3>
   <div class="link-note"><p><span class="k">6편에서</span>SD 모델은 연속 시스템입니다. 로지스틱 모델에서 Δt가 클 때 보았던 가짜 진동이 2.3절의 안정성 문제입니다. 큰 SD 모델에도 RK4나 적응형 적분기를 쓸 수 있습니다.</p></div>
   <div class="link-note"><p><span class="k">2편과 3편에서</span>2.6절의 사건 처리는 DES와 같은 구조이고, 3편 ABM의 틱 진행은 고정 Δt 오일러 방법과 같습니다. 개체가 연속적으로 움직이는 ABM(보행자, 드론 군집)에서는 이 편의 적분 지식이 직접 필요합니다.</p></div>
@@ -527,9 +531,10 @@ real = fly(<span class="num">3</span>, <span class="num">0.5</span>, <span class
   </div>
 </section>
 
+<p class="subs">이 편의 심화편: <a href="ch7-2_hybrid-simulation.html">7-2 하이브리드 시뮬레이션</a></p>
 <nav class="pager" aria-label="이전 다음 편">
-  <a href="system-dynamics.html"><span>이전 편</span><b>6. 시스템 다이내믹스</b></a>
-  <a class="next" href="verification-optimization.html"><span>다음 편</span><b>8. 검증, 타당성, 최적화</b></a>
+  <a href="ch6_system-dynamics.html"><span>이전 편</span><b>6. 시스템 다이내믹스</b></a>
+  <a class="next" href="ch8_verification-optimization.html"><span>다음 편</span><b>8. 검증, 타당성, 최적화</b></a>
 </nav>
 <footer><a href="https://sites.google.com/view/knunextcom">Next-generation Computing Systems Lab</a>, 경북대학교 컴퓨터학부</footer>
 </div>

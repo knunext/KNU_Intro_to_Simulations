@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>시뮬레이션 101: 시뮬레이션과 확률·통계 기초</title>
 <!--
-  편별 링크 (GitHub Pages에 올릴 때 실제 파일명으로 바꾸세요. 9편은 아직 더미 링크)
-    0 simulation-101.html   1 littles-law.html      2 prompt-cafe-des.html   3 abm-ecosystem.html
-    4 input-modeling.html   5 output-analysis.html  6 system-dynamics.html   7 continuous-simulation.html
-    8 verification-optimization.html  9 simulation-project.html (9편은 아직 페이지 없음)
+  편별 링크 (사이트 안 실제 파일명)
+    0 ch0_simulation-101.html   1 ch1_littles_law.html   2 ch2_DES.html   2-2 ch2-2_DEVS.html   3 ch3_ABM.html
+    4 ch4_input-modeling.html   5 ch5_output-analysis.html   6 ch6_system-dynamics.html   7 ch7_continuous-simulation.html
+    8 ch8_verification-optimization.html   9 ch9_simulation-project.html
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +16,7 @@
 <style>
 :root{
   --bg:#F3F5F8; --panel:#FFFFFF; --ink:#17202E; --muted:#5A6577; --line:#D5DBE3; --soft:#E8ECF1;
-  --acc:#6A44B0; --later:#4A5568; --c4:#A63D6B; --c5:#1F7A99; --c6:#B4531F; --c7:#4B5BD6; --c8:#4F7A12; --c1:#3557C9; --c2:#C27C00; --c3:#0E7C6B; --miss:#C8372D;
+  --acc:#6A44B0; --later:#4A5568; --c4:#A63D6B; --c5:#1F7A99; --c5b:#2C5F8A; --c6:#B4531F; --c7:#4B5BD6; --c7b:#323C8C; --c8:#4F7A12; --c1:#3557C9; --c2:#C27C00; --c2b:#8C5A2E; --c2c:#8A6D00; --c3:#0E7C6B; --c3b:#2F8F5B; --miss:#C8372D;
   --k-kw:#8A3FA8; --k-fn:#2457C5; --k-str:#2E7D32; --k-num:#B5560F; --k-com:#7A8494; --k-bi:#0F7C86;
   --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --math:"STIX Two Text","Times New Roman",Times,serif;
@@ -26,14 +26,14 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
-    --acc:#B394F0; --later:#8C97A8; --c4:#F08AB5; --c5:#5EC3E3; --c6:#F49A6A; --c7:#98A3FF; --c8:#A8D25E; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+    --acc:#B394F0; --later:#8C97A8; --c4:#F08AB5; --c5:#5EC3E3; --c5b:#7FB0DE; --c6:#F49A6A; --c7:#98A3FF; --c7b:#A9B2FF; --c8:#A8D25E; --c1:#7690F2; --c2:#F0A928; --c2b:#DDA56F; --c2c:#E3C04A; --c3:#2DB59D; --c3b:#5FD39A; --miss:#EE5D52;
     --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
-  --acc:#B394F0; --later:#8C97A8; --c4:#F08AB5; --c5:#5EC3E3; --c6:#F49A6A; --c7:#98A3FF; --c8:#A8D25E; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+  --acc:#B394F0; --later:#8C97A8; --c4:#F08AB5; --c5:#5EC3E3; --c5b:#7FB0DE; --c6:#F49A6A; --c7:#98A3FF; --c7b:#A9B2FF; --c8:#A8D25E; --c1:#7690F2; --c2:#F0A928; --c2b:#DDA56F; --c2c:#E3C04A; --c3:#2DB59D; --c3b:#5FD39A; --miss:#EE5D52;
   --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
   color-scheme:dark;
 }
@@ -183,6 +183,7 @@ pre.code .com{color:var(--k-com); font-style:italic}
 .road h4 a{color:inherit}
 .road p{margin:0; max-width:40em; font-size:15.5px}
 .road .uses{margin-top:6px; font-size:14px; color:var(--muted)}
+.road li.sub .dot{width:36px; height:36px; left:4px; top:4px; font-size:14px; letter-spacing:-.02em}
 .road li.here h4::after{content:"지금 보는 페이지"; margin-left:8px; font-size:12.5px; font-weight:500; padding:1px 7px; border-radius:4px; background:var(--acc); color:var(--panel); vertical-align:2px}
 .road .plan-label{font-size:13px; color:var(--muted); margin:8px 0 18px 64px}
 
@@ -537,7 +538,7 @@ MENU = [(<span class="str">&quot;아메리카노&quot;</span>, <span class="num"
 <span class="kw">def</span> <span class="fn">next_arrival_gap</span>(mean=<span class="num">3.0</span>):
     u = random.random()
     <span class="kw">return</span> -mean * math.log(<span class="num">1</span> - u)  <span class="com"># 지수분포의 역변환</span></code></pre>
-  <p class="code-cap">메뉴 확률은 설명을 위한 예시입니다. 실제 값은 커피점에서 주문을 세어 정해야 하는데, 이것이 <a href="input-modeling.html">4편 입력 모델링</a>의 주제입니다.</p>
+  <p class="code-cap">메뉴 확률은 설명을 위한 예시입니다. 실제 값은 커피점에서 주문을 세어 정해야 하는데, 이것이 <a href="ch4_input-modeling.html">4편 입력 모델링</a>의 주제입니다.</p>
 
   <h3 id="s2-6"><span class="n">2.6</span>몇 번 돌려야 믿을 수 있나</h3>
   <div class="prose">
@@ -594,50 +595,75 @@ lo, hi = one_experiment(<span class="num">30</span>)
       <p>시뮬레이션의 개념, 난수, 분포, 평균과 퍼짐, 신뢰구간.</p>
     </li>
     <li style="--rc:var(--c1)"><span class="dot" aria-hidden="true">1</span>
-      <h4><a href="littles-law.html">큐잉 이론과 리틀의 법칙</a></h4>
+      <h4><a href="ch1_littles_law.html">큐잉 이론과 리틀의 법칙</a></h4>
       <p>줄 서는 시스템의 평균을 공식으로 구하고, 시뮬레이션으로 확인합니다. <span class="mr"><span class="m">L</span> = <span class="m">λW</span></span>.</p>
       <p class="uses">쓰는 개념: 지수분포, 평균, 큰 수의 법칙, 퍼짐이 대기시간에 미치는 영향</p>
     </li>
     <li style="--rc:var(--c2)"><span class="dot" aria-hidden="true">2</span>
-      <h4><a href="prompt-cafe-des.html">이산사건 시뮬레이션 (DES)</a></h4>
+      <h4><a href="ch2_DES.html">이산사건 시뮬레이션 (DES)</a></h4>
       <p>프롬프트 커피점을 사건 단위로 모델링하고, 직원과 머신 배치를 바꿔 가며 비교합니다.</p>
       <p class="uses">쓰는 개념: 역변환법, 시드와 재현성, 여러 분포, 반복 실행과 신뢰구간</p>
     </li>
+    <li class="sub" style="--rc:var(--c2b)"><span class="dot" aria-hidden="true">2-2</span>
+      <h4><a href="ch2-2_DEVS.html">DEVS: 모델을 부품처럼 조립하기</a></h4>
+      <p>2편의 심화편입니다. 같은 커피점을 자기 상태만 아는 부품으로 쪼개고 포트와 메시지로 이어 붙여, 모델을 조립하고 다시 쓰는 법을 배웁니다.</p>
+      <p class="uses">쓰는 개념: 상태와 사건, 시간 진행 방식, 지수분포, 시드</p>
+    </li>
+    <li class="sub" style="--rc:var(--c2c)"><span class="dot" aria-hidden="true">2-3</span>
+      <h4><a href="ch2-3_PDES.html">병렬·분산 시뮬레이션</a></h4>
+      <p>2편의 심화편입니다. 모델을 여러 코어나 컴퓨터에 나눠 돌릴 때 시계를 맞추는 두 방법, 기다리기와 되돌리기를 배웁니다.</p>
+      <p class="uses">쓰는 개념: 사건 목록과 시계, 시드, 반복 실행</p>
+    </li>
     <li style="--rc:var(--c3)"><span class="dot" aria-hidden="true">3</span>
-      <h4><a href="abm-ecosystem.html">에이전트 기반 모델링 (ABM)</a></h4>
+      <h4><a href="ch3_ABM.html">에이전트 기반 모델링 (ABM)</a></h4>
       <p>여우, 토끼, 풀이 각자의 규칙대로 움직일 때 생태계 전체에 나타나는 패턴을 봅니다.</p>
       <p class="uses">쓰는 개념: 확률적 행동(베르누이 시행), 정규분포로 준 개체 차이, 몬테카를로 반복 실행</p>
+    </li>
+    <li class="sub" style="--rc:var(--c3b)"><span class="dot" aria-hidden="true">3-2</span>
+      <h4><a href="ch3-2_LLM-agents.html">LLM 에이전트와 시뮬레이션</a></h4>
+      <p>3편의 심화편입니다. 에이전트의 판단을 언어 모델에게 맡길 때 비용, 재현성, 검증이 어떻게 달라지는지 봅니다.</p>
+      <p class="uses">쓰는 개념: 시드와 재현성, 반복 실행과 신뢰구간</p>
     </li>
   </ol>
   <p class="plan-label">4편부터는 앞으로 내용과 순서가 바뀔 수 있습니다.</p>
   <ol class="road">
     <li style="--rc:var(--c4)"><span class="dot" aria-hidden="true">4</span>
-      <h4><a href="input-modeling.html">입력 모델링: 데이터에서 분포로</a></h4>
+      <h4><a href="ch4_input-modeling.html">입력 모델링: 데이터에서 분포로</a></h4>
       <p>커피점에서 실제로 잰 도착 간격과 제조 시간으로 히스토그램을 그리고, 어울리는 분포를 골라 모수를 정합니다. 데이터가 없을 때 쓰는 삼각분포도 다룹니다.</p>
       <p class="uses">쓰는 개념: 분포, 평균과 표준편차, 역변환법</p>
     </li>
     <li style="--rc:var(--c5)"><span class="dot" aria-hidden="true">5</span>
-      <h4><a href="output-analysis.html">출력 분석과 실험 설계</a></h4>
+      <h4><a href="ch5_output-analysis.html">출력 분석과 실험 설계</a></h4>
       <p>처음에 텅 빈 상태로 시작하는 문제(워밍업), 몇 번 돌려야 하는지, 두 정책을 공정하게 비교하는 법(같은 난수 쓰기), 여러 요인을 한꺼번에 바꾸는 실험 설계를 다룹니다.</p>
       <p class="uses">쓰는 개념: 시드, 표준오차, 신뢰구간</p>
     </li>
+    <li class="sub" style="--rc:var(--c5b)"><span class="dot" aria-hidden="true">5-2</span>
+      <h4><a href="ch5-2_variance-reduction.html">분산 감소와 희귀 사건</a></h4>
+      <p>5편의 심화편입니다. 같은 실행 횟수로 더 좁은 구간을 얻는 법과 아주 드문 사건의 확률을 재는 법을 다룹니다.</p>
+      <p class="uses">쓰는 개념: 역변환법, 분산과 상관, 신뢰구간</p>
+    </li>
     <li style="--rc:var(--c6)"><span class="dot" aria-hidden="true">6</span>
-      <h4><a href="system-dynamics.html">시스템 다이내믹스: 저량과 유량</a></h4>
+      <h4><a href="ch6_system-dynamics.html">시스템 다이내믹스: 저량과 유량</a></h4>
       <p>여우와 토끼를 개체가 아닌 “수”로 보고, 늘고 주는 속도를 식으로 세워 계산합니다. 3편의 ABM 결과와 나란히 놓고 무엇을 얻고 잃는지 비교합니다.</p>
       <p class="uses">쓰는 개념: 결정적 / 확률적, 이산 / 연속의 구분</p>
     </li>
     <li style="--rc:var(--c7)"><span class="dot" aria-hidden="true">7</span>
-      <h4><a href="continuous-simulation.html">연속 시스템 시뮬레이션</a></h4>
+      <h4><a href="ch7_continuous-simulation.html">연속 시스템 시뮬레이션</a></h4>
       <p>공, 드론, 로봇처럼 위치와 속도가 매끄럽게 바뀌는 물체를 작은 시간 간격으로 쪼개 계산합니다. 간격을 잘못 고르면 결과가 어떻게 틀어지는지도 봅니다.</p>
       <p class="uses">쓰는 개념: 시간 진행 방식, 검증</p>
     </li>
+    <li class="sub" style="--rc:var(--c7b)"><span class="dot" aria-hidden="true">7-2</span>
+      <h4><a href="ch7-2_hybrid-simulation.html">하이브리드 시뮬레이션</a></h4>
+      <p>7편의 심화편입니다. 연속 상태와 이산 사건이 섞인 모델에서 상태가 어떤 값에 닿는 순간을 정확히 잡습니다.</p>
+      <p class="uses">쓰는 개념: 결정적 / 확률적, 이산 / 연속의 구분</p>
+    </li>
     <li style="--rc:var(--c8)"><span class="dot" aria-hidden="true">8</span>
-      <h4><a href="verification-optimization.html">검증, 타당성, 최적화</a></h4>
+      <h4><a href="ch8_verification-optimization.html">검증, 타당성, 최적화</a></h4>
       <p>모델이 믿을 만한지 체계적으로 따지는 방법과, 시뮬레이션을 반복해 비용이 가장 적은 운영 방안(예: 시간대별 직원 수)을 찾는 방법을 다룹니다.</p>
       <p class="uses">쓰는 개념: 검증과 타당성 확인, 신뢰구간, 평균과 퍼짐</p>
     </li>
     <li style="--rc:var(--later)"><span class="dot" aria-hidden="true">9</span>
-      <h4><a href="simulation-project.html">프로젝트: 내 주변 시스템 모델링</a></h4>
+      <h4><a href="ch9_simulation-project.html">프로젝트: 내 주변 시스템 모델링</a></h4>
       <p>도서관 좌석, 셔틀버스, 학생식당, 엘리베이터 중 하나를 골라 1.5절의 과정을 처음부터 끝까지 직접 밟아 봅니다.</p>
       <p class="uses">쓰는 개념: 전부</p>
     </li>
@@ -650,11 +676,11 @@ lo, hi = one_experiment(<span class="num">30</span>)
   <div class="keep" style="max-width:none">
     <div>
       <h4>일정한 간격으로 (고정 시간 간격)</h4>
-      <p style="margin:0; font-size:15.5px">시계를 0.1초나 1틱씩 똑같이 보내고, 매번 모든 것을 갱신합니다. 상태가 계속 변하거나 모든 개체가 매 순간 무언가를 하는 시스템에 맞습니다. <a href="abm-ecosystem.html">3편 ABM</a>, <a href="system-dynamics.html">6편 시스템 다이내믹스</a>, <a href="continuous-simulation.html">7편 연속 시스템</a>이 이 방식입니다.</p>
+      <p style="margin:0; font-size:15.5px">시계를 0.1초나 1틱씩 똑같이 보내고, 매번 모든 것을 갱신합니다. 상태가 계속 변하거나 모든 개체가 매 순간 무언가를 하는 시스템에 맞습니다. <a href="ch3_ABM.html">3편 ABM</a>, <a href="ch6_system-dynamics.html">6편 시스템 다이내믹스</a>, <a href="ch7_continuous-simulation.html">7편 연속 시스템</a>이 이 방식입니다.</p>
     </div>
     <div>
       <h4>다음 사건으로 건너뛰며 (사건 기반)</h4>
-      <p style="margin:0; font-size:15.5px">아무 일도 없는 시간은 건너뛰고, 손님 도착이나 음료 완성처럼 상태가 바뀌는 순간으로 바로 넘어갑니다. 대부분의 시간 동안 아무 일도 없는 시스템에서 훨씬 빠릅니다. <a href="littles-law.html">1편</a>과 <a href="prompt-cafe-des.html">2편</a>이 이 방식입니다.</p>
+      <p style="margin:0; font-size:15.5px">아무 일도 없는 시간은 건너뛰고, 손님 도착이나 음료 완성처럼 상태가 바뀌는 순간으로 바로 넘어갑니다. 대부분의 시간 동안 아무 일도 없는 시스템에서 훨씬 빠릅니다. <a href="ch1_littles_law.html">1편</a>과 <a href="ch2_DES.html">2편</a>, 그리고 같은 일을 부품 단위로 적는 <a href="ch2-2_DEVS.html">2-2편 DEVS</a>가 이 방식입니다.</p>
     </div>
   </div>
 

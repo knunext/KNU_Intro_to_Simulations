@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>응용 사례: 유령 정체</title>
+<!--
+  모델링과 시뮬레이션 학습 자료 — 응용 사례 A4: 유령 정체 (나겔-슈레켄베르크 모델)
+  파일명: case4_phantom-jam.html. 강조색은 주로 쓰는 기법(3편 ABM)의 색입니다.
+  데모는 외부 라이브러리 없이 맨 아래 <script>에서 동작합니다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F8; --panel:#FFFFFF; --ink:#17202E; --muted:#5A6577; --line:#D5DBE3; --soft:#E8ECF1;
+  --acc:#0E7C6B; --c1:#3557C9; --c2:#C27C00; --c3:#0E7C6B; --miss:#C8372D;
+  --t1:#2E62D0; --t2:#C2410C; --t3:#0E8A6B; --t4:#8B3FD9; --t5:#B91C5C;
+  --k-kw:#8A3FA8; --k-fn:#2457C5; --k-str:#2E7D32; --k-num:#B5560F; --k-com:#7A8494; --k-bi:#0F7C86;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --math:"STIX Two Text","Times New Roman",Times,serif;
+  --code:"D2Coding","Consolas","SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+    --acc:#2DB59D; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+    --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+    --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+  --acc:#2DB59D; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+  --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+  --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+  color-scheme:dark;
+}
+:root{box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 16px); scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+body{margin:0; background:var(--bg); color:var(--ink); font:400 17px/1.75 var(--sans); -webkit-font-smoothing:antialiased; word-break:keep-all; overflow-wrap:break-word}
+a{color:var(--acc)}
+.wrap{max-width:980px; margin:0 auto; padding:40px 24px 48px}
+.prose{max-width:42em}
+p{margin:0 0 1em}
+code{font-family:var(--code); font-size:.9em; background:var(--soft); padding:1px 5px; border-radius:4px}
+
+/* 머리말 */
+.back{font-size:15px; margin:0 0 36px}
+.back a{color:var(--muted)}
+.series{margin:0 0 10px; color:var(--muted); font-size:15px}
+h1{margin:0; font-weight:700; font-size:clamp(34px,6vw,54px); line-height:1.12; letter-spacing:-0.02em}
+h1 .n{font-family:var(--math); font-weight:500; color:var(--acc); margin-right:.2em}
+.lead{margin:18px 0 0; color:var(--muted); max-width:38em; font-size:18px}
+.goals{display:grid; grid-template-columns:1.4fr 1fr; gap:24px; margin:32px 0 0}
+.goals > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px}
+.goals h2{font-size:15px; margin:0 0 6px}
+.goals ul{margin:0; padding-left:1.1em; font-size:15px; line-height:1.65}
+.goals .pre a{display:inline-block; margin:2px 6px 2px 0; font-size:14px; text-decoration:none; padding:2px 9px; border-radius:5px; background:var(--soft); color:var(--ink)}
+.goals .pre a:hover{background:var(--acc); color:var(--panel)}
+.goals .pre p{font-size:14.5px; color:var(--muted); margin:6px 0 0}
+.toc{margin:28px 0 0; display:grid; grid-template-columns:repeat(4,1fr); gap:0 24px; border-top:2px solid var(--ink); padding-top:16px}
+.toc h2{font-size:15px; margin:0 0 6px}
+.toc h2 a{color:var(--ink); text-decoration:none}
+.toc ol{list-style:none; margin:0; padding:0; font-size:14px; line-height:1.65}
+.toc ol a{color:var(--muted); text-decoration:none}
+.toc a:hover{color:var(--acc); text-decoration:underline}
+
+/* 장, 절 */
+.chap{margin-top:88px}
+.chap > h2{display:flex; align-items:baseline; gap:16px; font-size:clamp(28px,4.4vw,38px); line-height:1.2; margin:0 0 12px; letter-spacing:-0.01em}
+.chap > h2 .n{font:500 1.5em/1 var(--math); color:var(--acc)}
+.chap > .intro{color:var(--muted); font-size:18px; max-width:40em; margin-bottom:8px}
+h3{font-size:22px; line-height:1.35; margin:56px 0 12px}
+h3 .n{font:500 1em var(--math); color:var(--acc); margin-right:10px}
+h4{font-size:17px; margin:24px 0 6px}
+.m{font-family:var(--math); font-style:italic; font-size:1.08em; white-space:nowrap}
+.mr{font-family:var(--math); font-size:1.08em; white-space:nowrap}
+.note{max-width:42em; margin:20px 0; padding:14px 18px; border-radius:8px; background:var(--soft); font-size:15.5px; line-height:1.7}
+.note > :last-child{margin-bottom:0}
+.link-note{max-width:42em; margin:20px 0; padding:12px 18px 12px 16px; border-left:3px solid var(--acc); background:var(--panel); border-radius:0 8px 8px 0; font-size:15.5px}
+.link-note > :last-child{margin-bottom:0}
+.link-note .k{font-weight:700; color:var(--acc); margin-right:6px}
+dl.terms{display:grid; grid-template-columns:auto 1fr; gap:6px 18px; max-width:42em; margin:0; font-size:15.5px}
+dl.terms dt{font-weight:700}
+dl.terms dd{margin:0; color:var(--muted)}
+.cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:20px 0}
+.cards.two{grid-template-columns:1fr 1fr}
+.cards > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; font-size:15.5px}
+.cards h4{margin:0 0 6px}
+.cards p{margin:0}
+ol.steps{list-style:none; margin:20px 0; padding:0; counter-reset:s; max-width:44em}
+ol.steps > li{counter-increment:s; position:relative; padding:0 0 14px 44px}
+ol.steps > li::before{content:counter(s); position:absolute; left:0; top:-2px; width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font:500 17px/1 var(--math); background:var(--acc); color:var(--panel)}
+ol.steps > li b{display:block}
+
+/* 사례 연구 머리 */
+.case{margin:56px 0 0; padding-top:18px; border-top:1px solid var(--line)}
+.case h3{margin-top:0}
+.lvl{display:inline-block; font-size:13px; font-weight:500; padding:1px 8px; border-radius:4px; margin-left:8px; vertical-align:3px; background:var(--soft); color:var(--muted)}
+.lvl.real{background:var(--acc); color:var(--panel)}
+
+/* 수식 탐색기 */
+.eqx{margin:28px 0; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px 16px}
+.eqx > .cap{margin:0 0 4px; font-size:14px; color:var(--muted)}
+.eq-big{font-family:var(--math); font-size:clamp(24px,3.6vw,36px); line-height:1.6; padding:12px 0 14px; overflow-x:auto; white-space:nowrap; text-align:center}
+.eq-big .t{--tc:var(--ink); border-bottom:3px solid var(--tc); padding:0 3px; border-radius:4px; cursor:pointer; transition:background .15s}
+.eq-big .t:hover, .eqx[data-on] .eq-big .t.on{background:color-mix(in srgb, var(--tc) 22%, transparent)}
+.eqx[data-on] .eq-big .t:not(.on){opacity:.4}
+.eq-big .op{color:var(--muted); padding:0 .12em}
+.eq-big sub, .eq-big sup{font-size:.6em}
+.eq-big .frac{display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; line-height:1.15; margin:0 .1em}
+.eq-big .frac > span:first-child{border-bottom:2px solid currentColor; padding:0 .15em .05em}
+.eq-big .frac > span:last-child{padding:.08em .15em 0}
+.t[data-c="1"]{--tc:var(--t1)} .t[data-c="2"]{--tc:var(--t2)} .t[data-c="3"]{--tc:var(--t3)} .t[data-c="4"]{--tc:var(--t4)} .t[data-c="5"]{--tc:var(--t5)}
+.eq-terms{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; margin:4px 0 0}
+.eq-terms button{
+  --tc:var(--ink); text-align:left; font:400 14px/1.5 var(--sans); color:var(--ink); background:var(--bg);
+  border:1px solid var(--line); border-left:4px solid var(--tc); border-radius:6px; padding:8px 10px; cursor:pointer;
+}
+.eq-terms button b{display:block; font-family:var(--math); font-size:17px; font-weight:500; color:var(--tc)}
+.eq-terms button[aria-pressed="true"]{background:color-mix(in srgb, var(--tc) 14%, var(--panel)); border-color:var(--tc)}
+.eq-terms button:focus-visible{outline:2px solid var(--tc); outline-offset:2px}
+.eq-detail{margin:12px 0 0; padding:12px 14px; border-radius:8px; background:var(--soft); font-size:15px; min-height:3em}
+.eq-detail:empty{display:none}
+.eq-live{margin-top:14px; padding-top:12px; border-top:1px dashed var(--line)}
+.eq-live .sub{font-size:14px; color:var(--muted); margin:0 0 6px}
+.eqx canvas{display:block; width:100%; height:auto; margin-top:8px}
+.hat{position:relative; display:inline-block}
+.hat::after{content:"ˆ"; position:absolute; left:50%; top:-.42em; transform:translateX(-45%); font-style:normal}
+.lim{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; line-height:1; margin:0 .08em; font-size:1.3em}
+.lim small{font-size:.34em; line-height:1.15}
+.eq-num{font-family:var(--math); font-size:22px; text-align:center; margin:10px 0 2px; overflow-x:auto; white-space:nowrap}
+.eq-num .t{border-bottom:2px solid var(--tc); padding:0 2px}
+
+/* 위젯 */
+.widget{margin:24px 0 28px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px 14px}
+.widget > h4{margin:0 0 2px; font-size:16px}
+.widget > .sub{margin:0 0 12px; color:var(--muted); font-size:14.5px}
+.widget canvas{display:block; width:100%; height:auto; touch-action:manipulation}
+.ctrl, .eq-live .ctrl{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin-top:12px; font-size:14px}
+.ctrl button, .seg button{font:500 14px/1 var(--sans); color:var(--ink); background:var(--soft); border:1px solid var(--line); border-radius:7px; padding:8px 12px; cursor:pointer}
+.ctrl button:hover, .seg button:hover{border-color:var(--acc)}
+.ctrl button.primary{background:var(--acc); border-color:var(--acc); color:var(--panel)}
+.ctrl button:disabled{opacity:.5; cursor:default}
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+.seg{display:inline-flex; flex-wrap:wrap; gap:4px}
+.seg button[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--panel)}
+.ctrl label{display:inline-flex; align-items:center; gap:8px; color:var(--muted)}
+.ctrl label b, .ctrl label output{color:var(--ink); font-weight:500; min-width:2.8em; font-variant-numeric:tabular-nums}
+.ctrl input[type=range]{width:150px; accent-color:var(--acc)}
+.ctrl input[type=checkbox]{accent-color:var(--acc); width:16px; height:16px}
+.ctrl select{font:400 14px var(--sans); color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px 8px}
+textarea.data{width:100%; min-height:90px; font:400 13.5px/1.5 var(--code); color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px; resize:vertical}
+.readout{margin:12px 0 0; font-size:14.5px; line-height:1.6; color:var(--muted); font-variant-numeric:tabular-nums}
+.readout b{color:var(--ink); font-weight:500}
+.readout .good{color:var(--c3); font-weight:500}
+.readout .bad{color:var(--miss); font-weight:500}
+.split{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+
+/* 표 */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:15px; line-height:1.55}
+th,td{padding:9px 12px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line)}
+thead th{font-weight:700; color:var(--muted); font-size:14px}
+tbody tr:last-child th, tbody tr:last-child td{border-bottom:0}
+table.num td{font-variant-numeric:tabular-nums}
+.tbl{background:var(--panel); border:1px solid var(--line); border-radius:10px; margin:20px 0; max-width:46em}
+
+/* 연습 문제 */
+.ex{max-width:44em; margin:16px 0}
+.ex details{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 16px; margin:0 0 8px}
+.ex summary{cursor:pointer; font-weight:500}
+.ex summary::marker{color:var(--acc)}
+.ex details > div{margin-top:8px; color:var(--muted); font-size:15.5px}
+.ex details > div > :last-child{margin-bottom:0}
+
+/* 코드 */
+pre.code{margin:20px 0; padding:16px 18px; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow-x:auto; font:400 14px/1.65 var(--code); tab-size:4; max-width:46em}
+pre.code code{background:none; padding:0; font-size:1em}
+pre.code .kw{color:var(--k-kw); font-weight:500}
+pre.code .fn{color:var(--k-fn)}
+pre.code .bi{color:var(--k-bi)}
+pre.code .str{color:var(--k-str)}
+pre.code .num{color:var(--k-num)}
+pre.code .com{color:var(--k-com); font-style:italic}
+.code-cap{font-size:14px; color:var(--muted); margin:-12px 0 20px}
+
+/* 이전 / 다음 */
+.pager{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:72px}
+.pager a{display:block; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; text-decoration:none; color:var(--ink)}
+.pager a:hover{border-color:var(--acc)}
+.pager span{display:block; font-size:13.5px; color:var(--muted)}
+.pager b{font-size:17px}
+.pager .next{text-align:right}
+footer{margin-top:40px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:14px}
+footer a{color:inherit}
+
+@media (max-width:760px){
+  .wrap{padding:28px 18px 40px}
+  .toc{grid-template-columns:1fr 1fr; gap:14px}
+  .goals, .cards, .cards.two, .split, .pager{grid-template-columns:1fr}
+  .widget, .eqx{padding:14px 12px 12px; margin-left:-6px; margin-right:-6px}
+  .ctrl input[type=range]{width:120px}
+}
+@media (min-width:761px){ .toc{grid-template-columns:repeat(5,1fr)} }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="back"><a href="index.html">모델링과 시뮬레이션 목차</a></p>
+<header>
+  <p class="series">모델링과 시뮬레이션, 응용 사례 A4</p>
+  <h1><span class="n">A4</span>유령 정체: 사고 없이 멈추는 길</h1>
+  <p class="lead">사고도 공사도 없는데 학교 앞 도로가 갑자기 멈췄다가 다시 풀립니다. 앞을 봐도 원인이 없어서 유령 정체라고 부릅니다. 운전자 한 사람 한 사람의 작은 망설임이 모여 뒤로 퍼지는 파도가 되는 과정을 셀룰러 오토마타로 재현하고, 그 파도를 줄일 방법을 실험합니다.</p>
+  <div class="goals">
+    <div>
+      <h2>이 사례에서 해 볼 것</h2>
+      <ul>
+        <li>규칙 네 줄짜리 에이전트 모델(나겔-슈레켄베르크)에서 정체가 창발하는 것을 확인합니다.</li>
+        <li>무작위가 없을 때의 이론값으로 코드를 검증하고, 정체가 뒤로 퍼지는 속도로 타당성을 확인합니다.</li>
+        <li>밀도와 흐름의 관계(기본 도표)를 실험으로 그리고, 길이 가장 많은 차를 보내는 밀도를 찾습니다.</li>
+        <li>자율주행차의 비율을 바꾸는 실험을 하고, 결론이 모델의 가정에 얼마나 기대는지 따져 봅니다.</li>
+        <li>5절의 원형 트랙에서 직접 브레이크를 밟고 자율주행차를 섞어 봅니다.</li>
+      </ul>
+    </div>
+    <div class="pre">
+      <h2>먼저 보면 좋은 것</h2>
+      <a href="ch3_ABM.html">3편 ABM</a><a href="ch1_littles_law.html#s2-1">1편 2.1 리틀의 법칙</a><a href="ch8_verification-optimization.html">8편 검증</a>
+      <p>각 절의 단계 표시는 <a href="ch0_simulation-101.html#s1-5">0편 1.5절</a>의 시뮬레이션 연구 일곱 단계입니다.</p>
+    </div>
+  </div>
+  <nav class="toc" aria-label="목차">
+    <div><h2><a href="#ch1">1. 질문과 개념 모델</a></h2><ol><li><a href="#s1-1">질문 정하기</a></li><li><a href="#s1-2">개념 모델</a></li></ol></div>
+    <div><h2><a href="#ch2">2. 데이터와 구현</a></h2><ol><li><a href="#s2-1">데이터 모으기</a></li><li><a href="#s2-2">프로그램 짜기</a></li><li><a href="#s2-3">검증과 타당성</a></li></ol></div>
+    <div><h2><a href="#ch3">3. 실험과 결정</a></h2><ol><li><a href="#s3-1">기본 도표</a></li><li><a href="#s3-2">자율주행차 실험</a></li><li><a href="#s3-3">분석과 결정</a></li></ol></div>
+    <div style="order:5"><h2><a href="#ch5">5. 직접 돌려 보기</a></h2><ol><li><a href="#ch5">원형 트랙</a></li><li><a href="#s5-1">해 볼 것</a></li></ol></div>
+    <div><h2><a href="#ch4">4. 연결과 정리</a></h2><ol><li><a href="#s4-1">모델의 한계</a></li><li><a href="#s4-2">쓰인 편들</a></li><li><a href="#s4-3">파이썬으로 확인하기</a></li><li><a href="#s4-4">연습과 확장</a></li></ol></div>
+  </nav>
+</header>
+
+<section class="chap" id="ch1">
+  <h2><span class="n">1</span>질문과 개념 모델</h2>
+  <p class="intro">무엇이 궁금하고, 그 답에 무엇이 필요하고 무엇이 필요 없는지부터 정합니다.</p>
+
+  <h3 id="s1-1"><span class="n">1.1</span>질문 정하기<span class="lvl">단계 1</span></h3>
+  <div class="prose">
+    <p>질문은 둘입니다. 첫째, 병목이 없는 길에서도 정체가 생길까? 생긴다면 왜일까? 둘째, 운전자의 습관을 바꾸거나 자율주행차를 섞으면 정체가 줄어들까?</p>
+    <p>첫째 질문에는 실제 실험이 있습니다. 2008년 일본의 스기야마 연구진은 둘레 230 m인 원형 트랙에 차 22대를 고르게 세우고 일정한 속도로 달려 달라고 부탁했습니다. 신호도 차선 변경도 없었지만 몇 분 지나지 않아 한 곳에서 차들이 멈추기 시작했고, 그 정체는 차들이 달리는 방향과 반대로 트랙을 돌았습니다. 이 사례의 목표는 이 현상을 가장 단순한 모델로 재현하는 것입니다.</p>
+  </div>
+
+  <h3 id="s1-2"><span class="n">1.2</span>개념 모델<span class="lvl">단계 2</span></h3>
+  <div class="prose">
+    <p>남길 것과 버릴 것을 정합니다. 차선은 하나, 차는 모두 같은 크기와 같은 최고 속도, 추월과 차선 변경은 없습니다. 길은 길이 7.5 m인 칸으로 나누고, 한 칸에는 차가 한 대만 있을 수 있습니다. 시간은 1.5초씩 갑니다. 경계에서 생기는 효과를 없애려고 스기야마 실험처럼 길을 고리로 이었습니다(200칸, 1.5 km).</p>
+    <p>차마다 매 걸음 다음 규칙을 따릅니다. 1992년 나겔과 슈레켄베르크가 제안한 모델입니다.</p>
+  </div>
+  <ol class="steps">
+    <li><b>가속</b>최고 속도(3칸/걸음, 시속 54 km)보다 느리면 한 칸 빨라집니다.</li>
+    <li><b>감속</b>앞차와의 빈칸보다 빠르면 빈칸만큼으로 줄입니다. 부딪치지 않는다는 규칙입니다.</li>
+    <li><b>망설임</b>확률 <span class="m">p</span>로 한 칸 덜 갑니다. 늦은 반응, 과한 제동, 한눈팔기를 하나로 묶은 것입니다.</li>
+    <li><b>이동</b>모든 차가 동시에 정한 속도만큼 앞으로 갑니다.</li>
+  </ol>
+  <div class="prose">
+    <p>3편의 에이전트처럼 각 차는 바로 앞만 봅니다. 정체를 일으키라는 규칙은 어디에도 없습니다. 정체가 생긴다면 그것은 창발입니다.</p>
+  </div>
+</section>
+
+<section class="chap" id="ch2">
+  <h2><span class="n">2</span>데이터와 구현</h2>
+  <p class="intro">무엇을 잴 수 있는지 정하고, 규칙을 코드로 옮긴 뒤, 코드가 맞는지와 모델이 현실을 닮았는지를 따로 확인합니다.</p>
+
+  <h3 id="s2-1"><span class="n">2.1</span>데이터 모으기<span class="lvl">단계 3</span></h3>
+  <div class="prose">
+    <p>교통에서 쉽게 잴 수 있는 것은 셋입니다. 한 지점을 1시간 동안 지나간 차의 수인 흐름 <span class="m">q</span>, 차들의 평균 속도 <span class="m">v</span>, 1 km 안에 있는 차의 수인 밀도 <span class="m">k</span>입니다. 이 셋 사이에는 <span class="m">q</span> = <span class="m">kv</span>가 성립합니다. 길 1 km를 상자로 보면 1편의 리틀의 법칙 <span class="m">L</span> = <span class="m">λW</span>와 같은 식입니다. 상자 안 인원이 <span class="m">k</span>, 들어오는 비율이 <span class="m">q</span>, 머무는 시간이 1/<span class="m">v</span>입니다.</p>
+    <p>흐름은 육교 위에서 차를 세어서, 속도는 스마트폰 GPS 기록으로 잴 수 있습니다. 망설임 확률 <span class="m">p</span>는 직접 잴 수 없습니다. 대신 측정한 밀도와 흐름의 관계에 모델이 맞도록 <span class="m">p</span>를 고릅니다. 8편의 보정입니다.</p>
+  </div>
+
+  <h3 id="s2-2"><span class="n">2.2</span>프로그램 짜기<span class="lvl">단계 4</span></h3>
+  <div class="prose">
+    <p>아래 그림은 시공간도입니다. 가로가 길 위의 위치, 세로가 시간이고, 위에서 아래로 시간이 흐릅니다. 점 하나가 차 한 대이고, 멈춘 차일수록 빨갛습니다. 차가 몇 대 안 되면 모두 최고 속도로 달리고, 늘리면 빨간 띠가 생겨 왼쪽 아래로 비스듬히 내려갑니다. 정체가 차들의 진행 방향과 반대로 움직인다는 뜻입니다.</p>
+  </div>
+  <div class="widget" id="w-st">
+    <h4>시공간도: 정체는 뒤로 간다</h4>
+    <p class="sub">차는 오른쪽으로 달립니다. 위에서 아래로 시간이 흐르며, 맨 아래 줄이 지금입니다.</p>
+    <canvas data-w="640" data-h="310" role="img" aria-label="고리 도로 위 차들의 위치를 시간에 따라 쌓은 시공간도"></canvas>
+    <div class="ctrl">
+      <label>차 대수 <input type="range" min="10" max="120" step="2" value="44" data-n> <b></b></label>
+      <label>망설임 <span class="m">p</span> <input type="range" min="0" max="0.5" step="0.05" value="0.25" data-p> <b></b></label>
+      <button type="button" class="primary" data-act="play">일시정지</button>
+      <button type="button" data-act="reset">처음부터</button>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p><span class="m">p</span>를 0으로 바꿔 보세요. 같은 대수에서 정체가 금방 사라지고 모든 차가 일정한 간격으로 달립니다. 망설임이 없으면 이 밀도에서는 유령 정체가 생기지 않습니다. 차를 더 늘리면 <span class="m">p</span> = 0이어도 멈춘 차가 생기는데, 그것은 길이 꽉 차서 생긴 진짜 혼잡입니다.</p>
+  </div>
+
+  <h3 id="s2-3"><span class="n">2.3</span>검증과 타당성<span class="lvl">단계 5</span></h3>
+  <div class="prose">
+    <p><b>검증.</b> 무작위가 없는 <span class="m">p</span> = 0에서는 답을 손으로 구할 수 있습니다. 차가 적으면 모두 최고 속도로 달리므로 흐름은 밀도 × 3이고, 많으면 빈칸만큼만 움직이므로 흐름은 1 − 밀도입니다. 둘 중 작은 값이 이론값이고, 3.1절 그래프의 회색 선입니다. 시뮬레이터의 <span class="m">p</span> = 0 결과는 이 선 위에 정확히 놓입니다. 4.3절의 파이썬 출력에서도 소수 셋째 자리까지 같습니다.</p>
+    <p><b>타당성.</b> 실제 도로에서 관측한 정체 파도는 대략 시속 15~20 km로 뒤로 퍼집니다. 이 모델에서 꽉 찬 정체의 앞머리는 망설임이 없으면 한 걸음에 정확히 한 칸, 곧 7.5 m/1.5초 = 시속 18 km로 뒤로 물러나고, <span class="m">p</span> = 0.25이면 한 걸음에 0.73칸쯤, 시속 13 km 정도로 물러납니다. 칸 크기와 걸음 길이를 이 값에 맞추려고 고른 것이 아닌데도 관측과 같은 크기입니다. 숫자 하나가 맞는다고 모델이 옳다는 뜻은 아니지만, 정체가 생기는 밀도, 정체가 퍼지는 방향과 속도, 최대 흐름의 크기라는 여러 패턴이 함께 맞는다면 믿을 근거가 늘어납니다(3편 다음 단계의 패턴 맞추기).</p>
+  </div>
+</section>
+
+<section class="chap" id="ch3">
+  <h2><span class="n">3</span>실험과 결정</h2>
+  <p class="intro">밀도를 바꿔 보는 실험과 자율주행차를 섞는 실험을 하고, 그 결과로 무엇을 말할 수 있는지 따집니다.</p>
+
+  <h3 id="s3-1"><span class="n">3.1</span>기본 도표<span class="lvl">단계 6</span></h3>
+  <div class="prose">
+    <p>밀도를 0에서 0.8까지 바꾸며 흐름을 재면 교통공학의 기본 도표가 나옵니다. 흐름은 밀도와 함께 늘다가 어떤 밀도(임계 밀도)를 지나면 오히려 줄어듭니다. 차가 더 들어올수록 덜 지나가는 구간입니다.</p>
+  </div>
+  <div class="widget" id="w-fd">
+    <h4>밀도와 흐름</h4>
+    <p class="sub">점은 시뮬레이션(200칸, 600걸음 평균), 회색 선은 <span class="m">p</span> = 0의 이론값입니다. 오른쪽 눈금은 차선 하나가 시간당 보내는 차의 수입니다.</p>
+    <canvas data-w="640" data-h="260" role="img" aria-label="망설임 확률별 밀도와 흐름의 관계"></canvas>
+    <div class="ctrl"><button type="button" data-act="run">다른 시드로 다시</button></div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>망설임이 있으면 최대 흐름이 낮아지고, 그 최대가 더 낮은 밀도에서 나옵니다. <span class="m">p</span> = 0.25에서 이 길은 차선 하나에 시간당 약 1,100대가 최대이고, 밀도 0.2(1 km에 27대 정도)를 넘으면 차가 더 들어와도 덜 지나갑니다.</p>
+  </div>
+
+  <h3 id="s3-2"><span class="n">3.2</span>자율주행차를 섞으면<span class="lvl">단계 6</span></h3>
+  <div class="prose">
+    <p>이 모델에서 자율주행차는 망설이지 않는 차, 곧 <span class="m">p</span> = 0인 차로 둡니다. 사람이 모는 차는 <span class="m">p</span> = 0.25입니다. 자율주행차를 고르게 섞으며 평균 속도와 속도의 표준편차(멈췄다 섰다 하는 정도)를 잽니다.</p>
+  </div>
+  <div class="widget" id="w-av">
+    <h4>자율주행차 비율과 정체</h4>
+    <p class="sub">비율마다 시드 5개로 돌린 평균입니다. 실선은 평균 속도, 점선은 속도의 표준편차입니다.</p>
+    <canvas data-w="640" data-h="240" role="img" aria-label="자율주행차 비율에 따른 평균 속도와 속도 편차"></canvas>
+    <div class="ctrl"><label>차 대수 <input type="range" min="20" max="80" step="2" value="40" data-n> <b></b></label></div>
+    <p class="readout" data-out></p>
+  </div>
+
+  <h3 id="s3-3"><span class="n">3.3</span>분석과 결정<span class="lvl">단계 7</span></h3>
+  <div class="prose">
+    <p>첫째 질문에는 답이 나왔습니다. 병목이 없어도, 밀도가 임계값 근처를 넘고 운전자가 조금씩 망설이면 정체가 저절로 생깁니다. 정책으로 옮기면 길에 들어오는 차의 수를 임계 밀도 아래로 유지하는 것이 핵심입니다. 진입로의 신호로 들어오는 양을 조절하는 램프 미터링, 정체 앞에서 미리 속도를 낮추게 하는 가변 제한속도가 이 생각에서 나왔습니다.</p>
+    <p>둘째 질문의 답은 조심해서 읽어야 합니다. 이 모델에서는 자율주행차가 10~20%일 때 효과가 작고, 절반쯤 되어야 멈췄다 섰다 하는 움직임이 크게 줄어듭니다. 그런데 이 모델의 자율주행차는 망설이지만 않을 뿐, 앞의 정체를 보고 미리 간격을 넉넉히 두는 일은 하지 않습니다. 실제로 2018년에 발표된 미국 투손의 원형 트랙 실험(Stern 등)에서는 파도를 흡수하도록 속도를 부드럽게 제어한 자율주행차 한 대가 20대 남짓한 차들의 정체 파도를 크게 줄였습니다. 같은 질문에 다른 답이 나온 이유는 자율주행차의 행동을 다르게 가정했기 때문입니다. 이 모델이 말할 수 있는 것은 "망설임만 없앤 차는 많이 섞여야 효과가 있다"까지입니다.</p>
+  </div>
+</section>
+
+<section class="chap" id="ch4">
+  <h2><span class="n">4</span>연결과 정리</h2>
+
+  <h3 id="s4-1"><span class="n">4.1</span>모델의 한계</h3>
+  <dl class="terms">
+    <dt>차선 하나</dt><dd>차선 변경이 없으니 끼어들기로 생기는 정체는 다루지 못합니다.</dd>
+    <dt>고리 도로</dt><dd>실제 학교 앞 도로에는 신호와 교차로가 있습니다. 신호는 주기적인 병목이라 정체가 생기는 위치와 이유가 달라집니다.</dd>
+    <dt>같은 운전자</dt><dd>모든 사람의 <span class="m">p</span>가 같습니다. 망설임이 큰 운전자 몇 명이 섞이면 평균이 같아도 결과가 달라질 수 있습니다(4편의 분포 선택).</dd>
+    <dt>칸과 걸음</dt><dd>속도가 0, 1, 2, 3칸으로만 바뀝니다. 가속과 제동이 실제보다 거칩니다.</dd>
+  </dl>
+
+  <h3 id="s4-2"><span class="n">4.2</span>쓰인 편들</h3>
+  <div class="link-note"><p><span class="k">3편</span>개체의 규칙만으로 전체 패턴이 생기는 창발. 정체가 바로 그런 패턴입니다.</p></div>
+  <div class="link-note"><p><span class="k">1편</span><span class="m">q</span> = <span class="m">kv</span>는 길 위의 리틀의 법칙입니다.</p></div>
+  <div class="link-note"><p><span class="k">5편과 8편</span>무작위가 있으니 시드를 바꿔 반복하고, <span class="m">p</span> = 0의 이론값으로 검증하고, 관측한 기본 도표로 <span class="m">p</span>를 보정합니다.</p></div>
+  <div class="link-note"><p><span class="k">2-2편</span>교차로 신호를 넣으려면 2-2편의 신호등 부품을 도로 모델에 결합하면 됩니다.</p></div>
+
+  <h3 id="s4-3"><span class="n">4.3</span>파이썬으로 확인하기</h3>
+  <div class="prose"><p>규칙 네 줄을 그대로 옮긴 코드로 기본 도표를 계산합니다. <span class="m">p</span> = 0 열이 이론값과 같은 것이 검증입니다.</p></div>
+<pre class="code"><code><span class="com"># nasch.py : 나겔-슈레켄베르크 모형으로 유령 정체와 기본 도표(밀도-흐름)를 확인한다</span>
+<span class="kw">import</span> random
+
+<span class="kw">def</span> <span class="fn">run</span>(L, n, p, vmax=<span class="num">3</span>, steps=<span class="num">600</span>, warm=<span class="num">300</span>, seed=<span class="num">1</span>):
+    rng = random.Random(seed)
+    x = <span class="bi">sorted</span>(rng.sample(<span class="bi">range</span>(L), n))          <span class="com"># 고리 모양 길 위의 차 위치 (칸)</span>
+    v = [<span class="num">0</span>] * n
+    moved = <span class="num">0</span>
+    <span class="kw">for</span> t <span class="kw">in</span> <span class="bi">range</span>(warm + steps):
+        new_v = []
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n):
+            gap = (x[(i + <span class="num">1</span>) % n] - x[i] - <span class="num">1</span>) % L   <span class="com"># 앞차와의 빈칸</span>
+            s = <span class="bi">min</span>(v[i] + <span class="num">1</span>, vmax, gap)            <span class="com"># 1) 가속  2) 앞차에 맞춰 감속</span>
+            <span class="kw">if</span> s &gt; <span class="num">0</span> <span class="kw">and</span> rng.random() &lt; p:          <span class="com"># 3) 무작위로 한 칸 덜 감 (사람의 망설임)</span>
+                s -= <span class="num">1</span>
+            new_v.append(s)
+        v = new_v
+        x = [(xi + vi) % L <span class="kw">for</span> xi, vi <span class="kw">in</span> <span class="bi">zip</span>(x, v)]  <span class="com"># 4) 모두 동시에 이동</span>
+        order = <span class="bi">sorted</span>(<span class="bi">range</span>(n), key=<span class="kw">lambda</span> i: x[i])
+        x, v = [x[i] <span class="kw">for</span> i <span class="kw">in</span> order], [v[i] <span class="kw">for</span> i <span class="kw">in</span> order]
+        <span class="kw">if</span> t &gt;= warm:
+            moved += <span class="bi">sum</span>(v)
+    <span class="kw">return</span> moved / steps / L                     <span class="com"># 흐름: 한 칸을 지나는 차, 걸음당</span>
+
+L = <span class="num">200</span>
+<span class="bi">print</span>(<span class="str">&quot;밀도   흐름(p=0)  이론(p=0)  흐름(p=0.25)   시간당 차량(p=0.25)&quot;</span>)
+<span class="kw">for</span> rho <span class="kw">in</span> (<span class="num">0.1</span>, <span class="num">0.2</span>, <span class="num">0.25</span>, <span class="num">0.3</span>, <span class="num">0.4</span>, <span class="num">0.6</span>):
+    n = <span class="bi">round</span>(rho * L)
+    j0, j25 = run(L, n, <span class="num">0.0</span>), run(L, n, <span class="num">0.25</span>)
+    <span class="bi">print</span>(<span class="str">f&quot;</span>{rho:<span class="str">4.2f</span>}<span class="str">   </span>{j0:<span class="str">8.3f</span>}<span class="str">   </span>{<span class="bi">min</span>(<span class="num">3</span> * rho, <span class="num">1</span> - rho):<span class="str">8.3f</span>}<span class="str">   </span>{j25:<span class="str">10.3f</span>}<span class="str">   </span>{j25 * <span class="num">3600</span> / <span class="num">1.5</span>:<span class="str">12.0f</span>}<span class="str">&quot;</span>)</code></pre>
+  <pre class="code"><code>밀도   흐름(p=0)  이론(p=0)  흐름(p=0.25)   시간당 차량(p=0.25)
+0.10      0.300      0.300        0.272            653
+0.20      0.600      0.600        0.462           1108
+0.25      0.750      0.750        0.448           1075
+0.30      0.700      0.700        0.425           1020
+0.40      0.600      0.600        0.375            900
+0.60      0.400      0.400        0.266            638</code></pre>
+
+  <h3 id="s4-4"><span class="n">4.4</span>연습과 확장</h3>
+  <div class="ex">
+    <details><summary>1. 고리 도로의 한 곳에 신호등(90초 주기, 녹색 45초)을 넣으세요. 기본 도표가 어떻게 바뀔까요?</summary><div><p>빨간불 동안 그 칸을 막아 두는 것으로 구현할 수 있습니다. 최대 흐름은 대략 녹색 비율만큼 줄고, 정체는 무작위가 아니라 신호 바로 뒤에서 주기적으로 생깁니다. 이제는 유령 정체가 아니라 병목에서 생기는 정체입니다.</p></div></details>
+    <details><summary>2. 운전자의 절반은 p = 0.1, 나머지 절반은 p = 0.4로 두면, 모두 p = 0.25일 때와 결과가 같을까요?</summary><div><p>평균은 같아도 결과는 대개 다릅니다. 정체는 가장 많이 망설이는 차 뒤에서 시작되기 쉬워서, 퍼짐이 큰 쪽이 정체를 더 자주 만듭니다. 3편의 개체 차이와 4편의 분포 선택이 결과를 바꾸는 예입니다. 직접 돌려 확인해 보세요.</p></div></details>
+    <details><summary>3. 자율주행차가 "앞차와의 빈칸이 2칸 이하이면 가속하지 않는다"는 규칙을 따르게 바꾸면 3.2절 결론이 어떻게 달라질까요?</summary><div><p>간격을 여유 있게 두는 차는 앞의 속도 변화를 흡수해 뒤로 전달하지 않으므로, 더 적은 비율로도 효과가 날 수 있습니다. 대신 그 차 자체의 흐름은 줄어듭니다. 어느 쪽이 큰지는 실험으로 확인해야 하고, 그 결과가 곧 "자율주행차가 정체를 줄이는가"라는 질문의 답이 행동 가정에 달려 있다는 증거입니다.</p></div></details>
+    <details><summary>4. 측정한 흐름이 시간당 900대, 평균 속도가 시속 30 km였습니다. 밀도는 얼마이고, 기본 도표의 어느 쪽에 있을까요?</summary><div><p><span class="m">k</span> = <span class="m">q</span>/<span class="m">v</span> = 900/30 = 1 km에 30대, 한 칸(7.5 m)당 0.225대입니다. <span class="m">p</span> = 0.25인 모델의 임계 밀도 0.2를 조금 넘었으므로 혼잡 쪽입니다. 같은 900대가 시속 50 km로 지나간다면 밀도는 18대/km로 자유 흐름 쪽입니다. 흐름 하나만으로는 어느 쪽인지 알 수 없다는 것이 기본 도표의 교훈입니다.</p></div></details>
+  </div>
+</section>
+
+<section class="chap" id="ch5">
+  <h2><span class="n">5</span>직접 돌려 보기: 원형 트랙 위의 운전자들</h2>
+  <p class="intro">위의 칸 모델은 결론을 내기에 좋았습니다. 이번에는 운전자 한 명 한 명을 매끄럽게 움직이는 에이전트로 만들어, 직접 브레이크를 밟고 자율주행차를 섞어 봅니다.</p>
+  <div class="prose">
+    <p>스기야마 실험과 같은 크기인 둘레 230 m 트랙에 차 22대를 올렸습니다. 운전자는 0.1초마다 앞차와의 간격, 자기 속도, 앞차와의 속도 차이를 보고 가속도를 정합니다. 교통공학에서 널리 쓰는 지능형 운전자 모델(IDM)의 규칙이고, 안전 시간 간격 1.2초, 원하는 속도 시속 43 km로 두었습니다. 운전자마다 가속 페달을 조금씩 들쭉날쭉 밟는 정도(잡음)가 다릅니다. 칸 모델의 망설임 <span class="m">p</span>에 해당하는, 사람마다 다른 성질입니다.</p>
+    <p>자율주행차(파란 차)는 다르게 움직입니다. 앞차의 순간 속도를 따라가지 않고 최근 30초쯤의 평균 속도로 꾸준히 달리면서, 간격이 너무 좁아지거나 넓어질 때만 조금씩 고칩니다. 위험하면 사람과 같은 규칙으로 감속합니다. 2018년에 발표된 투손 실험(Stern 등)의 제어기를 흉내 낸 단순한 버전입니다.</p>
+  </div>
+  <div class="widget" id="w-ring">
+    <h4>원형 트랙: 브레이크를 밟아 보세요</h4>
+    <p class="sub">왼쪽은 트랙, 오른쪽 위는 시공간도, 오른쪽 아래는 테두리를 친 차의 속도입니다. 빨강은 멈춤, 노랑은 느림, 초록은 원활, 파랑은 자율주행차입니다.</p>
+    <canvas data-w="640" data-h="400" role="img" aria-label="원형 트랙 위를 달리는 차들과 시공간도, 한 차의 속도 그래프. 차를 누르면 급브레이크를 밟거나 자율주행차로 바뀝니다"></canvas>
+    <div class="ctrl">
+      <span>차를 누르면</span><div class="seg" data-g="mode"><button type="button" aria-pressed="true" data-v="brake">급브레이크</button><button type="button" aria-pressed="false" data-v="av">자율주행차로 바꾸기</button><button type="button" aria-pressed="false" data-v="track">속도 그래프에 표시</button></div>
+    </div>
+    <div class="ctrl">
+      <label>운전 잡음 <input type="range" min="0" max="1" step="0.05" value="0.4" data-noise> <b></b></label>
+      <label>안전 시간 간격 <input type="range" min="0.8" max="2" step="0.1" value="1.2" data-t> <b></b></label>
+      <button type="button" data-act="add">차 한 대 더</button>
+      <button type="button" data-act="del">한 대 빼기</button>
+    </div>
+    <div class="ctrl">
+      <button type="button" class="primary" data-act="play">일시정지</button>
+      <button type="button" data-act="human">모두 사람으로</button>
+      <button type="button" data-act="reset">처음부터 (22대)</button>
+      <span>속도</span><div class="seg" data-g="spd"><button type="button" aria-pressed="true" data-v="1">1배</button><button type="button" aria-pressed="false" data-v="4">4배</button></div>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <h3 id="s5-1"><span class="n">5.1</span>해 볼 것</h3>
+  <ol class="steps">
+    <li><b>정체가 생기기를 기다리기</b>처음 열면 350초를 미리 돌려 둔 상태라 이미 정체가 있습니다. "처음부터"를 누르고 속도를 4배로 두면, 트랙 시간으로 4~6분(화면에서 1분 남짓) 뒤 22대 모두 고르게 출발했는데도 빨간 무리가 생기고, 시공간도에서 왼쪽 아래로 비스듬히 내려갑니다. 2.2절 칸 모델의 결론이 매끄러운 모델에서도 그대로 나옵니다.</li>
+    <li><b>한산할 때 브레이크 밟기</b>"한 대 빼기"로 16대쯤으로 줄이고 아무 차나 급브레이크를 밟아 보세요. 뒤차들이 잠깐 느려졌다가 파도가 금방 사라집니다. 22대로 돌아가 같은 일을 하면 파도가 오히려 커지며 트랙을 돕니다. 밀도가 임계값을 넘으면 작은 흔들림이 자라는 불안정 상태가 됩니다.</li>
+    <li><b>자율주행차 한 대</b>정체가 생긴 뒤 "자율주행차로 바꾸기"를 고르고 차 한 대를 누르세요. 트랙 시간으로 몇 분 안에 시공간도의 빨간 띠가 옅어집니다. 이 코드로 4번 돌려 평균을 내면, 사람만 22대일 때 평균 시속 11.1 km, 속도 표준편차 5.2 km, 멈춘 차의 비율 6.5%였고, 자율주행차 한 대를 섞으면 시속 11.4 km, 0.7 km, 0%였습니다. 평균 속도는 거의 그대로인데 멈췄다 섰다 하는 움직임이 사라집니다.</li>
+    <li><b>조심스러운 운전자들</b>안전 시간 간격을 1.8초로 올려 보세요. 파도는 줄어들지만, 같은 간격에서 더 천천히 달리게 됩니다. 운전 습관을 바꾸는 것과 자율주행차 한 대를 넣는 것의 효과를 비교해 보세요.</li>
+  </ol>
+  <div class="note"><p>3.2절의 칸 모델에서는 자율주행차가 절반쯤 되어야 효과가 났는데, 여기서는 한 대로 충분했습니다. 모델이 달라서가 아니라 자율주행차의 행동이 달라서입니다. 칸 모델의 자율주행차는 망설이지만 않을 뿐 앞차를 그대로 따라갔고, 여기의 자율주행차는 앞차의 출렁임을 일부러 따라가지 않습니다. 3.3절에서 말한 "결론은 행동 가정에 달려 있다"를 직접 확인한 셈입니다.</p></div>
+</section>
+
+<nav class="pager" aria-label="이전 다음 사례">
+  <a href="case3_dorm-flu.html"><span>이전 사례</span><b>A3. 기숙사 독감</b></a>
+  <a class="next" href="index.html"><span>처음으로</span><b>모델링과 시뮬레이션 목차</b></a>
+</nav>
+<footer><a href="https://sites.google.com/view/knunextcom">Next-generation Computing Systems Lab</a>, 경북대학교 컴퓨터학부</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ===== 공통 도구: 색, 캔버스, 난수, 통계, 수식 탐색기 ===== */
+var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+var COL = {};
+function readColors(){
+  var s = getComputedStyle(document.documentElement);
+  ["ink","muted","line","soft","panel","bg","acc","c1","c2","c3","miss","t1","t2","t3","t4","t5"].forEach(function(k){ COL[k] = s.getPropertyValue("--"+k).trim(); });
+}
+readColors();
+function rgba(hex, a){
+  var h = hex.replace("#",""); if(h.length===3) h = h.replace(/(.)/g,"$1$1");
+  var n = parseInt(h,16); return "rgba("+(n>>16&255)+","+(n>>8&255)+","+(n&255)+","+a+")";
+}
+function F(size, weight){ return (weight||400)+" "+size+'px "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif'; }
+function txt(c, s, x, y, o){
+  o = o || {}; c.font = o.font || F(o.size||11, o.weight); c.fillStyle = o.color || COL.muted;
+  c.textAlign = o.align || "left"; c.textBaseline = o.base || "alphabetic"; c.fillText(s, x, y);
+  c.textAlign = "left"; c.textBaseline = "alphabetic";
+}
+function line(c, x0, y0, x1, y1, col, w, dash){
+  c.strokeStyle = col; c.lineWidth = w||1; c.setLineDash(dash||[]);
+  c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.setLineDash([]); c.lineWidth = 1;
+}
+function dot(c, x, y, r, col){ c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+function fmt(v, d){ if(!isFinite(v)) return "∞"; return (+v).toFixed(d===undefined?2:d); }
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+var CANVASES = [];
+function setup(rootOrCanvas, draw){
+  var cv = rootOrCanvas.tagName === "CANVAS" ? rootOrCanvas : rootOrCanvas.querySelector("canvas");
+  var c = cv.getContext("2d"), W = +cv.dataset.w, H = +cv.dataset.h;
+  cv.style.aspectRatio = W + " / " + H;
+  var o = {cv:cv, c:c, W:W, H:H};
+  o.redraw = function(){ c.clearRect(0,0,W,H); draw(c, W, H); };
+  o.fit = function(){
+    var w = cv.clientWidth || W, d = window.devicePixelRatio || 1;
+    cv.width = Math.round(w*d); cv.height = Math.round(w*H/W*d);
+    c.setTransform(cv.width/W, 0, 0, cv.height/H, 0, 0); o.redraw();
+  };
+  o.toLocal = function(ev){ var r = cv.getBoundingClientRect(); return {x:(ev.clientX-r.left)/r.width*W, y:(ev.clientY-r.top)/r.height*H}; };
+  new ResizeObserver(o.fit).observe(cv);
+  CANVASES.push(o);
+  return o;
+}
+function seg(root, sel, onPick){
+  var g = typeof sel === "string" ? root.querySelector(sel) : sel;
+  g.addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    g.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x===b ? "true" : "false"); });
+    onPick(b.dataset.v, b);
+  });
+}
+function bindRange(root, sel, onChange, fmtFn){
+  var inp = root.querySelector(sel), out = inp.parentElement.querySelector("b,output");
+  function u(){ if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value; onChange(+inp.value); }
+  inp.addEventListener("input", u); if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value;
+  return inp;
+}
+
+/* 축과 눈금 */
+function scale(box, xr, yr){
+  return {box:box, xr:xr, yr:yr,
+    X:function(v){ return box[0] + (v-xr[0])/(xr[1]-xr[0])*(box[2]-box[0]); },
+    Y:function(v){ return box[3] - (v-yr[0])/(yr[1]-yr[0])*(box[3]-box[1]); }};
+}
+function axes(c, s, o){
+  o = o || {}; var b = s.box;
+  (o.yt||[]).forEach(function(v){ var y = s.Y(v); line(c, b[0], y+.5, b[2], y+.5, COL.soft); txt(c, o.fy ? o.fy(v) : v, b[0]-6, y+4, {align:"right", size:10}); });
+  line(c, b[0], b[3]+.5, b[2], b[3]+.5, COL.line);
+  line(c, b[0]+.5, b[1], b[0]+.5, b[3], COL.line);
+  (o.xt||[]).forEach(function(v){ var x = s.X(v); line(c, x+.5, b[3], x+.5, b[3]+4, COL.line); txt(c, o.fx ? o.fx(v) : v, x, b[3]+15, {align:"center", size:10}); });
+  if(o.xl) txt(c, o.xl, b[2], b[3]+28, {align:"right", size:10});
+  if(o.yl) txt(c, o.yl, b[0], b[1]-6, {size:10});
+}
+function path(c, s, pts, col, w, dash){
+  var bx = s.box; c.save(); c.beginPath(); c.rect(bx[0]-1, bx[1]-3, bx[2]-bx[0]+2, bx[3]-bx[1]+4); c.clip();
+  c.strokeStyle = col; c.lineWidth = w||1.6; c.setLineDash(dash||[]); c.beginPath();
+  var started = false;
+  pts.forEach(function(p){ if(p == null || !isFinite(p[1])){ started = false; return; }
+    var x = s.X(p[0]), y = clamp(s.Y(p[1]), s.box[1]-2, s.box[3]+2); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; });
+  c.stroke(); c.setLineDash([]); c.lineWidth = 1; c.restore();
+}
+function ticks(a, b, n){
+  var span = b - a, step = Math.pow(10, Math.floor(Math.log10(span/n))), err = span/n/step;
+  step *= err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1;
+  var out = [], v = Math.ceil(a/step)*step;
+  for(; v <= b + 1e-9; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+
+/* 난수: 재현 가능한 생성기와 분포 */
+function mulberry(seed){ var a = seed >>> 0; return function(){ a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function U(r){ return (r || Math.random)(); }
+function expo(mean, r){ return -mean*Math.log(1-U(r)); }
+function normal(r){ var u = 1-U(r), v = U(r); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gammaRV(k, theta, r){
+  if(k < 1){ return gammaRV(k+1, theta, r)*Math.pow(U(r), 1/k); }
+  var d = k - 1/3, cc = 1/Math.sqrt(9*d);
+  while(true){ var x, v; do { x = normal(r); v = 1 + cc*x; } while(v <= 0);
+    v = v*v*v; var u = U(r);
+    if(u < 1 - .0331*x*x*x*x || Math.log(u) < .5*x*x + d*(1 - v + Math.log(v))) return d*v*theta; }
+}
+function lognormRV(mu, s, r){ return Math.exp(mu + s*normal(r)); }
+function poissonRV(lam, r){ var L = Math.exp(-lam), k = 0, p = 1; do { k++; p *= U(r); } while(p > L); return k-1; }
+
+/* 통계 */
+function mean(a){ var s = 0; for(var i=0;i<a.length;i++) s += a[i]; return s/a.length; }
+function sd(a){ var m = mean(a), s = 0; for(var i=0;i<a.length;i++) s += (a[i]-m)*(a[i]-m); return Math.sqrt(s/(a.length-1)); }
+function quantile(sorted, p){ var i = (sorted.length-1)*p, lo = Math.floor(i), hi = Math.ceil(i); return sorted[lo] + (sorted[hi]-sorted[lo])*(i-lo); }
+function normInv(p){ // Acklam 근사
+  var a=[-39.6968302866538,220.946098424521,-275.928510446969,138.357751867269,-30.6647980661472,2.50662827745924],
+      b=[-54.4760987982241,161.585836858041,-155.698979859887,66.8013118877197,-13.2806815528857],
+      cc=[-.00778489400243029,-.322396458041136,-2.40075827716184,-2.54973253934373,4.37466414146497,2.93816398269878],
+      d=[.00778469570904146,.32246712907004,2.445134137143,3.75440866190742], q, r;
+  if(p < .02425){ q = Math.sqrt(-2*Math.log(p)); return (((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if(p > .97575){ q = Math.sqrt(-2*Math.log(1-p)); return -(((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  q = p - .5; r = q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+function normCdf(x){ var t = 1/(1+.2316419*Math.abs(x)), y = .3989423*Math.exp(-x*x/2)*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return x > 0 ? 1-y : y; }
+function tcrit(df, conf){ // 양측 신뢰수준 conf의 t 임계값 (Cornish-Fisher 근사)
+  var z = normInv(1 - (1-(conf||.95))/2), z3 = z*z*z, z5 = z3*z*z, z7 = z5*z*z;
+  return z + (z3+z)/(4*df) + (5*z5+16*z3+3*z)/(96*df*df) + (3*z7+19*z5+17*z3-15*z)/(384*df*df*df);
+}
+
+/* 수식 탐색기: 항을 누르면 강조하고 설명을 보여 준다. EQ[id](값) 이 실시간 계산을 맡는다. */
+var EQ = {}, EQRUN = {};
+function refreshEq(id){ if(EQRUN[id]) EQRUN[id](); }
+function initEqx(){
+  document.querySelectorAll(".eqx").forEach(function(box){
+    var detail = box.querySelector(".eq-detail"), btns = box.querySelectorAll(".eq-terms button");
+    function pick(t){
+      var same = box.dataset.on === t;
+      if(same || !t){ delete box.dataset.on; } else box.dataset.on = t;
+      box.querySelectorAll(".eq-big .t").forEach(function(s){ s.classList.toggle("on", !same && s.dataset.t === t); });
+      btns.forEach(function(b){ b.setAttribute("aria-pressed", !same && b.dataset.t === t ? "true" : "false"); });
+      if(detail){ var src = box.querySelector('template[data-t="'+t+'"]'); detail.innerHTML = !same && src ? src.innerHTML : ""; }
+    }
+    btns.forEach(function(b){
+      var t = box.querySelector('.eq-big .t[data-t="'+b.dataset.t+'"]'); if(t) b.dataset.c = t.dataset.c;
+      b.style.setProperty("--tc", "var(--t"+(b.dataset.c||1)+")");
+      b.addEventListener("click", function(){ pick(b.dataset.t); });
+    });
+    box.querySelectorAll(".eq-big .t").forEach(function(s){ s.tabIndex = 0; s.setAttribute("role","button");
+      s.addEventListener("click", function(){ pick(s.dataset.t); });
+      s.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pick(s.dataset.t); } }); });
+    var fn = EQ[box.id];
+    if(fn){
+      var vars = box.querySelectorAll("[data-var]");
+      var run = function(){
+        var v = {}; vars.forEach(function(i){ v[i.dataset.var] = i.type === "checkbox" ? i.checked : +i.value;
+          var o = i.parentElement.querySelector("b"); if(o) o.textContent = i.dataset.fmt ? fmt(+i.value, +i.dataset.fmt) : i.value; });
+        var res = fn(v, box) || {};
+        Object.keys(res).forEach(function(k){ box.querySelectorAll('[data-o="'+k+'"]').forEach(function(el){ el.innerHTML = res[k]; }); });
+      };
+      vars.forEach(function(i){ i.addEventListener("input", run); });
+      EQRUN[box.id] = run; run();
+    }
+  });
+}
+function onTheme(){ readColors(); CANVASES.forEach(function(o){ o.redraw(); }); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onTheme);
+new MutationObserver(onTheme).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+
+/* 감마 함수와 분포 함수 */
+function lgamma(x){
+  var g = 7, cf = [0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(x < .5) return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*x))) - lgamma(1-x);
+  x -= 1; var a = cf[0], t = x + g + .5;
+  for(var i=1;i<g+2;i++) a += cf[i]/(x+i);
+  return .5*Math.log(2*Math.PI) + (x+.5)*Math.log(t) - t + Math.log(a);
+}
+function gammaP(a, x){ // 정규화된 하부 불완전 감마 함수
+  if(x <= 0) return 0;
+  var gln = lgamma(a);
+  if(x < a + 1){ var ap = a, sum = 1/a, del = sum; for(var n=0;n<300;n++){ ap++; del *= x/ap; sum += del; if(Math.abs(del) < Math.abs(sum)*1e-12) break; } return sum*Math.exp(-x + a*Math.log(x) - gln); }
+  var b = x + 1 - a, c = 1e300, d = 1/b, h = d;
+  for(var i=1;i<300;i++){ var an = -i*(i-a); b += 2; d = an*d + b; if(Math.abs(d) < 1e-300) d = 1e-300; c = b + an/c; if(Math.abs(c) < 1e-300) c = 1e-300; d = 1/d; var del2 = d*c; h *= del2; if(Math.abs(del2-1) < 1e-12) break; }
+  return 1 - Math.exp(-x + a*Math.log(x) - gln)*h;
+}
+function gammaPdf(x, k, th){ if(x <= 0) return (k < 1 && x === 0) ? Infinity : 0; return Math.exp((k-1)*Math.log(x) - x/th - lgamma(k) - k*Math.log(th)); }
+function chi2crit(df, z){ z = z || 1.6449; var a = 2/(9*df); return df*Math.pow(1 - a + z*Math.sqrt(a), 3); }
+function seededSample(seed, n, gen){ var r = mulberry(seed), out = []; for(var i=0;i<n;i++) out.push(gen(r)); return out; }
+
+
+/* ===== 응용 사례 A4 유령 정체 ===== */
+/* ---------- 나겔-슈레켄베르크(NaSch) 셀룰러 오토마타 ---------- */
+/* 한 칸 7.5 m, 한 걸음 1.5초, 최고 속도 3칸/걸음 = 시속 54 km. 길은 고리 모양 */
+var JAM = {cell:7.5, dt:1.5};
+function kmh(v){ return v*JAM.cell/JAM.dt*3.6; }
+function jamInit(L, N, o, r){
+  var cells = [], pos = [], i;
+  for(i=0;i<L;i++) cells.push(i);
+  for(i=L-1;i>0;i--){ var j = Math.floor(r()*(i+1)), t = cells[i]; cells[i] = cells[j]; cells[j] = t; }
+  pos = cells.slice(0, N).sort(function(a, b){ return a - b; });
+  var cars = pos.map(function(x, k){ return {x:x, v:0, av: k < Math.round(N*(o.av||0)) ? false : false}; });
+  // 자율주행차는 고르게 섞는다
+  var nav = Math.round(N*(o.av||0));
+  for(i=0;i<nav;i++) cars[Math.floor(i*N/nav)].av = true;
+  return {L:L, cars:cars, t:0};
+}
+function jamStep(S, o, r){
+  var L = S.L, c = S.cars, n = c.length, vmax = o.vmax || 3;
+  for(var i=0;i<n;i++){
+    var a = c[i], b = c[(i+1) % n], gap = (b.x - a.x - 1 + L) % L;
+    if(n === 1) gap = L - 1;
+    var v = Math.min(a.v + 1, vmax);
+    v = Math.min(v, gap);
+    var p = a.av ? 0 : o.p;
+    if(v > 0 && r() < p) v--;
+    a.nv = v;
+  }
+  var flow = 0;
+  for(i=0;i<n;i++){ c[i].v = c[i].nv; c[i].x = (c[i].x + c[i].v) % L; flow += c[i].v; }
+  // 순서 유지: 고리에서 맨 앞 차가 0을 넘으면 회전
+  var minI = 0; for(i=1;i<n;i++) if(c[i].x < c[minI].x) minI = i;
+  if(minI) S.cars = c.slice(minI).concat(c.slice(0, minI));
+  S.t++;
+  return flow;
+}
+function jamStats(L, N, o, seed, steps, warm){
+  var r = mulberry(seed), S = jamInit(L, N, o, r), fs = 0, vs = 0, v2 = 0, stop = 0, cnt = 0;
+  for(var t=0;t<warm+steps;t++){
+    var f = jamStep(S, o, r);
+    if(t >= warm){ fs += f; S.cars.forEach(function(c){ vs += c.v; v2 += c.v*c.v; if(c.v === 0) stop++; }); cnt += N; }
+  }
+  var mv = vs/cnt;
+  return {flow:fs/steps/L, v:mv, sd:Math.sqrt(Math.max(0, v2/cnt - mv*mv)), stop:stop/cnt};
+}
+
+function inView(el, cb){ if(!("IntersectionObserver" in window)){ cb(true); return; } new IntersectionObserver(function(es){ cb(es[0].isIntersecting); }, {rootMargin:"60px"}).observe(el); }
+var L4 = 200;
+
+/* ---------- 2.2 시공간도 ---------- */
+(function(){
+  var root = document.getElementById("w-st"); if(!root) return;
+  var N = 44, p = .25, seed = 1, S, r, rows = [], playing = !REDUCED, visible = false, acc = 0, stat = {f:0, v:0, stop:0, n:0};
+  function reset(){ r = mulberry(seed); S = jamInit(L4, N, {p:p}, r); rows = []; stat = {f:0, v:0, stop:0, n:0}; for(var i=0;i<200;i++) step(); }
+  function step(){
+    var f = jamStep(S, {p:p, vmax:3}, r), row = new Int8Array(L4).fill(-1);
+    S.cars.forEach(function(c){ row[c.x] = c.v; if(rows.length > 40){ stat.v += c.v; if(c.v === 0) stat.stop++; stat.n++; } });
+    if(rows.length > 40) stat.f += f;
+    rows.push(row); if(rows.length > 200) rows.shift();
+  }
+  var view = setup(root, function(c, W, H){
+    var cw = 600/L4, rh = 1.35, x0 = 30, y0 = 12;
+    c.fillStyle = COL.soft; c.fillRect(x0, y0, 600, 200*rh);
+    var cols = [COL.miss, rgba(COL.c2, .95), rgba(COL.acc, .7), rgba(COL.ink, .35)];
+    rows.forEach(function(row, k){ var y = y0 + (200 - rows.length + k)*rh; for(var i=0;i<L4;i++) if(row[i] >= 0){ c.fillStyle = cols[row[i]]; c.fillRect(x0 + i*cw, y, Math.max(1.2, cw), rh + .2); } });
+    txt(c, "시간", 4, y0 + 10, {size:10}); txt(c, "↓", 10, y0 + 26, {size:12});
+    txt(c, "위치 (차는 오른쪽으로) →", x0 + 600, y0 + 200*rh + 14, {size:10, align:"right"});
+    var lg = [["멈춤", 0], ["1칸", 1], ["2칸", 2], ["3칸 (최고)", 3]], lx = x0;
+    lg.forEach(function(l){ c.fillStyle = cols[l[1]]; c.fillRect(lx, y0 + 200*rh + 6, 10, 10); txt(c, l[0], lx + 14, y0 + 200*rh + 15, {size:10}); lx += 70; });
+  });
+  function report(){
+    var n = Math.max(1, stat.n), steps = Math.max(1, (rows.length > 40 ? stat.n/N : 1));
+    root.querySelector("[data-out]").innerHTML = "밀도 " + fmt(N/L4, 2) + " (1 km에 " + fmt(N/L4/0.0075, 0) + "대). 평균 속도 <b>시속 " + fmt(kmh(stat.v/n), 0) + " km</b>, 멈춘 차 비율 <b>" + fmt(100*stat.stop/n, 1) + "%</b>, 흐름 시간당 약 " + fmt(stat.f/steps/L4*3600/JAM.dt, 0) + "대.";
+  }
+  bindRange(root, "[data-n]", function(v){ N = v; reset(); view.redraw(); report(); });
+  bindRange(root, "[data-p]", function(v){ p = v; reset(); view.redraw(); report(); }, function(v){ return fmt(v, 2); });
+  var pb = root.querySelector('[data-act="play"]');
+  pb.onclick = function(){ playing = !playing; pb.textContent = playing ? "일시정지" : "재생"; };
+  pb.textContent = playing ? "일시정지" : "재생";
+  root.querySelector('[data-act="reset"]').onclick = function(){ seed++; reset(); view.redraw(); report(); };
+  inView(root, function(v){ visible = v; });
+  reset(); if(REDUCED){ for(var i=0;i<180;i++) step(); } view.redraw(); report();
+  var last = performance.now(), rep = 0;
+  (function frame(now){
+    var dt = Math.min(.1, (now - last)/1000); last = now;
+    if(playing && visible){ acc += dt; while(acc > 1/30){ acc -= 1/30; step(); } view.redraw(); rep += dt; if(rep > .3){ rep = 0; report(); } }
+    requestAnimationFrame(frame);
+  })(last);
+})();
+
+/* ---------- 3.1 기본 도표 ---------- */
+(function(){
+  var root = document.getElementById("w-fd"); if(!root) return;
+  var seed = 1, data = null, PS = [0, .1, .25, .4];
+  function compute(){
+    data = PS.map(function(p){ var pts = []; for(var rho=.02; rho<=.801; rho+=.02){ var N = Math.round(rho*L4), s = jamStats(L4, N, {p:p, vmax:3}, seed*31 + Math.round(rho*100), 400, 200); pts.push([N/L4, s.flow]); } return {p:p, pts:pts}; });
+  }
+  var cols = ["muted", "c1", "acc", "c2"];
+  var view = setup(root, function(c, W, H){
+    if(!data) compute();
+    var s = scale([52, 14, 580, 214], [0, .8], [0, .8]);
+    axes(c, s, {xt:[0,.1,.2,.3,.4,.5,.6,.7,.8], yt:[0,.2,.4,.6,.8], xl:"밀도 (칸당 차)", yl:"흐름 (칸당, 걸음당)"});
+    var th = []; for(var x=0;x<=.8;x+=.005) th.push([x, Math.min(3*x, 1-x)]); path(c, s, th, COL.line, 3);
+    data.forEach(function(d, k){ d.pts.forEach(function(p){ dot(c, s.X(p[0]), s.Y(p[1]), k ? 2.6 : 3.2, COL[cols[k]]); }); });
+    [0, .2, .4, .6, .8].forEach(function(v){ txt(c, fmt(v*3600/JAM.dt, 0), 586, s.Y(v) + 4, {size:10}); });
+    txt(c, "대/시간", 586, 10, {size:10});
+    var lx = 300; data.forEach(function(d, k){ dot(c, lx, 22, 3, COL[cols[k]]); txt(c, "p = " + d.p, lx + 7, 26, {size:10.5, color:COL.ink}); lx += 64; });
+  });
+  function report(){
+    var msg = data.map(function(d){ var best = d.pts.reduce(function(a, b){ return b[1] > a[1] ? b : a; }); return "p = " + d.p + ": 최대 시간당 " + fmt(best[1]*3600/JAM.dt, 0) + "대 (밀도 " + fmt(best[0], 2) + ")"; });
+    root.querySelector("[data-out]").innerHTML = msg.join(", ") + ". p = 0의 점들은 회색 이론선 위에 놓입니다.";
+  }
+  root.querySelector('[data-act="run"]').onclick = function(){ seed++; compute(); view.redraw(); report(); };
+  compute(); report();
+})();
+
+/* ---------- 3.2 자율주행차 ---------- */
+(function(){
+  var root = document.getElementById("w-av"); if(!root) return;
+  var N = 40, data = null;
+  function compute(){
+    data = []; for(var a=0;a<=1.0001;a+=.1){ var v = 0, sd = 0, st = 0; for(var sd0=1; sd0<=5; sd0++){ var s = jamStats(L4, N, {p:.25, vmax:3, av:a}, sd0*7 + N, 400, 200); v += s.v; sd += s.sd; st += s.stop; } data.push([a, kmh(v/5), kmh(sd/5), st/5]); }
+  }
+  var view = setup(root, function(c, W, H){
+    if(!data) compute();
+    var s = scale([52, 14, 600, 196], [0, 1], [0, 60]);
+    axes(c, s, {xt:[0,.2,.4,.6,.8,1], yt:[0,20,40,60], fx:function(v){ return Math.round(v*100) + "%"; }, xl:"자율주행차 비율", yl:"시속 km"});
+    path(c, s, data.map(function(d){ return [d[0], d[1]]; }), COL.acc, 2.2);
+    path(c, s, data.map(function(d){ return [d[0], d[2]]; }), COL.miss, 1.8, [5,3]);
+    data.forEach(function(d){ dot(c, s.X(d[0]), s.Y(d[1]), 3, COL.acc); dot(c, s.X(d[0]), s.Y(d[2]), 2.6, COL.miss); });
+    txt(c, "평균 속도", s.X(1) - 4, s.Y(data[data.length-1][1]) - 8, {align:"right", size:11, color:COL.acc});
+    txt(c, "속도 표준편차", s.X(0) + 6, s.Y(data[0][2]) - 8, {size:11, color:COL.miss});
+  });
+  function report(){
+    var a0 = data[0], a2 = data[2], a5 = data[5];
+    root.querySelector("[data-out]").innerHTML = "밀도 " + fmt(N/L4, 2) + ". 자율주행차 0%: 시속 " + fmt(a0[1], 1) + " km, 멈춘 차 " + fmt(a0[3]*100, 1) + "%. 20%: 시속 " + fmt(a2[1], 1) + " km, " + fmt(a2[3]*100, 1) + "%. 50%: 시속 " + fmt(a5[1], 1) + " km, " + fmt(a5[3]*100, 1) + "%.";
+  }
+  bindRange(root, "[data-n]", function(v){ N = v; compute(); view.redraw(); report(); });
+  compute(); report();
+})();
+
+/* ===== 5. 직접 돌려 보기: 원형 트랙 위의 운전자 에이전트 ===== */
+/* ---------- 원형 트랙 위의 운전자 에이전트 (지능형 운전자 모델, IDM) ---------- */
+var IDM = {L:230, len:4.5, v0:12, T:1.2, s0:2, a:1.0, b:1.5, dt:.1};
+function gauss(r){ var u = 1 - r(), v = r(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function ringNew(n, o, r){
+  var cars = [];
+  for(var i=0;i<n;i++) cars.push({x:i*IDM.L/n, v:0, av:false, brake:0, id:i, noise:o.noise*(0.5 + r()), hist:[]});
+  return {cars:cars, t:0, r:r};
+}
+function idmAcc(v, vl, gap, T){
+  var dv = v - vl, ss = IDM.s0 + Math.max(0, v*T + v*dv/(2*Math.sqrt(IDM.a*IDM.b)));
+  return IDM.a*(1 - Math.pow(v/IDM.v0, 4) - Math.pow(ss/Math.max(.1, gap), 2));
+}
+function ringAcc(c, lead, gap, o){
+  var human = idmAcc(c.v, lead.v, gap, o.T || IDM.T);
+  if(!c.av) return human;
+  // 자율주행차: 앞차의 출렁임을 따라가지 않고 최근 평균 속도로 꾸준히 달린다 (파동 흡수)
+  if(c.vavg === undefined) c.vavg = lead.v;
+  c.vavg += (lead.v - c.vavg)*IDM.dt/(o.avTau || 30);
+  var hw = o.avT || 1.3, vSafe = Math.max(0, (gap - IDM.s0)/.9), cmd = Math.min(vSafe, Math.max(0, c.vavg + (o.avK || .03)*(gap - (IDM.s0 + hw*c.vavg))));
+  var a = Math.max(-3, Math.min(.8, .5*(cmd - c.v)));
+  return Math.min(a, idmAcc(c.v, lead.v, gap, .8));   // 위험하면 사람과 같은 규칙으로 감속
+}
+function ringStep(S, o){
+  var cars = S.cars, n = cars.length, dt = IDM.dt, acc = [];
+  for(var i=0;i<n;i++){
+    var c = cars[i], lead = cars[(i+1) % n], gap = (lead.x - c.x - IDM.len + IDM.L) % IDM.L;
+    if(n === 1) gap = IDM.L - IDM.len;
+    var a = ringAcc(c, lead, gap, o);
+    if(!c.av) a += (o.noiseOn === false ? 0 : c.noise*gauss(S.r));
+    if(c.brake > 0){ a = -4; c.brake -= dt; }
+    acc.push(Math.max(-8, Math.min(a, 3)));
+  }
+  for(i=0;i<n;i++){ var c2 = cars[i], lead2 = cars[(i+1) % n], gap2 = (lead2.x - c2.x - IDM.len + IDM.L) % IDM.L;
+    c2.v = Math.max(0, c2.v + acc[i]*dt);
+    c2.v = Math.min(c2.v, Math.max(0, gap2 - .5)/dt);    // 부딪치지 않는다
+    c2.x = (c2.x + c2.v*dt) % IDM.L; }
+  S.t += dt;
+}
+
+(function(){
+  var root = document.getElementById("w-ring"); if(!root) return;
+  var O = {noise:.4, T:1.2, avK:.03, avTau:30, avT:1.3}, S, mode = "brake", playing = !REDUCED, visible = false, spd = 1, track = 0, hist = [], st = [], seed = 2;
+  function reset(n){ S = ringNew(n || 22, O, mulberry(seed++)); hist = []; st = []; track = 0; }
+  var CX = 170, CY = 200, RR = 150;
+  function carXY(x){ var a = x/IDM.L*2*Math.PI - Math.PI/2; return [CX + RR*Math.cos(a), CY + RR*Math.sin(a), a]; }
+  function spColor(v){ var u = Math.max(0, Math.min(1, v/IDM.v0)); return u < .1 ? COL.miss : u < .45 ? COL.c2 : COL.acc; }
+  var view = setup(root, function(c, W, H){
+    // 트랙
+    c.strokeStyle = COL.soft; c.lineWidth = 22; c.beginPath(); c.arc(CX, CY, RR, 0, 7); c.stroke(); c.lineWidth = 1;
+    txt(c, "둘레 " + IDM.L + " m", CX, CY - 6, {align:"center", size:12, color:COL.ink});
+    txt(c, S.cars.length + "대", CX, CY + 12, {align:"center", size:12});
+    S.cars.forEach(function(car, i){
+      var p = carXY(car.x); c.save(); c.translate(p[0], p[1]); c.rotate(p[2] + Math.PI/2);
+      c.fillStyle = car.av ? COL.c1 : spColor(car.v); c.fillRect(-4, -7, 8, 14);
+      if(car.av){ c.strokeStyle = COL.panel; c.lineWidth = 1.5; c.strokeRect(-2.5, -5.5, 5, 11); c.lineWidth = 1; }
+      if(i === track){ c.strokeStyle = COL.ink; c.lineWidth = 2; c.strokeRect(-6, -9, 12, 18); c.lineWidth = 1; }
+      if(car.brake > 0){ c.fillStyle = COL.miss; c.beginPath(); c.arc(0, 9, 3, 0, 7); c.fill(); }
+      c.restore();
+    });
+    // 시공간도 (최근 60초)
+    var bx = 350, by = 22, bw = 270, bh = 170;
+    c.fillStyle = COL.soft; c.fillRect(bx, by, bw, bh);
+    hist.forEach(function(row, k){ var y = by + bh - (hist.length - k)*(bh/300); row.forEach(function(cv){ c.fillStyle = cv[2] ? COL.c1 : spColor(cv[1]); c.fillRect(bx + cv[0]/IDM.L*bw, y, 2, Math.max(1, bh/300 + .3)); }); });
+    txt(c, "시공간도: 위치 →, 아래가 지금 (최근 60초)", bx, by - 6, {size:10});
+    // 추적 차의 속도
+    var sx = 350, sy = 230, sw = 270, sh = 110, s2 = scale([sx, sy, sx + sw, sy + sh], [0, 60], [0, 45]);
+    axes(c, s2, {yt:[0,15,30,45], xl:"최근 60초", yl:"표시한 차의 속도 (km/h)"});
+    var tn = S.t, pts = st.map(function(p){ return [60 - (tn - p[0]), p[1]*3.6]; }).filter(function(p){ return p[0] >= 0; });
+    path(c, s2, pts, COL.ink, 1.6);
+    txt(c, "차를 누르면 " + (mode === "brake" ? "급브레이크" : mode === "av" ? "자율주행차로 바꿈" : "그 차를 표시"), CX, 390, {align:"center", size:11, color:COL.ink});
+  });
+  function step(){
+    ringStep(S, O);
+    if(Math.round(S.t*10) % 2 === 0){ hist.push(S.cars.map(function(cv){ return [cv.x, cv.v, cv.av]; })); if(hist.length > 300) hist.shift(); }
+    st.push([S.t, S.cars[track] ? S.cars[track].v : 0]); while(st.length && st[0][0] < S.t - 60) st.shift();
+  }
+  function report(){
+    var n = S.cars.length, m = 0, m2 = 0, stop = 0, nav = 0;
+    S.cars.forEach(function(cv){ m += cv.v; m2 += cv.v*cv.v; if(cv.v < .5) stop++; if(cv.av) nav++; });
+    m /= n; var sdv = Math.sqrt(Math.max(0, m2/n - m*m));
+    root.querySelector("[data-out]").innerHTML = "차 " + n + "대(자율주행차 " + nav + "대). 지금 평균 시속 <b>" + fmt(m*3.6, 1) + " km</b>, 속도 표준편차 <b>" + fmt(sdv*3.6, 1) + " km</b>, 멈춘 차 <b>" + stop + "대</b>. 경과 " + Math.floor(S.t) + "초.";
+  }
+  root.querySelector("canvas").addEventListener("click", function(ev){
+    var p = view.toLocal(ev), best = -1, bd = 20;
+    S.cars.forEach(function(cv, i){ var q = carXY(cv.x), d = Math.hypot(q[0] - p.x, q[1] - p.y); if(d < bd){ bd = d; best = i; } });
+    if(best < 0) return;
+    var car = S.cars[best];
+    if(mode === "brake"){ car.brake = 1.2; track = best; }
+    else if(mode === "av"){ car.av = !car.av; car.vavg = undefined; }
+    else track = best;
+    view.redraw(); report();
+  });
+  seg(root, '[data-g="mode"]', function(v){ mode = v; view.redraw(); });
+  seg(root, '[data-g="spd"]', function(v){ spd = +v; });
+  bindRange(root, "[data-noise]", function(v){ O.noise = v; S.cars.forEach(function(cv){ cv.noise = v*(0.5 + Math.random()); }); }, function(v){ return fmt(v, 2); });
+  bindRange(root, "[data-t]", function(v){ O.T = v; }, function(v){ return fmt(v, 1) + "초"; });
+  function addCar(){ var cs = S.cars, gi = 0, gb = -1; cs.forEach(function(cv, i){ var g = (cs[(i+1) % cs.length].x - cv.x + IDM.L) % IDM.L; if(g > gb){ gb = g; gi = i; } });
+    if(gb < 2*IDM.len + 4) return; var a = cs[gi], nc = {x:(a.x + gb/2) % IDM.L, v:a.v, av:false, brake:0, noise:O.noise*(0.5 + Math.random())}; cs.splice(gi + 1, 0, nc);
+    var mi = 0; cs.forEach(function(cv, i){ if(cv.x < cs[mi].x) mi = i; }); S.cars = cs.slice(mi).concat(cs.slice(0, mi)); }
+  root.querySelector('[data-act="add"]').onclick = function(){ addCar(); track = Math.min(track, S.cars.length - 1); report(); };
+  root.querySelector('[data-act="del"]').onclick = function(){ if(S.cars.length > 4){ S.cars.splice(Math.floor(Math.random()*S.cars.length), 1); track = Math.min(track, S.cars.length - 1); } report(); };
+  root.querySelector('[data-act="human"]').onclick = function(){ S.cars.forEach(function(cv){ cv.av = false; }); report(); };
+  root.querySelector('[data-act="reset"]').onclick = function(){ reset(22); view.redraw(); report(); };
+  var pb = root.querySelector('[data-act="play"]');
+  pb.onclick = function(){ playing = !playing; pb.textContent = playing ? "일시정지" : "재생"; };
+  pb.textContent = playing ? "일시정지" : "재생";
+  inView(root, function(v){ visible = v; });
+  reset(22); for(var i=0;i<3500;i++) step(); view.redraw(); report();   // 350초를 미리 돌려 정체가 생긴 상태에서 시작
+  var last = performance.now(), acc = 0, rep = 0;
+  (function frame(now){
+    var dt = Math.min(.1, (now - last)/1000); last = now;
+    if(playing && visible){ acc += dt*spd; while(acc >= IDM.dt){ acc -= IDM.dt; step(); } view.redraw(); rep += dt; if(rep > .3){ rep = 0; report(); } }
+    requestAnimationFrame(frame);
+  })(last);
+})();
+
+initEqx();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>병렬·분산 시뮬레이션</title>
+<!--
+  모델링과 시뮬레이션 학습 자료 — 2-3편 (2편 심화): 병렬·분산 시뮬레이션
+  파일명: ch2-3_PDES.html, 강조색 --acc는 메인 페이지의 --c2c와 같습니다.
+  데모는 외부 라이브러리 없이 맨 아래 <script>에서 동작합니다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F8; --panel:#FFFFFF; --ink:#17202E; --muted:#5A6577; --line:#D5DBE3; --soft:#E8ECF1;
+  --acc:#8A6D00; --c1:#3557C9; --c2:#C27C00; --c3:#0E7C6B; --miss:#C8372D;
+  --t1:#2E62D0; --t2:#C2410C; --t3:#0E8A6B; --t4:#8B3FD9; --t5:#B91C5C;
+  --k-kw:#8A3FA8; --k-fn:#2457C5; --k-str:#2E7D32; --k-num:#B5560F; --k-com:#7A8494; --k-bi:#0F7C86;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --math:"STIX Two Text","Times New Roman",Times,serif;
+  --code:"D2Coding","Consolas","SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+    --acc:#E3C04A; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+    --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+    --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+  --acc:#E3C04A; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+  --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+  --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+  color-scheme:dark;
+}
+:root{box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 16px); scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+body{margin:0; background:var(--bg); color:var(--ink); font:400 17px/1.75 var(--sans); -webkit-font-smoothing:antialiased; word-break:keep-all; overflow-wrap:break-word}
+a{color:var(--acc)}
+.wrap{max-width:980px; margin:0 auto; padding:40px 24px 48px}
+.prose{max-width:42em}
+p{margin:0 0 1em}
+code{font-family:var(--code); font-size:.9em; background:var(--soft); padding:1px 5px; border-radius:4px}
+
+/* 머리말 */
+.back{font-size:15px; margin:0 0 36px}
+.back a{color:var(--muted)}
+.series{margin:0 0 10px; color:var(--muted); font-size:15px}
+h1{margin:0; font-weight:700; font-size:clamp(34px,6vw,54px); line-height:1.12; letter-spacing:-0.02em}
+h1 .n{font-family:var(--math); font-weight:500; color:var(--acc); margin-right:.2em}
+.lead{margin:18px 0 0; color:var(--muted); max-width:38em; font-size:18px}
+.goals{display:grid; grid-template-columns:1.4fr 1fr; gap:24px; margin:32px 0 0}
+.goals > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px}
+.goals h2{font-size:15px; margin:0 0 6px}
+.goals ul{margin:0; padding-left:1.1em; font-size:15px; line-height:1.65}
+.goals .pre a{display:inline-block; margin:2px 6px 2px 0; font-size:14px; text-decoration:none; padding:2px 9px; border-radius:5px; background:var(--soft); color:var(--ink)}
+.goals .pre a:hover{background:var(--acc); color:var(--panel)}
+.goals .pre p{font-size:14.5px; color:var(--muted); margin:6px 0 0}
+.toc{margin:28px 0 0; display:grid; grid-template-columns:repeat(4,1fr); gap:0 24px; border-top:2px solid var(--ink); padding-top:16px}
+.toc h2{font-size:15px; margin:0 0 6px}
+.toc h2 a{color:var(--ink); text-decoration:none}
+.toc ol{list-style:none; margin:0; padding:0; font-size:14px; line-height:1.65}
+.toc ol a{color:var(--muted); text-decoration:none}
+.toc a:hover{color:var(--acc); text-decoration:underline}
+
+/* 장, 절 */
+.chap{margin-top:88px}
+.chap > h2{display:flex; align-items:baseline; gap:16px; font-size:clamp(28px,4.4vw,38px); line-height:1.2; margin:0 0 12px; letter-spacing:-0.01em}
+.chap > h2 .n{font:500 1.5em/1 var(--math); color:var(--acc)}
+.chap > .intro{color:var(--muted); font-size:18px; max-width:40em; margin-bottom:8px}
+h3{font-size:22px; line-height:1.35; margin:56px 0 12px}
+h3 .n{font:500 1em var(--math); color:var(--acc); margin-right:10px}
+h4{font-size:17px; margin:24px 0 6px}
+.m{font-family:var(--math); font-style:italic; font-size:1.08em; white-space:nowrap}
+.mr{font-family:var(--math); font-size:1.08em; white-space:nowrap}
+.note{max-width:42em; margin:20px 0; padding:14px 18px; border-radius:8px; background:var(--soft); font-size:15.5px; line-height:1.7}
+.note > :last-child{margin-bottom:0}
+.link-note{max-width:42em; margin:20px 0; padding:12px 18px 12px 16px; border-left:3px solid var(--acc); background:var(--panel); border-radius:0 8px 8px 0; font-size:15.5px}
+.link-note > :last-child{margin-bottom:0}
+.link-note .k{font-weight:700; color:var(--acc); margin-right:6px}
+dl.terms{display:grid; grid-template-columns:auto 1fr; gap:6px 18px; max-width:42em; margin:0; font-size:15.5px}
+dl.terms dt{font-weight:700}
+dl.terms dd{margin:0; color:var(--muted)}
+.cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:20px 0}
+.cards.two{grid-template-columns:1fr 1fr}
+.cards > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; font-size:15.5px}
+.cards h4{margin:0 0 6px}
+.cards p{margin:0}
+ol.steps{list-style:none; margin:20px 0; padding:0; counter-reset:s; max-width:44em}
+ol.steps > li{counter-increment:s; position:relative; padding:0 0 14px 44px}
+ol.steps > li::before{content:counter(s); position:absolute; left:0; top:-2px; width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font:500 17px/1 var(--math); background:var(--acc); color:var(--panel)}
+ol.steps > li b{display:block}
+
+/* 사례 연구 머리 */
+.case{margin:56px 0 0; padding-top:18px; border-top:1px solid var(--line)}
+.case h3{margin-top:0}
+.lvl{display:inline-block; font-size:13px; font-weight:500; padding:1px 8px; border-radius:4px; margin-left:8px; vertical-align:3px; background:var(--soft); color:var(--muted)}
+.lvl.real{background:var(--acc); color:var(--panel)}
+
+/* 수식 탐색기 */
+.eqx{margin:28px 0; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px 16px}
+.eqx > .cap{margin:0 0 4px; font-size:14px; color:var(--muted)}
+.eq-big{font-family:var(--math); font-size:clamp(24px,3.6vw,36px); line-height:1.6; padding:12px 0 14px; overflow-x:auto; white-space:nowrap; text-align:center}
+.eq-big .t{--tc:var(--ink); border-bottom:3px solid var(--tc); padding:0 3px; border-radius:4px; cursor:pointer; transition:background .15s}
+.eq-big .t:hover, .eqx[data-on] .eq-big .t.on{background:color-mix(in srgb, var(--tc) 22%, transparent)}
+.eqx[data-on] .eq-big .t:not(.on){opacity:.4}
+.eq-big .op{color:var(--muted); padding:0 .12em}
+.eq-big sub, .eq-big sup{font-size:.6em}
+.eq-big .frac{display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; line-height:1.15; margin:0 .1em}
+.eq-big .frac > span:first-child{border-bottom:2px solid currentColor; padding:0 .15em .05em}
+.eq-big .frac > span:last-child{padding:.08em .15em 0}
+.t[data-c="1"]{--tc:var(--t1)} .t[data-c="2"]{--tc:var(--t2)} .t[data-c="3"]{--tc:var(--t3)} .t[data-c="4"]{--tc:var(--t4)} .t[data-c="5"]{--tc:var(--t5)}
+.eq-terms{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; margin:4px 0 0}
+.eq-terms button{
+  --tc:var(--ink); text-align:left; font:400 14px/1.5 var(--sans); color:var(--ink); background:var(--bg);
+  border:1px solid var(--line); border-left:4px solid var(--tc); border-radius:6px; padding:8px 10px; cursor:pointer;
+}
+.eq-terms button b{display:block; font-family:var(--math); font-size:17px; font-weight:500; color:var(--tc)}
+.eq-terms button[aria-pressed="true"]{background:color-mix(in srgb, var(--tc) 14%, var(--panel)); border-color:var(--tc)}
+.eq-terms button:focus-visible{outline:2px solid var(--tc); outline-offset:2px}
+.eq-detail{margin:12px 0 0; padding:12px 14px; border-radius:8px; background:var(--soft); font-size:15px; min-height:3em}
+.eq-detail:empty{display:none}
+.eq-live{margin-top:14px; padding-top:12px; border-top:1px dashed var(--line)}
+.eq-live .sub{font-size:14px; color:var(--muted); margin:0 0 6px}
+.eqx canvas{display:block; width:100%; height:auto; margin-top:8px}
+.hat{position:relative; display:inline-block}
+.hat::after{content:"ˆ"; position:absolute; left:50%; top:-.42em; transform:translateX(-45%); font-style:normal}
+.lim{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; line-height:1; margin:0 .08em; font-size:1.3em}
+.lim small{font-size:.34em; line-height:1.15}
+.eq-num{font-family:var(--math); font-size:22px; text-align:center; margin:10px 0 2px; overflow-x:auto; white-space:nowrap}
+.eq-num .t{border-bottom:2px solid var(--tc); padding:0 2px}
+
+/* 위젯 */
+.widget{margin:24px 0 28px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px 14px}
+.widget > h4{margin:0 0 2px; font-size:16px}
+.widget > .sub{margin:0 0 12px; color:var(--muted); font-size:14.5px}
+.widget canvas{display:block; width:100%; height:auto; touch-action:manipulation}
+.ctrl, .eq-live .ctrl{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin-top:12px; font-size:14px}
+.ctrl button, .seg button{font:500 14px/1 var(--sans); color:var(--ink); background:var(--soft); border:1px solid var(--line); border-radius:7px; padding:8px 12px; cursor:pointer}
+.ctrl button:hover, .seg button:hover{border-color:var(--acc)}
+.ctrl button.primary{background:var(--acc); border-color:var(--acc); color:var(--panel)}
+.ctrl button:disabled{opacity:.5; cursor:default}
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+.seg{display:inline-flex; flex-wrap:wrap; gap:4px}
+.seg button[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--panel)}
+.ctrl label{display:inline-flex; align-items:center; gap:8px; color:var(--muted)}
+.ctrl label b, .ctrl label output{color:var(--ink); font-weight:500; min-width:2.8em; font-variant-numeric:tabular-nums}
+.ctrl input[type=range]{width:150px; accent-color:var(--acc)}
+.ctrl input[type=checkbox]{accent-color:var(--acc); width:16px; height:16px}
+.ctrl select{font:400 14px var(--sans); color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px 8px}
+textarea.data{width:100%; min-height:90px; font:400 13.5px/1.5 var(--code); color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px; resize:vertical}
+.readout{margin:12px 0 0; font-size:14.5px; line-height:1.6; color:var(--muted); font-variant-numeric:tabular-nums}
+.readout b{color:var(--ink); font-weight:500}
+.readout .good{color:var(--c3); font-weight:500}
+.readout .bad{color:var(--miss); font-weight:500}
+.split{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+
+/* 표 */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:15px; line-height:1.55}
+th,td{padding:9px 12px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line)}
+thead th{font-weight:700; color:var(--muted); font-size:14px}
+tbody tr:last-child th, tbody tr:last-child td{border-bottom:0}
+table.num td{font-variant-numeric:tabular-nums}
+.tbl{background:var(--panel); border:1px solid var(--line); border-radius:10px; margin:20px 0; max-width:46em}
+
+/* 연습 문제 */
+.ex{max-width:44em; margin:16px 0}
+.ex details{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 16px; margin:0 0 8px}
+.ex summary{cursor:pointer; font-weight:500}
+.ex summary::marker{color:var(--acc)}
+.ex details > div{margin-top:8px; color:var(--muted); font-size:15.5px}
+.ex details > div > :last-child{margin-bottom:0}
+
+/* 코드 */
+pre.code{margin:20px 0; padding:16px 18px; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow-x:auto; font:400 14px/1.65 var(--code); tab-size:4; max-width:46em}
+pre.code code{background:none; padding:0; font-size:1em}
+pre.code .kw{color:var(--k-kw); font-weight:500}
+pre.code .fn{color:var(--k-fn)}
+pre.code .bi{color:var(--k-bi)}
+pre.code .str{color:var(--k-str)}
+pre.code .num{color:var(--k-num)}
+pre.code .com{color:var(--k-com); font-style:italic}
+.code-cap{font-size:14px; color:var(--muted); margin:-12px 0 20px}
+
+/* 이전 / 다음 */
+.pager{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:72px}
+.pager a{display:block; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; text-decoration:none; color:var(--ink)}
+.pager a:hover{border-color:var(--acc)}
+.pager span{display:block; font-size:13.5px; color:var(--muted)}
+.pager b{font-size:17px}
+.pager .next{text-align:right}
+footer{margin-top:40px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:14px}
+footer a{color:inherit}
+
+@media (max-width:760px){
+  .wrap{padding:28px 18px 40px}
+  .toc{grid-template-columns:1fr 1fr; gap:14px}
+  .goals, .cards, .cards.two, .split, .pager{grid-template-columns:1fr}
+  .widget, .eqx{padding:14px 12px 12px; margin-left:-6px; margin-right:-6px}
+  .ctrl input[type=range]{width:120px}
+}
+.lps{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:0 0 10px}
+.lps > div{border:1px solid var(--line); border-top:3px solid var(--c); border-radius:8px; padding:6px 10px; font-size:13.5px; line-height:1.45; display:flex; flex-wrap:wrap; gap:2px 10px; align-items:baseline; font-variant-numeric:tabular-nums}
+.lps b{color:var(--c); font-weight:700}
+.lps span{color:var(--muted)}
+.lps em{font-style:normal; margin-left:auto; font-weight:500}
+.lps em.w{color:var(--miss)}
+@media (max-width:760px){ .lps{grid-template-columns:1fr 1fr} }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="back"><a href="index.html">모델링과 시뮬레이션 목차</a></p>
+<header>
+  <p class="series">모델링과 시뮬레이션, 2-3편 (2편 심화)</p>
+  <h1><span class="n">2-3</span>병렬·분산 시뮬레이션</h1>
+  <p class="lead">모델 하나를 여러 컴퓨터가 나눠 돌리면 시계도 여러 개가 됩니다. 각자 자기 시계로 앞서 나가다가 과거 시각이 찍힌 메시지를 받는 순간 인과가 무너집니다. 이 편에서는 그 문제를 막는 두 방법, 안전할 때까지 기다리는 보수적 방식과 일단 나아갔다가 되돌리는 낙관적 방식을 직접 돌려 봅니다. 마지막에는 국방 M&amp;S에서 쓰는 분산 시뮬레이션 표준 HLA까지 이어 갑니다.</p>
+  <div class="goals">
+    <div>
+      <h2>이 편을 마치면</h2>
+      <ul>
+        <li>논리 프로세스(LP)와 지역 인과성 제약이 무엇인지 설명할 수 있습니다.</li>
+        <li>보수적 동기화에서 lookahead와 널 메시지가 하는 일을 알고, 교착이 왜 생기는지 설명할 수 있습니다.</li>
+        <li>Time Warp의 롤백, 반메시지, GVT를 이해하고 보수적 방식과 장단점을 비교할 수 있습니다.</li>
+        <li>반복 실행의 병렬화, 병렬 이산사건 시뮬레이션, HLA 기반 분산 시뮬레이션 가운데 상황에 맞는 것을 고를 수 있습니다.</li>
+      </ul>
+    </div>
+    <div class="pre">
+      <h2>먼저 보면 좋은 것</h2>
+      <a href="ch2_DES.html">2편 DES</a><a href="ch2-2_DEVS.html">2-2편 DEVS</a><a href="ch5_output-analysis.html#s2-1">5편 2.1 반복 실행</a>
+      <p>2-2편 4절의 코디네이터 나무를 여러 컴퓨터에 나눠 올린다고 생각하면 이 편의 문제가 그대로 보입니다.</p>
+    </div>
+  </div>
+  <nav class="toc" aria-label="목차">
+    <div><h2><a href="#ch1">1. 왜 나눠서 돌리나</a></h2><ol><li><a href="#s1-1">한 대로는 모자랄 때</a></li><li><a href="#s1-2">시계가 여러 개가 되면</a></li></ol></div>
+    <div><h2><a href="#ch2">2. 이론</a></h2><ol><li><a href="#s2-1">실험 모델 PHOLD</a></li><li><a href="#s2-2">보수적 동기화</a></li><li><a href="#s2-3">낙관적 동기화</a></li><li><a href="#s2-4">두 방식과 반복 실행</a></li><li><a href="#s2-5">분산 시뮬레이션과 HLA</a></li></ol></div>
+    <div><h2><a href="#ch3">3. 예제와 사례 연구</a></h2><ol><li><a href="#s3-1">파이썬으로 확인하기</a></li><li><a href="#s3-2">교전 시뮬레이션 나누기</a></li><li><a href="#s3-3">내 모델을 나눌 때</a></li></ol></div>
+    <div><h2><a href="#ch4">4. 연결과 정리</a></h2><ol><li><a href="#s4-1">앞뒤 편과의 연결</a></li><li><a href="#s4-2">요약</a></li><li><a href="#s4-3">연습 문제</a></li></ol></div>
+  </nav>
+</header>
+
+<!-- ===================== 1 ===================== -->
+<section class="chap" id="ch1">
+  <h2><span class="n">1</span>왜 나눠서 돌리나</h2>
+  <p class="intro">시뮬레이션을 나눠 돌리는 이유는 둘입니다. 더 빨리 끝내고 싶거나, 이미 여러 곳에 흩어져 있는 모델을 하나로 묶어야 하거나.</p>
+
+  <h3 id="s1-1"><span class="n">1.1</span>한 대로는 모자랄 때</h3>
+  <div class="prose">
+    <p>2편의 커피점은 노트북에서 하루치가 순식간에 끝납니다. 하지만 대대급 지상 전투의 병사와 차량 수천 개, 도시 하나의 교통, 수만 개 노드의 통신망을 개체 하나하나까지 모델링하면 한 번 돌리는 데 몇 시간이 걸리고 메모리도 모자랍니다. 사람이 직접 참여하는 훈련용 시뮬레이터라면 벽시계를 따라가야 하니 느려서는 안 됩니다.</p>
+  </div>
+  <div class="cards two">
+    <div><h4>병렬 시뮬레이션</h4><p>모델 하나를 여러 코어나 컴퓨터에 나눠 <b>더 빨리</b> 돌리는 것이 목표입니다. 보통 같은 기관이 같은 코드로 만들고, 고성능 컴퓨터 안에서 돌아갑니다. 이 편의 2.1~2.4절이 다루는 병렬 이산사건 시뮬레이션(PDES)이 여기에 해당합니다.</p></div>
+    <div><h4>분산 시뮬레이션</h4><p>서로 다른 기관이 따로 만든 모델들을 네트워크로 이어 <b>함께</b> 돌리는 것이 목표입니다. 육군의 지상 모델, 공군의 항공 모델, 실제 지휘통제 장비가 한 연습에 참여하는 식입니다. 속도보다 상호운용과 재사용이 중요하고, 2.5절의 HLA가 그 표준입니다.</p></div>
+  </div>
+
+  <h3 id="s1-2"><span class="n">1.2</span>시계가 여러 개가 되면</h3>
+  <div class="prose">
+    <p>사건 목록 하나를 여러 개로 쪼개면, 쪼갠 조각마다 자기 사건 목록과 자기 시계를 가집니다. 이 조각을 <b>논리 프로세스</b>(logical process, LP)라 부르고, 각자의 시계를 지역 가상 시각(LVT)이라고 합니다. LP끼리는 "시각 <span class="m">t</span>에 이 일이 일어난다"는 타임스탬프가 찍힌 메시지로만 영향을 주고받습니다.</p>
+    <p>문제는 LP마다 처리 속도가 다르다는 데 있습니다. 아래는 LP 네 개가 아무런 약속 없이 각자 최대한 빨리 앞서 나가는 실험입니다. 선 하나가 LP 하나의 시계이고, 빨간 점은 자기 시계보다 과거 시각이 찍힌 메시지(straggler)를 받은 순간입니다. 그 LP는 이미 그 시각 이후의 사건을 처리해 버렸으니, 과거를 모른 채 미래를 계산한 셈입니다.</p>
+  </div>
+  <div class="widget" id="w-none">
+    <h4>약속 없이 각자 달리면</h4>
+    <p class="sub">가로축은 벽시계(처리 걸음), 세로축은 시뮬레이션 시각입니다. 오른쪽 점선은 컴퓨터 한 대로 순서대로 돌렸을 때 끝나는 걸음 수입니다.</p>
+    <div class="lps" aria-live="polite"></div>
+    <canvas data-w="640" data-h="250" role="img" aria-label="LP 네 개의 지역 시각이 벽시계에 따라 늘어나는 그래프와 과거 메시지가 도착한 지점"></canvas>
+    <div class="ctrl">
+      <button type="button" class="primary" data-act="play">재생</button>
+      <button type="button" data-act="end">끝까지</button>
+      <button type="button" data-act="reset">처음부터</button>
+      <label>LP 4의 속도 <input type="range" data-slow min="0.2" max="1" step="0.1" value="0.4"><b></b></label>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>결과는 순서대로 돌렸을 때와 달라집니다. 이 실험의 사건은 처리하는 순간의 LP 상태에 따라 다음 사건이 정해지는데, 순서가 뒤집히면 상태가 달라지고 그 뒤 미래 전체가 달라지기 때문입니다. 이것을 막는 규칙은 하나로 요약됩니다.</p>
+  </div>
+  <div class="note"><p><b>지역 인과성 제약.</b> 모든 LP가 자기에게 온 사건을 타임스탬프 순서대로만 처리하면, 병렬 실행 결과는 순차 실행과 같습니다. 방법은 두 갈래입니다. 순서가 어긋날 가능성이 없을 때까지 <b>기다리거나</b>(보수적, 2.2절), 일단 처리하고 어긋나면 <b>되돌리거나</b>(낙관적, 2.3절).</p></div>
+  <div class="link-note"><p><span class="k">2-2편에서</span>DEVS 코디네이터는 언제나 <i>t</i><sub>N</sub>이 가장 이른 부품만 실행하므로 순서가 어긋날 일이 없습니다. 병렬 DEVS도 정확히 같은 시각의 사건만 한꺼번에 처리합니다. 서로 다른 시각의 사건을 동시에 처리해 속도를 내려면 이 편의 기법이 필요합니다.</p></div>
+</section>
+
+<!-- ===================== 2 ===================== -->
+<section class="chap" id="ch2">
+  <h2><span class="n">2</span>이론</h2>
+  <p class="intro">모든 방법이 답하려는 질문은 하나입니다. 지금 이 사건을 처리해도 안전한가?</p>
+
+  <h3 id="s2-1"><span class="n">2.1</span>실험 모델 PHOLD</h3>
+  <div class="prose">
+    <p>이 편의 실험은 병렬 시뮬레이션 연구에서 오래 쓰여 온 벤치마크 PHOLD를 조금 바꾼 것입니다. LP 네 개에 사건이 두 개씩 들어 있고, 사건 하나를 처리하면 새 사건 하나가 무작위 LP에 생깁니다. 새 사건의 시각은 지금 시각에 <span class="m">L</span> + (평균 2인 지수분포 값)을 더한 것입니다. 시뮬레이션 시각 80까지 돌립니다.</p>
+    <p>여기서 <span class="m">L</span>이 중요합니다. 어떤 사건도 지금보다 <span class="m">L</span> 이전으로는 새 사건을 만들지 않는다는 보장이고, 이 보장의 크기를 <b>lookahead</b>라고 부릅니다. 커피점이라면 "주문은 아무리 빨라도 30초는 걸린다"가 lookahead입니다. 그리고 실제 모델처럼, 새 사건이 어느 LP에 언제 생길지는 처리하는 순간의 LP 상태에 따라 달라지게 했습니다. 그래서 순서가 틀리면 결과도 틀립니다.</p>
+  </div>
+
+  <h3 id="s2-2"><span class="n">2.2</span>보수적 동기화: 기다리기</h3>
+  <div class="prose">
+    <p>보수적 방식은 순서가 어긋날 가능성이 조금이라도 있으면 처리하지 않습니다. LP <span class="m">i</span>는 다른 LP들이 보내 온 약속, 곧 "앞으로 너에게 보낼 메시지는 모두 이 시각 이후다"라는 값을 기억합니다. 그 약속들의 최솟값이 <b>안전 시각</b>이고, 다음 사건이 안전 시각보다 늦으면 기다립니다.</p>
+    <p>약속은 lookahead에서 나옵니다. LP가 다음에 처리할 수 있는 가장 이른 시각이 <span class="m">t</span>라면, 그 LP가 앞으로 보낼 메시지는 모두 <span class="m">t</span> + <span class="m">L</span> 이후입니다. 보낼 진짜 메시지가 없어도 이 약속만 담은 메시지를 보낼 수 있고, 이것을 <b>널 메시지</b>(null message)라고 합니다. Chandy, Misra, Bryant가 1970년대 말에 제안한 방식이라 CMB 알고리즘이라고도 부릅니다.</p>
+  </div>
+  <div class="eqx" id="eq-safe">
+    <p class="cap">LP <i>i</i>의 안전 시각과, LP <i>i</i>가 이웃에게 보내는 약속</p>
+    <div class="eq-big">
+      <span class="t" data-t="safe" data-c="1"><i>S</i><sub><i>i</i></sub></span><span class="op"> = </span><span class="t" data-t="min" data-c="2">min<sub><i>j</i>≠<i>i</i></sub> <i>G</i><sub><i>ij</i></sub></span><span class="op">,&ensp;&ensp;</span>
+      <span class="t" data-t="g" data-c="3"><i>G</i><sub><i>ji</i></sub></span><span class="op"> ← </span>min(<span class="t" data-t="next" data-c="4"><i>t</i><sub>다음</sub></span>, <i>S</i><sub><i>i</i></sub>)<span class="op"> + </span><span class="t" data-t="L" data-c="5"><i>L</i></span>
+    </div>
+    <div class="eq-terms">
+      <button type="button" data-t="safe"><b>S<sub>i</sub></b>안전 시각</button>
+      <button type="button" data-t="min"><b>min G<sub>ij</sub></b>받은 약속의 최솟값</button>
+      <button type="button" data-t="g"><b>G<sub>ji</sub></b>보내는 약속</button>
+      <button type="button" data-t="next"><b>t<sub>다음</sub></b>내 다음 사건</button>
+      <button type="button" data-t="L"><b>L</b>lookahead</button>
+    </div>
+    <template data-t="safe">LP <i>i</i>가 지금 처리해도 되는 시각의 상한입니다. 다음 사건의 시각이 이 값 이하이면 처리하고, 크면 기다립니다.</template>
+    <template data-t="min">입력 채널마다 받아 둔 약속 중 가장 이른 것입니다. 가장 늦게 따라오는 이웃이 안전 시각을 정합니다. 한 LP만 느려도 모두가 그 LP를 기다리게 되는 이유입니다.</template>
+    <template data-t="g">LP <i>i</i>가 이웃 <i>j</i>에게 보내는 약속입니다. 진짜 메시지에 실어 보낼 수도 있고, 보낼 것이 없으면 널 메시지로 따로 보냅니다.</template>
+    <template data-t="next">아직 처리하지 않은 내 사건 중 가장 이른 시각입니다. 내가 기다리는 중이라면 안전 시각보다 이르게 처리할 일은 없으므로 둘 중 작은 값을 씁니다.</template>
+    <template data-t="L">모델에서 나오는 최소 지연입니다. 클수록 약속이 멀리 앞서 나가 안전 시각이 빨리 늘어납니다. 0이면 약속이 전혀 앞서 나가지 못해 진행이 멈출 수 있습니다.</template>
+    <div class="eq-detail"></div>
+  </div>
+  <div class="widget" id="w-cons">
+    <h4>보수적 동기화</h4>
+    <p class="sub">LP 상자에 '대기'가 뜨면 다음 사건이 안전 시각보다 늦어서 기다리는 중입니다. 널 메시지를 끄거나 lookahead를 줄여 보세요.</p>
+    <div class="lps" aria-live="polite"></div>
+    <canvas data-w="640" data-h="250" role="img" aria-label="보수적 동기화에서 LP 네 개의 지역 시각"></canvas>
+    <div class="ctrl">
+      <button type="button" class="primary" data-act="play">재생</button>
+      <button type="button" data-act="end">끝까지</button>
+      <button type="button" data-act="reset">처음부터</button>
+      <label>lookahead <i>L</i> <input type="range" data-l min="0.05" max="2" step="0.05" value="1"><b></b></label>
+      <label>LP 4의 속도 <input type="range" data-slow min="0.2" max="1" step="0.1" value="1"><b></b></label>
+      <label><input type="checkbox" data-nulls checked> 널 메시지 보내기</label>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>널 메시지를 끄면 시작하자마자 멈춥니다. 모든 LP가 다른 LP의 약속을 기다리는데, 아무도 약속을 보내지 않기 때문입니다. 이것이 <b>교착</b>(deadlock)이고, 널 메시지는 교착을 막으려고 생겼습니다. lookahead를 0.05까지 줄이면 반대 문제가 보입니다. 약속이 한 번에 조금씩만 앞서 나가니 같은 구간을 넘으려고 널 메시지를 수천 개 주고받고, 한 대로 순서대로 돌릴 때보다 오히려 느려집니다.</p>
+    <p>그래서 보수적 방식의 성능은 모델에서 lookahead를 얼마나 크게 뽑아낼 수 있느냐에 달려 있습니다. 통신 지연, 센서 갱신 주기, 이동에 걸리는 최소 시간처럼 모델 안의 "아무리 빨라도 이만큼은 걸린다"를 찾는 것이 설계의 핵심입니다.</p>
+  </div>
+
+  <h3 id="s2-3"><span class="n">2.3</span>낙관적 동기화: 되돌리기</h3>
+  <div class="prose">
+    <p>Jefferson이 1985년에 제안한 <b>Time Warp</b>는 반대로 생각합니다. 기다리지 말고 일단 처리하되, 처리할 때마다 상태를 저장해 둡니다. 과거 시각의 메시지가 도착하면 그 시각까지 <b>롤백</b>합니다. 저장해 둔 상태로 되돌아가고, 그 사이에 처리한 사건을 다시 처리할 목록에 넣습니다.</p>
+    <p>되돌린 사건들이 이미 다른 LP에 메시지를 보냈다면 그것도 취소해야 합니다. 이때 보내는 것이 <b>반메시지</b>(anti-message)입니다. 받은 쪽이 아직 그 메시지를 처리하지 않았으면 둘이 만나 사라지고, 이미 처리했다면 그쪽도 롤백합니다. 롤백이 연쇄적으로 퍼질 수 있는 이유입니다.</p>
+    <p>그러면 무엇이 확정된 결과일까요? 아직 처리하지 않은 사건과 전송 중인 메시지 가운데 가장 이른 시각을 <b>GVT</b>(global virtual time)라 합니다. 어떤 LP도 GVT보다 과거로는 돌아가지 않으므로, GVT 이전의 결과는 확정이고 그 시각 이전에 저장한 상태는 지워도 됩니다(fossil collection). 화면 출력이나 파일 기록처럼 되돌릴 수 없는 일도 GVT가 넘어간 뒤에만 합니다.</p>
+  </div>
+  <div class="widget" id="w-opt">
+    <h4>Time Warp</h4>
+    <p class="sub">선이 아래로 꺾이는 곳이 롤백입니다. 굵은 점선은 GVT로, 절대 내려가지 않습니다.</p>
+    <div class="lps" aria-live="polite"></div>
+    <canvas data-w="640" data-h="250" role="img" aria-label="Time Warp에서 LP 네 개의 지역 시각과 GVT"></canvas>
+    <div class="ctrl">
+      <button type="button" class="primary" data-act="play">재생</button>
+      <button type="button" data-act="end">끝까지</button>
+      <button type="button" data-act="reset">처음부터</button>
+      <label>lookahead <i>L</i> <input type="range" data-l min="0.05" max="2" step="0.05" value="1"><b></b></label>
+      <label>LP 4의 속도 <input type="range" data-slow min="0.2" max="1" step="0.1" value="1"><b></b></label>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>Time Warp는 lookahead에 거의 영향을 받지 않습니다. 대신 처리한 사건 중 일부가 롤백으로 버려지고, 상태를 저장하는 메모리와 시간이 듭니다. LP 4의 속도를 0.3으로 낮춰 보세요. 빠른 LP들이 멀리 앞서 나갔다가 느린 LP가 보낸 과거 메시지에 자꾸 끌려 내려옵니다. 처리 횟수 대비 확정된 사건의 비율, 곧 효율이 떨어집니다.</p>
+  </div>
+
+  <h3 id="s2-4"><span class="n">2.4</span>두 방식, 그리고 반복 실행</h3>
+  <div class="tbl scroll">
+    <table>
+      <thead><tr><th></th><th>보수적 (CMB)</th><th>낙관적 (Time Warp)</th><th>반복 실행 병렬화</th></tr></thead>
+      <tbody>
+        <tr><th>핵심 생각</th><td>안전할 때까지 기다림</td><td>일단 진행, 틀리면 되돌림</td><td>독립인 실행 여러 개를 동시에</td></tr>
+        <tr><th>잘 맞는 모델</th><td>lookahead가 크고 연결이 단순할 때</td><td>lookahead가 작거나 찾기 어려울 때</td><td>한 번의 실행이 한 대에 들어갈 때</td></tr>
+        <tr><th>비용</th><td>널 메시지, 대기 시간</td><td>상태 저장 메모리, 롤백한 계산</td><td>거의 없음 (결과를 모으기만)</td></tr>
+        <tr><th>구현 난이도</th><td>중간</td><td>높음 (모든 상태를 되돌릴 수 있어야)</td><td>낮음</td></tr>
+        <tr><th>결과</th><td colspan="2">올바르게 구현하면 순차 실행과 같음 (위 실험의 '결과 같음' 표시)</td><td>실행마다 독립인 표본</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note"><p><b>코어가 여러 개라면 먼저 반복 실행을 나누세요.</b> 5편에서 보았듯 결론을 내려면 어차피 실행을 수십 번 반복해야 합니다. 서로 독립인 실행 32개를 코어 32개에 하나씩 맡기면 거의 정확히 32배 빨라지고, 동기화 문제도 없습니다. PDES가 필요한 경우는 한 번의 실행이 너무 커서 한 대의 메모리나 시간에 들어가지 않을 때, 사람이 참여해 벽시계를 따라가야 할 때, 모델이 처음부터 여러 곳에 흩어져 있을 때입니다.</p></div>
+  <div class="prose">
+    <p>실제로 쓰는 도구로는 Time Warp를 구현한 ROSS, 널 메시지 방식의 병렬 실행을 지원하는 OMNeT++ 같은 통신망 시뮬레이터가 있습니다. 위 실험은 원리를 보이려고 단순화했습니다. 메시지 지연을 한 걸음으로 고정했고, 널 메시지를 보내는 데 드는 계산은 셈하지 않았습니다.</p>
+  </div>
+
+  <h3 id="s2-5"><span class="n">2.5</span>분산 시뮬레이션과 HLA</h3>
+  <div class="prose">
+    <p>서로 다른 기관이 만든 시뮬레이터를 잇는 표준이 <b>HLA</b>(High Level Architecture, IEEE 1516)입니다. HLA에서 함께 돌아가는 시뮬레이터 하나하나를 <b>페더레이트</b>(federate), 그 묶음을 <b>페더레이션</b>(federation)이라 합니다. 페더레이트들은 서로 직접 이야기하지 않고 모두 <b>RTI</b>(run-time infrastructure)라는 중개 소프트웨어를 거칩니다. 어떤 객체와 상호작용을 주고받을지는 FOM(페더레이션 객체 모델)이라는 공통 정의서로 미리 합의합니다.</p>
+  </div>
+  <div class="cards">
+    <div><h4>선언과 객체 관리</h4><p>"나는 전차의 위치를 발행(publish)한다", "나는 그것을 구독(subscribe)한다"를 선언하고, 그에 따라 속성 갱신과 상호작용을 주고받습니다. 2-2편의 포트와 결합을 기관 사이로 넓힌 셈입니다.</p></div>
+    <div><h4>시간 관리</h4><p>시간을 앞으로 보내는 페더레이트(time-regulating)는 lookahead를 밝히고, 순서대로 받아야 하는 페더레이트(time-constrained)는 RTI에 시간 전진을 요청한 뒤 허가를 받습니다. 원리는 2.2절의 보수적 동기화와 같습니다.</p></div>
+    <div><h4>그 밖의 서비스</h4><p>페더레이션 참여와 탈퇴, 객체 속성의 소유권 넘기기, 관심 지역의 데이터만 받는 데이터 분배 관리까지 모두 여섯 묶음의 서비스가 정의되어 있습니다.</p></div>
+  </div>
+  <div class="prose">
+    <p>HLA보다 먼저 쓰인 <b>DIS</b>(IEEE 1278)는 시간 관리 없이 실시간으로 상태 패킷(PDU)을 방송하고, 다음 패킷이 올 때까지 상대의 위치를 속도로 추정하는 추측 항법(dead reckoning)으로 빈틈을 메웁니다. 사람이 탄 모의 조종석들을 잇는 훈련처럼 벽시계를 따라가는 연동에 지금도 쓰입니다.</p>
+  </div>
+  <div class="link-note"><p><span class="k">2-2편과 함께</span>DEVS 모델을 HLA 페더레이트로 감싸는 DEVS-HLA 연구가 많습니다. DEVS의 포트와 결합이 HLA의 발행과 구독으로, DEVS의 <i>t</i><sub>N</sub>이 HLA의 시간 전진 요청으로 자연스럽게 옮겨지기 때문입니다.</p></div>
+</section>
+
+<!-- ===================== 3 ===================== -->
+<section class="chap" id="ch3">
+  <h2><span class="n">3</span>예제와 사례 연구</h2>
+
+  <h3 id="s3-1"><span class="n">3.1</span>파이썬으로 확인하기</h3>
+  <div class="prose">
+    <p>2.2절의 보수적 동기화를 파이썬으로 옮긴 것입니다. 한 라운드에 모든 LP가 동시에 한 걸음씩 움직이고, 메시지는 다음 라운드에 도착한다고 흉내 냅니다. 순차 실행과 사건 목록이 정확히 같은지, lookahead에 따라 널 메시지와 라운드 수가 어떻게 바뀌는지 출력합니다.</p>
+  </div>
+  <pre class="code"><code><span class="com"># phold_cmb.py : PHOLD 모델을 순차 실행과 보수적(널 메시지) 병렬 실행으로 돌려 비교</span>
+<span class="kw">import</span> heapq, math, random
+
+N, MEAN, T_END = <span class="num">4</span>, <span class="num">2.0</span>, <span class="num">80.0</span>
+
+<span class="kw">def</span> <span class="fn">child</span>(ev, state, L):
+    <span class="str">&quot;&quot;&quot;사건 하나를 처리하면 새 사건 하나가 생긴다. 결과는 사건 id와 LP 상태에 달려 있다.&quot;&quot;&quot;</span>
+    t, eid, lp = ev
+    rng = random.Random(<span class="str">f&quot;</span>{eid}<span class="str">:</span>{state}<span class="str">&quot;</span>)
+    <span class="kw">return</span> (t + L + rng.expovariate(<span class="num">1</span> / MEAN), rng.getrandbits(<span class="num">32</span>), rng.randrange(N))
+
+<span class="kw">def</span> <span class="fn">next_state</span>(state, ev):
+    <span class="kw">return</span> (state * <span class="num">1_000_003</span> ^ ev[<span class="num">1</span>]) &amp; <span class="num">0xFFFFFFFF</span>
+
+<span class="kw">def</span> <span class="fn">initial</span>(seed=<span class="num">1</span>):
+    rng = random.Random(seed)
+    <span class="kw">return</span> [(rng.expovariate(<span class="num">1</span> / MEAN), rng.getrandbits(<span class="num">32</span>), i) <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(N) <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(<span class="num">2</span>)]
+
+<span class="kw">def</span> <span class="fn">sequential</span>(L):
+    fel, state, done = initial(), [i + <span class="num">1</span> <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(N)], []
+    heapq.heapify(fel)
+    <span class="kw">while</span> fel <span class="kw">and</span> fel[<span class="num">0</span>][<span class="num">0</span>] &lt; T_END:
+        ev = heapq.heappop(fel)
+        lp = ev[<span class="num">2</span>]
+        state[lp] = next_state(state[lp], ev)
+        done.append(ev)
+        heapq.heappush(fel, child(ev, state[lp], L))
+    <span class="kw">return</span> done
+
+<span class="kw">def</span> <span class="fn">conservative</span>(L):
+    <span class="str">&quot;&quot;&quot;한 라운드 = 모든 LP가 동시에 한 걸음. 메시지는 다음 라운드에 도착한다.&quot;&quot;&quot;</span>
+    pend = [[] <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(N)]
+    <span class="kw">for</span> ev <span class="kw">in</span> initial():
+        heapq.heappush(pend[ev[<span class="num">2</span>]], ev)
+    state = [i + <span class="num">1</span> <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(N)]
+    G = [[L] * N <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(N)]          <span class="com"># G[i][j]: j가 i에게 약속한 &#x27;이보다 이른 메시지는 없음&#x27;</span>
+    sent = [[L] * N <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(N)]
+    net, done, rounds, nulls = [], [], <span class="num">0</span>, <span class="num">0</span>
+    <span class="kw">while</span> <span class="kw">True</span>:
+        rounds += <span class="num">1</span>
+        arrived, net = net, []
+        <span class="kw">for</span> kind, to, frm, g, ev <span class="kw">in</span> arrived:      <span class="com"># 1. 배달</span>
+            G[to][frm] = <span class="bi">max</span>(G[to][frm], g)
+            <span class="kw">if</span> kind == <span class="str">&quot;real&quot;</span>:
+                heapq.heappush(pend[to], ev)
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(N):                        <span class="com"># 2. 안전한 사건만 처리</span>
+            safe = <span class="bi">min</span>(G[i][j] <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(N) <span class="kw">if</span> j != i)
+            <span class="kw">if</span> pend[i] <span class="kw">and</span> pend[i][<span class="num">0</span>][<span class="num">0</span>] &lt; T_END <span class="kw">and</span> pend[i][<span class="num">0</span>][<span class="num">0</span>] &lt;= safe:
+                ev = heapq.heappop(pend[i])
+                state[i] = next_state(state[i], ev)
+                done.append(ev)
+                ch = child(ev, state[i], L)
+                <span class="kw">if</span> ch[<span class="num">2</span>] == i:
+                    heapq.heappush(pend[i], ch)
+                <span class="kw">else</span>:
+                    net.append((<span class="str">&quot;real&quot;</span>, ch[<span class="num">2</span>], i, ev[<span class="num">0</span>] + L, ch))
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(N):                        <span class="com"># 3. 널 메시지: 앞으로의 약속을 알린다</span>
+            safe = <span class="bi">min</span>(G[i][j] <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(N) <span class="kw">if</span> j != i)
+            nxt = pend[i][<span class="num">0</span>][<span class="num">0</span>] <span class="kw">if</span> pend[i] <span class="kw">else</span> math.inf
+            v = <span class="bi">min</span>(nxt, safe, T_END) + L
+            <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(N):
+                <span class="kw">if</span> j != i <span class="kw">and</span> v &gt; sent[i][j]:
+                    sent[i][j] = v
+                    net.append((<span class="str">&quot;null&quot;</span>, j, i, v, <span class="kw">None</span>)); nulls += <span class="num">1</span>
+        lower = <span class="bi">min</span>([p[<span class="num">0</span>][<span class="num">0</span>] <span class="kw">for</span> p <span class="kw">in</span> pend <span class="kw">if</span> p] + [m[<span class="num">4</span>][<span class="num">0</span>] <span class="kw">for</span> m <span class="kw">in</span> net <span class="kw">if</span> m[<span class="num">0</span>] == <span class="str">&quot;real&quot;</span>] + [math.inf])
+        <span class="kw">if</span> lower &gt;= T_END:
+            <span class="kw">return</span> <span class="bi">sorted</span>(done), rounds, nulls
+
+<span class="kw">for</span> L <span class="kw">in</span> (<span class="num">2.0</span>, <span class="num">1.0</span>, <span class="num">0.5</span>, <span class="num">0.2</span>, <span class="num">0.05</span>):
+    ref = <span class="bi">sorted</span>(sequential(L))
+    got, rounds, nulls = conservative(L)
+    <span class="bi">print</span>(<span class="str">f&quot;</span><span class="str">L = </span>{L:<span class="str">4</span>}<span class="str">: 사건 </span>{<span class="bi">len</span>(ref)}<span class="str">개, 순차와 같음 </span>{got == ref}<span class="str">, </span><span class="str">&quot;</span>
+          <span class="str">f&quot;</span><span class="str">라운드 </span>{rounds}<span class="str"> (속도 </span>{<span class="bi">len</span>(ref) / rounds:<span class="str">.2f</span>}<span class="str">배), 널 메시지 </span>{nulls}<span class="str">개</span><span class="str">&quot;</span>)</code></pre>
+  <pre class="code"><code>L =  2.0: 사건 159개, 순차와 같음 True, 라운드 70 (속도 2.27배), 널 메시지 831개
+L =  1.0: 사건 225개, 순차와 같음 True, 라운드 106 (속도 2.12배), 널 메시지 1272개
+L =  0.5: 사건 253개, 순차와 같음 True, 라운드 174 (속도 1.45배), 널 메시지 2088개
+L =  0.2: 사건 293개, 순차와 같음 True, 라운드 407 (속도 0.72배), 널 메시지 4884개
+L = 0.05: 사건 308개, 순차와 같음 True, 라운드 1601 (속도 0.19배), 널 메시지 19212개</code></pre>
+  <p class="code-cap">lookahead가 작아질수록 사건 수는 조금 늘지만(사건 간격이 짧아지므로) 널 메시지는 수십 배로 늘고, 0.2 아래에서는 한 대로 돌리는 것보다 느려집니다.</p>
+
+  <div class="case">
+    <h3 id="s3-2"><span class="n">3.2</span>교전 시뮬레이션 나누기 <span class="lvl">사례</span></h3>
+    <div class="prose">
+      <p>지상 교전 시뮬레이션을 나눠 돌린다고 해 봅시다. 가장 먼저 정할 것은 무엇을 같은 LP에 묶느냐입니다. 자주 메시지를 주고받는 개체끼리 같은 LP에 두어야 통신과 대기가 줄어듭니다. 같은 소대의 병사와 차량, 같은 지역의 개체를 묶는 것이 보통입니다.</p>
+      <p>다음은 lookahead의 출처입니다. 무전 지연, 센서가 표적 정보를 갱신하는 주기, 포탄의 비행 시간, 차량이 일정 거리를 움직이는 데 걸리는 최소 시간이 모두 후보입니다. 반대로 "보는 즉시 반응한다" 같은 규칙은 lookahead를 0으로 만들어 보수적 방식을 어렵게 합니다. 모델의 타당성을 해치지 않는 범위에서 반응 지연을 명시적으로 넣는 것이 흔한 해법입니다.</p>
+      <p>국내에서도 국방과학연구소를 중심으로 무기체계 모델을 컴포넌트로 만들어 재사용하는 통합 교전 시뮬레이션 환경(AddSIM)이 개발되었고, DEVS로 만든 교전급 모델을 HLA로 연동하는 연구들이 있습니다. 모델을 부품으로 만들고(2-2편), 부품을 나눠 돌리는(이 편) 두 단계가 실제 시스템에서 어떻게 이어지는지 보여 주는 예입니다.</p>
+    </div>
+  </div>
+
+  <h3 id="s3-3"><span class="n">3.3</span>내 모델을 나눌 때</h3>
+  <ol class="steps">
+    <li><b>반복 실행으로 충분한지부터</b>한 번의 실행이 한 대에 들어간다면 반복 실행을 코어에 나누는 것이 가장 쉽고 효과가 확실합니다.</li>
+    <li><b>통신 그래프를 그린다</b>개체 사이에 메시지가 얼마나 자주 오가는지 그려 보고, 자주 오가는 덩어리를 한 LP로 묶습니다.</li>
+    <li><b>lookahead를 찾는다</b>LP 사이의 모든 상호작용에 대해 "아무리 빨라도 이만큼은 걸린다"를 적습니다. 0인 곳이 있으면 보수적 방식은 어렵습니다.</li>
+    <li><b>동시 사건 규칙을 정한다</b>같은 시각의 메시지 순서는 실행할 때마다 달라질 수 있습니다. 2-2편 5절처럼 동점일 때의 규칙을 명시합니다.</li>
+    <li><b>순차 실행과 비교한다</b>같은 입력으로 순차 실행과 병렬 실행의 결과가 같은지 확인합니다. 다르면 동기화 버그이거나 동점 처리가 다른 것입니다(8편의 검증).</li>
+  </ol>
+</section>
+
+<!-- ===================== 4 ===================== -->
+<section class="chap" id="ch4">
+  <h2><span class="n">4</span>연결과 정리</h2>
+  <h3 id="s4-1"><span class="n">4.1</span>앞뒤 편과의 연결</h3>
+  <div class="link-note"><p><span class="k">2편에서</span>미래 사건 목록 하나가 시간을 지배했습니다. 이 편은 그 목록을 여러 개로 쪼갰을 때 생기는 문제를 다뤘습니다.</p></div>
+  <div class="link-note"><p><span class="k">2-2편에서</span>부품과 포트로 나눈 모델은 LP로 나누기도 쉽습니다. DEVS의 결합 정보가 곧 통신 그래프입니다.</p></div>
+  <div class="link-note"><p><span class="k">5편에서</span>반복 실행은 가장 쉬운 병렬화입니다. 병렬로 돌린 반복 실행들도 시드를 따로 관리해야 독립성이 보장됩니다.</p></div>
+  <div class="link-note"><p><span class="k">3편으로</span>에이전트가 많은 ABM은 PDES가 가장 자주 필요한 모델입니다. 다만 매 틱 모든 에이전트가 이웃을 보는 ABM은 lookahead가 한 틱이라, 틱 단위로 경계를 맞추는 방식이 흔합니다.</p></div>
+
+  <h3 id="s4-2"><span class="n">4.2</span>요약</h3>
+  <dl class="terms">
+    <dt>LP</dt><dd>자기 사건 목록과 시계를 가진 조각. 다른 LP와는 타임스탬프 메시지로만 이야기한다.</dd>
+    <dt>지역 인과성</dt><dd>각 LP가 타임스탬프 순서대로 처리하면 결과는 순차 실행과 같다.</dd>
+    <dt>보수적</dt><dd>안전 시각까지만 처리. lookahead로 약속을 만들고, 널 메시지로 교착을 막는다. lookahead가 작으면 느리다.</dd>
+    <dt>낙관적</dt><dd>일단 처리하고 상태를 저장. 과거 메시지가 오면 롤백, 반메시지로 취소. GVT 이전만 확정.</dd>
+    <dt>반복 실행</dt><dd>독립인 실행을 나누는 것이 가장 쉬운 병렬화. PDES는 한 실행이 너무 클 때.</dd>
+    <dt>HLA</dt><dd>페더레이트, RTI, FOM. 발행과 구독, 보수적 방식의 시간 관리.</dd>
+  </dl>
+
+  <h3 id="s4-3"><span class="n">4.3</span>연습 문제</h3>
+  <div class="ex">
+    <details><summary>1. lookahead가 0인 모델에서 보수적 방식은 왜 멈출 수 있을까요?</summary><div><p>약속이 "내 다음 사건 시각 + 0"이라 서로의 약속이 전혀 앞서 나가지 못합니다. 두 LP가 서로의 약속을 기다리며 같은 시각에 머물면 널 메시지를 아무리 주고받아도 안전 시각이 늘지 않습니다. 동점을 처리하는 별도 규칙이나 낙관적 방식이 필요합니다.</p></div></details>
+    <details><summary>2. LP 하나만 다른 LP보다 세 배 느리다면, 보수적 방식과 낙관적 방식은 각각 어떻게 될까요?</summary><div><p>보수적 방식에서는 그 LP가 보내는 약속이 가장 늦으므로 모두가 그 LP를 기다리게 되고, 전체 속도가 느린 LP에 묶입니다. 낙관적 방식에서는 빠른 LP들이 앞서 나갔다가 느린 LP의 메시지에 자주 롤백되어 효율이 떨어집니다. 어느 쪽이든 LP 사이의 계산량을 고르게 나누는 것(부하 균형)이 중요합니다.</p></div></details>
+    <details><summary>3. Time Warp에서 "손님 대기시간이 10분을 넘었다"는 경고를 화면에 띄우는 코드는 언제 실행해야 할까요?</summary><div><p>그 사건의 시각이 GVT보다 이를 때, 곧 확정된 뒤에 실행해야 합니다. 그 전에 띄우면 롤백으로 사라질 사건에 대한 경고를 사용자가 보게 됩니다.</p></div></details>
+    <details><summary>4. 하루치 커피점 시뮬레이션 100번을 8코어에서 돌려야 합니다. PDES를 쓸까요?</summary><div><p>쓰지 않습니다. 한 번의 실행이 작으므로 100번의 반복을 8개 코어에 나누면 거의 8배 빨라지고 구현도 간단합니다. 실행마다 다른 시드를 주고, 결과를 모아 5편의 신뢰구간을 만듭니다.</p></div></details>
+  </div>
+</section>
+
+<nav class="pager" aria-label="이전 다음 편">
+  <a href="ch2-2_DEVS.html"><span>이전 편</span><b>2-2. DEVS</b></a>
+  <a class="next" href="ch3_ABM.html"><span>다음 편</span><b>3. 에이전트 기반 모델링</b></a>
+</nav>
+<footer><a href="https://sites.google.com/view/knunextcom">Next-generation Computing Systems Lab</a>, 경북대학교 컴퓨터학부</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ===== 공통 도구: 색, 캔버스, 난수, 통계, 수식 탐색기 ===== */
+var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+var COL = {};
+function readColors(){
+  var s = getComputedStyle(document.documentElement);
+  ["ink","muted","line","soft","panel","bg","acc","c1","c2","c3","miss","t1","t2","t3","t4","t5"].forEach(function(k){ COL[k] = s.getPropertyValue("--"+k).trim(); });
+}
+readColors();
+function rgba(hex, a){
+  var h = hex.replace("#",""); if(h.length===3) h = h.replace(/(.)/g,"$1$1");
+  var n = parseInt(h,16); return "rgba("+(n>>16&255)+","+(n>>8&255)+","+(n&255)+","+a+")";
+}
+function F(size, weight){ return (weight||400)+" "+size+'px "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif'; }
+function txt(c, s, x, y, o){
+  o = o || {}; c.font = o.font || F(o.size||11, o.weight); c.fillStyle = o.color || COL.muted;
+  c.textAlign = o.align || "left"; c.textBaseline = o.base || "alphabetic"; c.fillText(s, x, y);
+  c.textAlign = "left"; c.textBaseline = "alphabetic";
+}
+function line(c, x0, y0, x1, y1, col, w, dash){
+  c.strokeStyle = col; c.lineWidth = w||1; c.setLineDash(dash||[]);
+  c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.setLineDash([]); c.lineWidth = 1;
+}
+function dot(c, x, y, r, col){ c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+function fmt(v, d){ if(!isFinite(v)) return "∞"; return (+v).toFixed(d===undefined?2:d); }
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+var CANVASES = [];
+function setup(rootOrCanvas, draw){
+  var cv = rootOrCanvas.tagName === "CANVAS" ? rootOrCanvas : rootOrCanvas.querySelector("canvas");
+  var c = cv.getContext("2d"), W = +cv.dataset.w, H = +cv.dataset.h;
+  cv.style.aspectRatio = W + " / " + H;
+  var o = {cv:cv, c:c, W:W, H:H};
+  o.redraw = function(){ c.clearRect(0,0,W,H); draw(c, W, H); };
+  o.fit = function(){
+    var w = cv.clientWidth || W, d = window.devicePixelRatio || 1;
+    cv.width = Math.round(w*d); cv.height = Math.round(w*H/W*d);
+    c.setTransform(cv.width/W, 0, 0, cv.height/H, 0, 0); o.redraw();
+  };
+  o.toLocal = function(ev){ var r = cv.getBoundingClientRect(); return {x:(ev.clientX-r.left)/r.width*W, y:(ev.clientY-r.top)/r.height*H}; };
+  new ResizeObserver(o.fit).observe(cv);
+  CANVASES.push(o);
+  return o;
+}
+function seg(root, sel, onPick){
+  var g = typeof sel === "string" ? root.querySelector(sel) : sel;
+  g.addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    g.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x===b ? "true" : "false"); });
+    onPick(b.dataset.v, b);
+  });
+}
+function bindRange(root, sel, onChange, fmtFn){
+  var inp = root.querySelector(sel), out = inp.parentElement.querySelector("b,output");
+  function u(){ if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value; onChange(+inp.value); }
+  inp.addEventListener("input", u); if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value;
+  return inp;
+}
+
+/* 축과 눈금 */
+function scale(box, xr, yr){
+  return {box:box, xr:xr, yr:yr,
+    X:function(v){ return box[0] + (v-xr[0])/(xr[1]-xr[0])*(box[2]-box[0]); },
+    Y:function(v){ return box[3] - (v-yr[0])/(yr[1]-yr[0])*(box[3]-box[1]); }};
+}
+function axes(c, s, o){
+  o = o || {}; var b = s.box;
+  (o.yt||[]).forEach(function(v){ var y = s.Y(v); line(c, b[0], y+.5, b[2], y+.5, COL.soft); txt(c, o.fy ? o.fy(v) : v, b[0]-6, y+4, {align:"right", size:10}); });
+  line(c, b[0], b[3]+.5, b[2], b[3]+.5, COL.line);
+  line(c, b[0]+.5, b[1], b[0]+.5, b[3], COL.line);
+  (o.xt||[]).forEach(function(v){ var x = s.X(v); line(c, x+.5, b[3], x+.5, b[3]+4, COL.line); txt(c, o.fx ? o.fx(v) : v, x, b[3]+15, {align:"center", size:10}); });
+  if(o.xl) txt(c, o.xl, b[2], b[3]+28, {align:"right", size:10});
+  if(o.yl) txt(c, o.yl, b[0], b[1]-6, {size:10});
+}
+function path(c, s, pts, col, w, dash){
+  var bx = s.box; c.save(); c.beginPath(); c.rect(bx[0]-1, bx[1]-3, bx[2]-bx[0]+2, bx[3]-bx[1]+4); c.clip();
+  c.strokeStyle = col; c.lineWidth = w||1.6; c.setLineDash(dash||[]); c.beginPath();
+  var started = false;
+  pts.forEach(function(p){ if(p == null || !isFinite(p[1])){ started = false; return; }
+    var x = s.X(p[0]), y = clamp(s.Y(p[1]), s.box[1]-2, s.box[3]+2); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; });
+  c.stroke(); c.setLineDash([]); c.lineWidth = 1; c.restore();
+}
+function ticks(a, b, n){
+  var span = b - a, step = Math.pow(10, Math.floor(Math.log10(span/n))), err = span/n/step;
+  step *= err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1;
+  var out = [], v = Math.ceil(a/step)*step;
+  for(; v <= b + 1e-9; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+
+/* 난수: 재현 가능한 생성기와 분포 */
+function mulberry(seed){ var a = seed >>> 0; return function(){ a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function U(r){ return (r || Math.random)(); }
+function expo(mean, r){ return -mean*Math.log(1-U(r)); }
+function normal(r){ var u = 1-U(r), v = U(r); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gammaRV(k, theta, r){
+  if(k < 1){ return gammaRV(k+1, theta, r)*Math.pow(U(r), 1/k); }
+  var d = k - 1/3, cc = 1/Math.sqrt(9*d);
+  while(true){ var x, v; do { x = normal(r); v = 1 + cc*x; } while(v <= 0);
+    v = v*v*v; var u = U(r);
+    if(u < 1 - .0331*x*x*x*x || Math.log(u) < .5*x*x + d*(1 - v + Math.log(v))) return d*v*theta; }
+}
+function lognormRV(mu, s, r){ return Math.exp(mu + s*normal(r)); }
+function poissonRV(lam, r){ var L = Math.exp(-lam), k = 0, p = 1; do { k++; p *= U(r); } while(p > L); return k-1; }
+
+/* 통계 */
+function mean(a){ var s = 0; for(var i=0;i<a.length;i++) s += a[i]; return s/a.length; }
+function sd(a){ var m = mean(a), s = 0; for(var i=0;i<a.length;i++) s += (a[i]-m)*(a[i]-m); return Math.sqrt(s/(a.length-1)); }
+function quantile(sorted, p){ var i = (sorted.length-1)*p, lo = Math.floor(i), hi = Math.ceil(i); return sorted[lo] + (sorted[hi]-sorted[lo])*(i-lo); }
+function normInv(p){ // Acklam 근사
+  var a=[-39.6968302866538,220.946098424521,-275.928510446969,138.357751867269,-30.6647980661472,2.50662827745924],
+      b=[-54.4760987982241,161.585836858041,-155.698979859887,66.8013118877197,-13.2806815528857],
+      cc=[-.00778489400243029,-.322396458041136,-2.40075827716184,-2.54973253934373,4.37466414146497,2.93816398269878],
+      d=[.00778469570904146,.32246712907004,2.445134137143,3.75440866190742], q, r;
+  if(p < .02425){ q = Math.sqrt(-2*Math.log(p)); return (((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if(p > .97575){ q = Math.sqrt(-2*Math.log(1-p)); return -(((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  q = p - .5; r = q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+function normCdf(x){ var t = 1/(1+.2316419*Math.abs(x)), y = .3989423*Math.exp(-x*x/2)*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return x > 0 ? 1-y : y; }
+function tcrit(df, conf){ // 양측 신뢰수준 conf의 t 임계값 (Cornish-Fisher 근사)
+  var z = normInv(1 - (1-(conf||.95))/2), z3 = z*z*z, z5 = z3*z*z, z7 = z5*z*z;
+  return z + (z3+z)/(4*df) + (5*z5+16*z3+3*z)/(96*df*df) + (3*z7+19*z5+17*z3-15*z)/(384*df*df*df);
+}
+
+/* 수식 탐색기: 항을 누르면 강조하고 설명을 보여 준다. EQ[id](값) 이 실시간 계산을 맡는다. */
+var EQ = {}, EQRUN = {};
+function refreshEq(id){ if(EQRUN[id]) EQRUN[id](); }
+function initEqx(){
+  document.querySelectorAll(".eqx").forEach(function(box){
+    var detail = box.querySelector(".eq-detail"), btns = box.querySelectorAll(".eq-terms button");
+    function pick(t){
+      var same = box.dataset.on === t;
+      if(same || !t){ delete box.dataset.on; } else box.dataset.on = t;
+      box.querySelectorAll(".eq-big .t").forEach(function(s){ s.classList.toggle("on", !same && s.dataset.t === t); });
+      btns.forEach(function(b){ b.setAttribute("aria-pressed", !same && b.dataset.t === t ? "true" : "false"); });
+      if(detail){ var src = box.querySelector('template[data-t="'+t+'"]'); detail.innerHTML = !same && src ? src.innerHTML : ""; }
+    }
+    btns.forEach(function(b){
+      var t = box.querySelector('.eq-big .t[data-t="'+b.dataset.t+'"]'); if(t) b.dataset.c = t.dataset.c;
+      b.style.setProperty("--tc", "var(--t"+(b.dataset.c||1)+")");
+      b.addEventListener("click", function(){ pick(b.dataset.t); });
+    });
+    box.querySelectorAll(".eq-big .t").forEach(function(s){ s.tabIndex = 0; s.setAttribute("role","button");
+      s.addEventListener("click", function(){ pick(s.dataset.t); });
+      s.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pick(s.dataset.t); } }); });
+    var fn = EQ[box.id];
+    if(fn){
+      var vars = box.querySelectorAll("[data-var]");
+      var run = function(){
+        var v = {}; vars.forEach(function(i){ v[i.dataset.var] = i.type === "checkbox" ? i.checked : +i.value;
+          var o = i.parentElement.querySelector("b"); if(o) o.textContent = i.dataset.fmt ? fmt(+i.value, +i.dataset.fmt) : i.value; });
+        var res = fn(v, box) || {};
+        Object.keys(res).forEach(function(k){ box.querySelectorAll('[data-o="'+k+'"]').forEach(function(el){ el.innerHTML = res[k]; }); });
+      };
+      vars.forEach(function(i){ i.addEventListener("input", run); });
+      EQRUN[box.id] = run; run();
+    }
+  });
+}
+function onTheme(){ readColors(); CANVASES.forEach(function(o){ o.redraw(); }); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onTheme);
+new MutationObserver(onTheme).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+
+/* 감마 함수와 분포 함수 */
+function lgamma(x){
+  var g = 7, cf = [0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(x < .5) return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*x))) - lgamma(1-x);
+  x -= 1; var a = cf[0], t = x + g + .5;
+  for(var i=1;i<g+2;i++) a += cf[i]/(x+i);
+  return .5*Math.log(2*Math.PI) + (x+.5)*Math.log(t) - t + Math.log(a);
+}
+function gammaP(a, x){ // 정규화된 하부 불완전 감마 함수
+  if(x <= 0) return 0;
+  var gln = lgamma(a);
+  if(x < a + 1){ var ap = a, sum = 1/a, del = sum; for(var n=0;n<300;n++){ ap++; del *= x/ap; sum += del; if(Math.abs(del) < Math.abs(sum)*1e-12) break; } return sum*Math.exp(-x + a*Math.log(x) - gln); }
+  var b = x + 1 - a, c = 1e300, d = 1/b, h = d;
+  for(var i=1;i<300;i++){ var an = -i*(i-a); b += 2; d = an*d + b; if(Math.abs(d) < 1e-300) d = 1e-300; c = b + an/c; if(Math.abs(c) < 1e-300) c = 1e-300; d = 1/d; var del2 = d*c; h *= del2; if(Math.abs(del2-1) < 1e-12) break; }
+  return 1 - Math.exp(-x + a*Math.log(x) - gln)*h;
+}
+function gammaPdf(x, k, th){ if(x <= 0) return (k < 1 && x === 0) ? Infinity : 0; return Math.exp((k-1)*Math.log(x) - x/th - lgamma(k) - k*Math.log(th)); }
+function chi2crit(df, z){ z = z || 1.6449; var a = 2/(9*df); return df*Math.pow(1 - a + z*Math.sqrt(a), 3); }
+function seededSample(seed, n, gen){ var r = mulberry(seed), out = []; for(var i=0;i<n;i++) out.push(gen(r)); return out; }
+
+
+/* ---------- PHOLD와 세 가지 실행 방식 (none, cons, opt) ---------- */
+/* PHOLD 기반 병렬 실행 흉내: mode = "none" | "cons" | "opt"
+   각 사건의 자식(다음 사건)은 사건 id에서 결정적으로 정해지므로, 어떤 실행 방식이든 올바르면 같은 사건 집합을 처리한다. */
+function hash32(x){ x = (x ^ 61) ^ (x >>> 16); x = x + (x << 3) | 0; x = x ^ (x >>> 4); x = Math.imul(x, 0x27d4eb2d); x = x ^ (x >>> 15); return x >>> 0; }
+function rngOf(seed){ var a = seed >>> 0; return function(){ a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+/* 자식 사건은 사건 id와 그 LP의 현재 상태(st)에 따라 정해진다. 상태가 틀리면 미래도 틀린다. */
+function pholdChild(ev, st, P){ var h = hash32(ev.id ^ st ^ 0x9e3779b9), r = rngOf(h); return {id:hash32(h * 31 + 7), lp:Math.floor(r()*P.N), t:ev.t + P.L + (-P.mean*Math.log(1-r()))}; }
+function nextState(st, ev){ return hash32(st ^ ev.id); }
+function initState(i, P){ return hash32(77 + i*1009 + (P.seed||1)); }
+function pholdInit(P){ var out = [], r = rngOf(P.seed || 1); for(var i=0;i<P.N;i++) for(var k=0;k<P.M;k++) out.push({id:hash32(1000 + i*97 + k*13 + (P.seed||1)*7919), lp:i, t:-P.mean*Math.log(1-r())}); return out; }
+function keyLess(a, b){ return a.t < b.t || (a.t === b.t && a.id < b.id); }
+function insertSorted(arr, ev){ var lo = 0, hi = arr.length; while(lo < hi){ var m = (lo+hi)>>1; if(keyLess(arr[m], ev)) lo = m+1; else hi = m; } arr.splice(lo, 0, ev); }
+function phSequential(P){
+  var pq = pholdInit(P).sort(function(a,b){ return keyLess(a,b) ? -1 : 1; }), done = [], st = [];
+  for(var i=0;i<P.N;i++) st.push(initState(i, P));
+  while(pq.length && pq[0].t < P.T){ var e = pq.shift(); done.push(e); st[e.lp] = nextState(st[e.lp], e); insertSorted(pq, pholdChild(e, st[e.lp], P)); }
+  return done;
+}
+function PDES(P, mode){
+  var N = P.N, S = this;
+  S.P = P; S.mode = mode; S.tick = 0; S.done = false; S.dead = false;
+  S.lp = []; for(var i=0;i<N;i++) S.lp.push({st:initState(i, P), pending:[], processed:[], lvt:0, work:0, G:new Array(N).fill(P.L), sent:new Array(N).fill(P.L), blocked:false});
+  pholdInit(P).forEach(function(e){ insertSorted(S.lp[e.lp].pending, e); });
+  S.net = []; S.stat = {proc:0, nulls:0, real:0, rb:0, strag:0, anti:0, committed:0};
+  S.hist = []; S.gvt = 0; S.events = [];
+}
+PDES.prototype.send = function(m){ m.at = this.tick + (this.P.lat || 1); this.net.push(m); };
+PDES.prototype.rollback = function(i, key){
+  var L = this.lp[i], S = this, n = 0;
+  while(L.processed.length){
+    var top = L.processed[L.processed.length-1];
+    if(!keyLess(key, top.ev)) break;
+    L.processed.pop(); n++; L.st = top.prev;
+    insertSorted(L.pending, top.ev);
+    var ch = top.child;
+    if(ch.lp === i){ var k = L.pending.findIndex(function(x){ return x.id === ch.id; }); if(k >= 0) L.pending.splice(k, 1); }
+    else { S.send({type:"-", to:ch.lp, from:i, ev:ch}); S.stat.anti++; }
+  }
+  L.lvt = L.processed.length ? L.processed[L.processed.length-1].ev.t : 0;
+  S.stat.rb += n; if(n) S.events.push({tick:S.tick, lp:i, kind:"rb", n:n, t:key.t});
+};
+PDES.prototype.step = function(){
+  var S = this, P = S.P, N = P.N, mode = S.mode;
+  if(S.done || S.dead) return;
+  S.tick++;
+  // 1. 배달
+  var keep = [], arrived = [];
+  S.net.forEach(function(m){ (m.at <= S.tick ? arrived : keep).push(m); }); S.net = keep;
+  arrived.forEach(function(m){
+    var L = S.lp[m.to];
+    if(m.type === "null"){ L.G[m.from] = Math.max(L.G[m.from], m.g); return; }
+    if(m.type === "+"){
+      if(mode === "cons") L.G[m.from] = Math.max(L.G[m.from], m.g);
+      if(L.processed.length && keyLess(m.ev, L.processed[L.processed.length-1].ev)){
+        S.stat.strag++; S.events.push({tick:S.tick, lp:m.to, kind:"strag", t:m.ev.t});
+        if(mode === "opt") S.rollback(m.to, m.ev);
+      }
+      if(L.anti && L.anti[m.ev.id]){ delete L.anti[m.ev.id]; return; }
+      insertSorted(L.pending, m.ev);
+    } else if(m.type === "-"){
+      var k = L.pending.findIndex(function(x){ return x.id === m.ev.id; });
+      if(k >= 0){ L.pending.splice(k, 1); return; }
+      var pk = L.processed.findIndex(function(r){ return r.ev.id === m.ev.id; });
+      if(pk >= 0){ S.rollback(m.to, {t:m.ev.t, id:m.ev.id - 0.5}); k = L.pending.findIndex(function(x){ return x.id === m.ev.id; }); if(k >= 0) L.pending.splice(k, 1); return; }
+      L.anti = L.anti || {}; L.anti[m.ev.id] = true;
+    }
+  });
+  // 2. 처리
+  for(var i=0;i<N;i++){
+    var L = S.lp[i], nx = L.pending[0];
+    L.work = Math.min(1, L.work + P.speed[i]);
+    var safe = Infinity; if(mode === "cons") for(var j=0;j<N;j++) if(j !== i) safe = Math.min(safe, L.G[j]);
+    L.safe = safe;
+    var can = nx && nx.t < P.T && (mode !== "cons" || nx.t <= safe);
+    L.blocked = !!(nx && nx.t < P.T && !can);
+    if(!can || L.work < 1) continue;
+    L.work -= 1; L.pending.shift(); L.lvt = nx.t; S.stat.proc++;
+    var prev = L.st; L.st = nextState(L.st, nx);
+    var ch = pholdChild(nx, L.st, P);
+    L.processed.push({ev:nx, child:ch, prev:prev});
+    if(ch.lp === i) insertSorted(L.pending, ch);
+    else { S.send({type:"+", to:ch.lp, from:i, ev:ch, g:L.lvt + P.L}); S.stat.real++; }
+  }
+  // 3. 널 메시지 (보수적)
+  if(mode === "cons" && P.nulls){
+    for(var a=0;a<N;a++){
+      var A = S.lp[a], lb = Math.min(A.pending.length ? A.pending[0].t : Infinity, (function(){ var s = Infinity; for(var j=0;j<N;j++) if(j !== a) s = Math.min(s, A.G[j]); return s; })());
+      var v = Math.min(lb, P.T) + P.L;
+      for(var b=0;b<N;b++){ if(b === a) continue; if(v > A.sent[b] + 1e-12){ A.sent[b] = v; S.send({type:"null", to:b, from:a, g:v}); S.stat.nulls++; } }
+    }
+  }
+  // 4. GVT, 종료
+  var g = Infinity;
+  S.lp.forEach(function(L){ if(L.pending.length) g = Math.min(g, L.pending[0].t); });
+  S.net.forEach(function(m){ if(m.type !== "null") g = Math.min(g, m.ev.t); });
+  if(mode === "cons"){ /* 보수적: 처리한 것은 모두 확정 */ }
+  S.gvt = Math.min(g, P.T);
+  S.hist.push({tick:S.tick, lvt:S.lp.map(function(L){ return L.lvt; }), gvt:S.gvt});
+  if(g >= P.T) S.done = true;
+  else if(mode === "cons" && !P.nulls){
+    var any = S.net.length > 0 || S.lp.some(function(L, i){ var nx = L.pending[0]; return nx && nx.t < P.T && nx.t <= L.safe; });
+    if(!any) S.dead = true;
+  }
+};
+PDES.prototype.result = function(){ var out = []; this.lp.forEach(function(L){ L.processed.forEach(function(r){ if(r.ev.t < this.P.T) out.push(r.ev); }, this); }, this); return out.sort(function(a,b){ return keyLess(a,b) ? -1 : 1; }); };
+function sameSet(a, b){ if(a.length !== b.length) return false; for(var i=0;i<a.length;i++) if(a[i].id !== b[i].id || a[i].lp !== b[i].lp) return false; return true; }
+
+var LPCOL = ["t1","t2","t3","t4"];
+function pdesWidget(id, mode){
+  var root = document.getElementById(id); if(!root) return;
+  var out = root.querySelector("[data-out]"), box = root.querySelector(".lps");
+  var lIn = root.querySelector("[data-l]"), sIn = root.querySelector("[data-slow]"), nIn = root.querySelector("[data-nulls]");
+  var P, sim, seq, seqIds, raf = 0, playing = false, acc = 0, last = 0;
+  var view = setup(root, function(c, W, H){
+    if(!sim) return;
+    var xmax = Math.max(seq.length*1.08, sim.tick*1.04, 20), s = scale([46, 14, W-14, H-30], [0, xmax], [0, P.T]);
+    axes(c, s, {xt:ticks(0, xmax, 8), yt:[0, 20, 40, 60, 80], xl:"벽시계 (걸음)", yl:"시뮬레이션 시각"});
+    var xs = s.X(seq.length); line(c, xs+.5, s.box[1], xs+.5, s.box[3], COL.muted, 1, [4,4]);
+    txt(c, "순차 실행이면 여기서 끝", xs-4, s.box[1]+10, {align:"right", size:10});
+    for(var i=0;i<P.N;i++){
+      var pts = [[0,0]]; sim.hist.forEach(function(h){ pts.push([h.tick, h.lvt[i]]); });
+      path(c, s, pts, COL[LPCOL[i]], 1.6);
+    }
+    if(mode === "opt"){ var gp = [[0,0]]; sim.hist.forEach(function(h){ gp.push([h.tick, h.gvt]); }); path(c, s, gp, COL.ink, 2.6, [6,4]); }
+    sim.events.forEach(function(e){ if(e.kind === "strag" && mode !== "cons") dot(c, s.X(e.tick), s.Y(e.t), 3.2, COL.miss); });
+  });
+  function params(){
+    var L = lIn ? +lIn.value : 1, slow = sIn ? +sIn.value : 1;
+    return {N:4, M:2, L:L, mean:2, T:80, seed:3, speed:[1,1,1,slow], nulls:nIn ? nIn.checked : true, lat:1};
+  }
+  function reset(){
+    stop(); P = params(); sim = new PDES(P, mode); seq = phSequential(P);
+    seqIds = {}; seq.forEach(function(e){ seqIds[e.id] = true; });
+    if(lIn) lIn.parentElement.querySelector("b").textContent = P.L.toFixed(2);
+    if(sIn) sIn.parentElement.querySelector("b").textContent = P.speed[3].toFixed(1);
+    view.redraw(); status();
+  }
+  function status(){
+    box.innerHTML = sim.lp.map(function(L, i){
+      var st = sim.dead ? "교착" : sim.done ? "끝" : L.blocked ? "대기" : "진행";
+      var extra = mode === "cons" && isFinite(L.safe) && !sim.done ? "<span>안전 " + fmt(Math.min(L.safe, P.T), 1) + "</span>" : "";
+      return '<div style="--c:var(--' + LPCOL[i] + ')"><b>LP ' + (i+1) + '</b><span>LVT ' + fmt(L.lvt, 1) + '</span>' + extra + '<em class="' + (st === "대기" || st === "교착" ? "w" : "") + '">' + st + '</em></div>';
+    }).join("");
+    var stt = sim.stat, sp = seq.length / Math.max(1, sim.tick);
+    if(!sim.done && !sim.dead){ out.innerHTML = "걸음 <b>" + sim.tick + "</b>, 처리한 사건 " + stt.proc + "개" + (mode === "cons" ? ", 널 메시지 " + stt.nulls + "개" : "") + (mode !== "cons" ? ", 과거 메시지 " + stt.strag + "개" : "") + (mode === "opt" ? ", 롤백 " + stt.rb + "번, GVT " + fmt(sim.gvt, 1) : "") + "."; return; }
+    if(sim.dead){ out.innerHTML = "<span class='bad'>교착</span>: " + sim.tick + "걸음째에 모든 LP가 다른 LP의 약속을 기다리며 멈췄습니다. 아무도 약속을 보내지 않으니 안전 시각이 늘지 않습니다."; return; }
+    var res = sim.result(), ok = sameSet(seq, res);
+    if(mode === "none"){
+      var diff = 0; res.forEach(function(e){ if(!seqIds[e.id]) diff++; });
+      out.innerHTML = "끝: " + sim.tick + "걸음. 과거 메시지 <b>" + stt.strag + "개</b>를 받았고, 처리한 사건 " + res.length + "개 중 <b>" + diff + "개</b>가 순차 실행에는 없는 사건입니다. <span class='bad'>결과가 순차 실행과 다릅니다.</span>";
+    } else if(mode === "cons"){
+      out.innerHTML = "끝: <b>" + sim.tick + "걸음</b> (순차 " + seq.length + "걸음, 속도 <b>" + sp.toFixed(2) + "배</b>). 진짜 메시지 " + stt.real + "개, 널 메시지 <b>" + stt.nulls + "개</b>. " + (ok ? "<span class='good'>결과가 순차 실행과 같습니다.</span>" : "<span class='bad'>결과가 다릅니다.</span>");
+    } else {
+      out.innerHTML = "끝: <b>" + sim.tick + "걸음</b> (순차 " + seq.length + "걸음, 속도 <b>" + sp.toFixed(2) + "배</b>). 처리 " + stt.proc + "번 중 롤백으로 버린 것 <b>" + stt.rb + "번</b>, 효율 " + Math.round(100*seq.length/stt.proc) + "%. 반메시지 " + stt.anti + "개. " + (ok ? "<span class='good'>결과가 순차 실행과 같습니다.</span>" : "<span class='bad'>결과가 다릅니다.</span>");
+    }
+  }
+  function frame(now){
+    var dt = Math.min(.1, (now - last)/1000); last = now; acc += dt*40;
+    while(acc >= 1 && !sim.done && !sim.dead){ sim.step(); acc -= 1; }
+    view.redraw(); status();
+    if(sim.done || sim.dead){ stop(); return; }
+    raf = requestAnimationFrame(frame);
+  }
+  function play(){ if(sim.done || sim.dead) reset(); playing = true; acc = 0; last = performance.now(); btn.textContent = "멈춤"; raf = requestAnimationFrame(frame); }
+  function stop(){ playing = false; cancelAnimationFrame(raf); if(btn) btn.textContent = "재생"; }
+  var btn = root.querySelector('[data-act="play"]');
+  btn.onclick = function(){ playing ? stop() : play(); };
+  root.querySelector('[data-act="end"]').onclick = function(){ stop(); var k = 0; while(!sim.done && !sim.dead && k++ < 100000) sim.step(); view.redraw(); status(); };
+  root.querySelector('[data-act="reset"]').onclick = reset;
+  [lIn, sIn, nIn].forEach(function(el){ if(el) el.addEventListener(el.type === "checkbox" ? "change" : "input", reset); });
+  reset();
+  if(REDUCED){ var k = 0; while(!sim.done && !sim.dead && k++ < 100000) sim.step(); view.redraw(); status(); }
+}
+pdesWidget("w-none", "none");
+pdesWidget("w-cons", "cons");
+pdesWidget("w-opt", "opt");
+
+initEqx();
+})();
+</script>
+</body>
+</html>

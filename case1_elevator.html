@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>응용 사례: 엘리베이터</title>
+<!--
+  모델링과 시뮬레이션 학습 자료 — 응용 사례 A1: 강의동 엘리베이터 배차 규칙
+  파일명: case1_elevator.html. 강조색은 주로 쓰는 기법(2편 DES)의 색입니다.
+  데모는 외부 라이브러리 없이 맨 아래 <script>에서 동작합니다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F8; --panel:#FFFFFF; --ink:#17202E; --muted:#5A6577; --line:#D5DBE3; --soft:#E8ECF1;
+  --acc:#C27C00; --c1:#3557C9; --c2:#C27C00; --c3:#0E7C6B; --miss:#C8372D;
+  --t1:#2E62D0; --t2:#C2410C; --t3:#0E8A6B; --t4:#8B3FD9; --t5:#B91C5C;
+  --k-kw:#8A3FA8; --k-fn:#2457C5; --k-str:#2E7D32; --k-num:#B5560F; --k-com:#7A8494; --k-bi:#0F7C86;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --math:"STIX Two Text","Times New Roman",Times,serif;
+  --code:"D2Coding","Consolas","SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+    --acc:#F0A928; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+    --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+    --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+  --acc:#F0A928; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+  --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+  --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+  color-scheme:dark;
+}
+:root{box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 16px); scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+body{margin:0; background:var(--bg); color:var(--ink); font:400 17px/1.75 var(--sans); -webkit-font-smoothing:antialiased; word-break:keep-all; overflow-wrap:break-word}
+a{color:var(--acc)}
+.wrap{max-width:980px; margin:0 auto; padding:40px 24px 48px}
+.prose{max-width:42em}
+p{margin:0 0 1em}
+code{font-family:var(--code); font-size:.9em; background:var(--soft); padding:1px 5px; border-radius:4px}
+
+/* 머리말 */
+.back{font-size:15px; margin:0 0 36px}
+.back a{color:var(--muted)}
+.series{margin:0 0 10px; color:var(--muted); font-size:15px}
+h1{margin:0; font-weight:700; font-size:clamp(34px,6vw,54px); line-height:1.12; letter-spacing:-0.02em}
+h1 .n{font-family:var(--math); font-weight:500; color:var(--acc); margin-right:.2em}
+.lead{margin:18px 0 0; color:var(--muted); max-width:38em; font-size:18px}
+.goals{display:grid; grid-template-columns:1.4fr 1fr; gap:24px; margin:32px 0 0}
+.goals > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px}
+.goals h2{font-size:15px; margin:0 0 6px}
+.goals ul{margin:0; padding-left:1.1em; font-size:15px; line-height:1.65}
+.goals .pre a{display:inline-block; margin:2px 6px 2px 0; font-size:14px; text-decoration:none; padding:2px 9px; border-radius:5px; background:var(--soft); color:var(--ink)}
+.goals .pre a:hover{background:var(--acc); color:var(--panel)}
+.goals .pre p{font-size:14.5px; color:var(--muted); margin:6px 0 0}
+.toc{margin:28px 0 0; display:grid; grid-template-columns:repeat(4,1fr); gap:0 24px; border-top:2px solid var(--ink); padding-top:16px}
+.toc h2{font-size:15px; margin:0 0 6px}
+.toc h2 a{color:var(--ink); text-decoration:none}
+.toc ol{list-style:none; margin:0; padding:0; font-size:14px; line-height:1.65}
+.toc ol a{color:var(--muted); text-decoration:none}
+.toc a:hover{color:var(--acc); text-decoration:underline}
+
+/* 장, 절 */
+.chap{margin-top:88px}
+.chap > h2{display:flex; align-items:baseline; gap:16px; font-size:clamp(28px,4.4vw,38px); line-height:1.2; margin:0 0 12px; letter-spacing:-0.01em}
+.chap > h2 .n{font:500 1.5em/1 var(--math); color:var(--acc)}
+.chap > .intro{color:var(--muted); font-size:18px; max-width:40em; margin-bottom:8px}
+h3{font-size:22px; line-height:1.35; margin:56px 0 12px}
+h3 .n{font:500 1em var(--math); color:var(--acc); margin-right:10px}
+h4{font-size:17px; margin:24px 0 6px}
+.m{font-family:var(--math); font-style:italic; font-size:1.08em; white-space:nowrap}
+.mr{font-family:var(--math); font-size:1.08em; white-space:nowrap}
+.note{max-width:42em; margin:20px 0; padding:14px 18px; border-radius:8px; background:var(--soft); font-size:15.5px; line-height:1.7}
+.note > :last-child{margin-bottom:0}
+.link-note{max-width:42em; margin:20px 0; padding:12px 18px 12px 16px; border-left:3px solid var(--acc); background:var(--panel); border-radius:0 8px 8px 0; font-size:15.5px}
+.link-note > :last-child{margin-bottom:0}
+.link-note .k{font-weight:700; color:var(--acc); margin-right:6px}
+dl.terms{display:grid; grid-template-columns:auto 1fr; gap:6px 18px; max-width:42em; margin:0; font-size:15.5px}
+dl.terms dt{font-weight:700}
+dl.terms dd{margin:0; color:var(--muted)}
+.cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:20px 0}
+.cards.two{grid-template-columns:1fr 1fr}
+.cards > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; font-size:15.5px}
+.cards h4{margin:0 0 6px}
+.cards p{margin:0}
+ol.steps{list-style:none; margin:20px 0; padding:0; counter-reset:s; max-width:44em}
+ol.steps > li{counter-increment:s; position:relative; padding:0 0 14px 44px}
+ol.steps > li::before{content:counter(s); position:absolute; left:0; top:-2px; width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font:500 17px/1 var(--math); background:var(--acc); color:var(--panel)}
+ol.steps > li b{display:block}
+
+/* 사례 연구 머리 */
+.case{margin:56px 0 0; padding-top:18px; border-top:1px solid var(--line)}
+.case h3{margin-top:0}
+.lvl{display:inline-block; font-size:13px; font-weight:500; padding:1px 8px; border-radius:4px; margin-left:8px; vertical-align:3px; background:var(--soft); color:var(--muted)}
+.lvl.real{background:var(--acc); color:var(--panel)}
+
+/* 수식 탐색기 */
+.eqx{margin:28px 0; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px 16px}
+.eqx > .cap{margin:0 0 4px; font-size:14px; color:var(--muted)}
+.eq-big{font-family:var(--math); font-size:clamp(24px,3.6vw,36px); line-height:1.6; padding:12px 0 14px; overflow-x:auto; white-space:nowrap; text-align:center}
+.eq-big .t{--tc:var(--ink); border-bottom:3px solid var(--tc); padding:0 3px; border-radius:4px; cursor:pointer; transition:background .15s}
+.eq-big .t:hover, .eqx[data-on] .eq-big .t.on{background:color-mix(in srgb, var(--tc) 22%, transparent)}
+.eqx[data-on] .eq-big .t:not(.on){opacity:.4}
+.eq-big .op{color:var(--muted); padding:0 .12em}
+.eq-big sub, .eq-big sup{font-size:.6em}
+.eq-big .frac{display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; line-height:1.15; margin:0 .1em}
+.eq-big .frac > span:first-child{border-bottom:2px solid currentColor; padding:0 .15em .05em}
+.eq-big .frac > span:last-child{padding:.08em .15em 0}
+.t[data-c="1"]{--tc:var(--t1)} .t[data-c="2"]{--tc:var(--t2)} .t[data-c="3"]{--tc:var(--t3)} .t[data-c="4"]{--tc:var(--t4)} .t[data-c="5"]{--tc:var(--t5)}
+.eq-terms{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; margin:4px 0 0}
+.eq-terms button{
+  --tc:var(--ink); text-align:left; font:400 14px/1.5 var(--sans); color:var(--ink); background:var(--bg);
+  border:1px solid var(--line); border-left:4px solid var(--tc); border-radius:6px; padding:8px 10px; cursor:pointer;
+}
+.eq-terms button b{display:block; font-family:var(--math); font-size:17px; font-weight:500; color:var(--tc)}
+.eq-terms button[aria-pressed="true"]{background:color-mix(in srgb, var(--tc) 14%, var(--panel)); border-color:var(--tc)}
+.eq-terms button:focus-visible{outline:2px solid var(--tc); outline-offset:2px}
+.eq-detail{margin:12px 0 0; padding:12px 14px; border-radius:8px; background:var(--soft); font-size:15px; min-height:3em}
+.eq-detail:empty{display:none}
+.eq-live{margin-top:14px; padding-top:12px; border-top:1px dashed var(--line)}
+.eq-live .sub{font-size:14px; color:var(--muted); margin:0 0 6px}
+.eqx canvas{display:block; width:100%; height:auto; margin-top:8px}
+.hat{position:relative; display:inline-block}
+.hat::after{content:"ˆ"; position:absolute; left:50%; top:-.42em; transform:translateX(-45%); font-style:normal}
+.lim{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; line-height:1; margin:0 .08em; font-size:1.3em}
+.lim small{font-size:.34em; line-height:1.15}
+.eq-num{font-family:var(--math); font-size:22px; text-align:center; margin:10px 0 2px; overflow-x:auto; white-space:nowrap}
+.eq-num .t{border-bottom:2px solid var(--tc); padding:0 2px}
+
+/* 위젯 */
+.widget{margin:24px 0 28px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px 14px}
+.widget > h4{margin:0 0 2px; font-size:16px}
+.widget > .sub{margin:0 0 12px; color:var(--muted); font-size:14.5px}
+.widget canvas{display:block; width:100%; height:auto; touch-action:manipulation}
+.ctrl, .eq-live .ctrl{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin-top:12px; font-size:14px}
+.ctrl button, .seg button{font:500 14px/1 var(--sans); color:var(--ink); background:var(--soft); border:1px solid var(--line); border-radius:7px; padding:8px 12px; cursor:pointer}
+.ctrl button:hover, .seg button:hover{border-color:var(--acc)}
+.ctrl button.primary{background:var(--acc); border-color:var(--acc); color:var(--panel)}
+.ctrl button:disabled{opacity:.5; cursor:default}
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+.seg{display:inline-flex; flex-wrap:wrap; gap:4px}
+.seg button[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--panel)}
+.ctrl label{display:inline-flex; align-items:center; gap:8px; color:var(--muted)}
+.ctrl label b, .ctrl label output{color:var(--ink); font-weight:500; min-width:2.8em; font-variant-numeric:tabular-nums}
+.ctrl input[type=range]{width:150px; accent-color:var(--acc)}
+.ctrl input[type=checkbox]{accent-color:var(--acc); width:16px; height:16px}
+.ctrl select{font:400 14px var(--sans); color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px 8px}
+textarea.data{width:100%; min-height:90px; font:400 13.5px/1.5 var(--code); color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px; resize:vertical}
+.readout{margin:12px 0 0; font-size:14.5px; line-height:1.6; color:var(--muted); font-variant-numeric:tabular-nums}
+.readout b{color:var(--ink); font-weight:500}
+.readout .good{color:var(--c3); font-weight:500}
+.readout .bad{color:var(--miss); font-weight:500}
+.split{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+
+/* 표 */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:15px; line-height:1.55}
+th,td{padding:9px 12px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line)}
+thead th{font-weight:700; color:var(--muted); font-size:14px}
+tbody tr:last-child th, tbody tr:last-child td{border-bottom:0}
+table.num td{font-variant-numeric:tabular-nums}
+.tbl{background:var(--panel); border:1px solid var(--line); border-radius:10px; margin:20px 0; max-width:46em}
+
+/* 연습 문제 */
+.ex{max-width:44em; margin:16px 0}
+.ex details{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 16px; margin:0 0 8px}
+.ex summary{cursor:pointer; font-weight:500}
+.ex summary::marker{color:var(--acc)}
+.ex details > div{margin-top:8px; color:var(--muted); font-size:15.5px}
+.ex details > div > :last-child{margin-bottom:0}
+
+/* 코드 */
+pre.code{margin:20px 0; padding:16px 18px; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow-x:auto; font:400 14px/1.65 var(--code); tab-size:4; max-width:46em}
+pre.code code{background:none; padding:0; font-size:1em}
+pre.code .kw{color:var(--k-kw); font-weight:500}
+pre.code .fn{color:var(--k-fn)}
+pre.code .bi{color:var(--k-bi)}
+pre.code .str{color:var(--k-str)}
+pre.code .num{color:var(--k-num)}
+pre.code .com{color:var(--k-com); font-style:italic}
+.code-cap{font-size:14px; color:var(--muted); margin:-12px 0 20px}
+
+/* 이전 / 다음 */
+.pager{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:72px}
+.pager a{display:block; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; text-decoration:none; color:var(--ink)}
+.pager a:hover{border-color:var(--acc)}
+.pager span{display:block; font-size:13.5px; color:var(--muted)}
+.pager b{font-size:17px}
+.pager .next{text-align:right}
+footer{margin-top:40px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:14px}
+footer a{color:inherit}
+
+@media (max-width:760px){
+  .wrap{padding:28px 18px 40px}
+  .toc{grid-template-columns:1fr 1fr; gap:14px}
+  .goals, .cards, .cards.two, .split, .pager{grid-template-columns:1fr}
+  .widget, .eqx{padding:14px 12px 12px; margin-left:-6px; margin-right:-6px}
+  .ctrl input[type=range]{width:120px}
+}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="back"><a href="index.html">모델링과 시뮬레이션 목차</a></p>
+<header>
+  <p class="series">모델링과 시뮬레이션, 응용 사례 A1</p>
+  <h1><span class="n">A1</span>엘리베이터: 수업 시작 10분 전</h1>
+  <p class="lead">8층짜리 강의동에 엘리베이터가 두 대 있습니다. 평소에는 충분한데, 9시 수업 직전에는 1층 로비에 줄이 길게 늘어서고 지각하는 학생이 생깁니다. 엘리베이터를 늘리지 않고 운행 규칙만 바꿔서 줄일 수 있을까요? 세 가지 배차 규칙을 같은 학생들로 비교하고, 부하에 따라 가장 좋은 규칙이 바뀌는 것을 확인합니다.</p>
+  <div class="goals">
+    <div>
+      <h2>이 사례에서 해 볼 것</h2>
+      <ul>
+        <li>엘리베이터의 상태와 규칙을 시뮬레이션 모델로 적고, 손계산한 수송 능력으로 타당성을 확인합니다.</li>
+        <li>집합 제어, 구역 나누기, 목적층 예약을 공통 난수로 비교해 차이를 신뢰구간으로 말합니다.</li>
+        <li>부하가 커질 때 가장 좋은 규칙이 바뀌는 지점을 찾습니다.</li>
+        <li>시간에 따라 변하는 도착(수업 전 몰림)에서 지각하는 학생 수로 규칙을 평가하고, 시간대별로 규칙을 바꾸는 방안을 시험합니다.</li>
+      </ul>
+    </div>
+    <div class="pre">
+      <h2>먼저 보면 좋은 것</h2>
+      <a href="ch2_DES.html">2편 DES</a><a href="ch4_input-modeling.html#s2-7">4편 2.7 시간에 따라 변하는 도착</a><a href="ch5_output-analysis.html">5편 공통 난수</a><a href="ch8_verification-optimization.html">8편 검증</a>
+      <p>각 절의 단계 표시는 <a href="ch0_simulation-101.html#s1-5">0편 1.5절</a>의 시뮬레이션 연구 일곱 단계입니다. 건물과 엘리베이터의 숫자는 학습용 가정입니다.</p>
+    </div>
+  </div>
+  <nav class="toc" aria-label="목차">
+    <div><h2><a href="#ch1">1. 질문과 개념 모델</a></h2><ol><li><a href="#s1-1">질문 정하기</a></li><li><a href="#s1-2">개념 모델</a></li></ol></div>
+    <div><h2><a href="#ch2">2. 데이터와 구현</a></h2><ol><li><a href="#s2-1">데이터 모으기</a></li><li><a href="#s2-2">프로그램 짜기</a></li><li><a href="#s2-3">검증과 타당성</a></li></ol></div>
+    <div><h2><a href="#ch3">3. 실험과 결정</a></h2><ol><li><a href="#s3-1">부하와 규칙</a></li><li><a href="#s3-2">수업 전 30분</a></li><li><a href="#s3-3">분석과 결정</a></li></ol></div>
+    <div><h2><a href="#ch4">4. 연결과 정리</a></h2><ol><li><a href="#s4-1">모델의 한계</a></li><li><a href="#s4-2">쓰인 편들</a></li><li><a href="#s4-3">파이썬으로 확인하기</a></li><li><a href="#s4-4">연습과 확장</a></li></ol></div>
+  </nav>
+</header>
+
+<section class="chap" id="ch1">
+  <h2><span class="n">1</span>질문과 개념 모델</h2>
+  <p class="intro">엘리베이터 한 대는 정원이 있는 서버이고, 승강장의 줄은 큐입니다. 다른 점은 서버가 움직인다는 것입니다.</p>
+
+  <h3 id="s1-1"><span class="n">1.1</span>질문 정하기<span class="lvl">단계 1</span></h3>
+  <div class="prose">
+    <p>질문은 "어떤 배차 규칙이 수업 직전의 대기와 지각을 가장 줄이는가"입니다. 무엇을 줄일지도 정해야 합니다. 평균 대기만 보면 오래 기다리는 몇 사람의 불만이 가려지므로 95번째 백분위 대기를 함께 보고, 수업 직전에는 9시 전에 1층에 도착했는데 9시가 넘어서야 강의실 층에 닿은 학생 수, 곧 지각을 봅니다.</p>
+  </div>
+
+  <h3 id="s1-2"><span class="n">1.2</span>개념 모델<span class="lvl">단계 2</span></h3>
+  <dl class="terms">
+    <dt>건물</dt><dd>1층부터 8층까지. 아침에는 학생이 모두 1층에서 타서 2~8층 중 한 곳으로 갑니다(상향 피크). 수업이 끝나면 반대로 각 층에서 1층으로 갑니다(하향 피크).</dd>
+    <dt>엘리베이터</dt><dd>정원 12명. 한 층 오르내리는 데 2초, 서면 문을 열고 닫는 데 4초에 한 사람이 타고 내릴 때마다 1초가 더 듭니다. 상향 피크에는 할 일이 없으면 1층으로 돌아가 기다립니다.</dd>
+    <dt>집합 제어</dt><dd>가장 흔한 방식입니다. 가는 방향의 호출을 지나가며 모두 받고, 그 방향에 더 할 일이 없으면 방향을 바꿉니다(2편의 LOOK 스케줄링과 같은 생각). 어느 차든 먼저 온 차가 태웁니다.</dd>
+    <dt>구역 나누기</dt><dd>위층을 엘리베이터 수만큼 나눠, 차마다 자기 구역의 층만 다닙니다. 두 대라면 한 대는 2~5층, 한 대는 6~8층입니다.</dd>
+    <dt>목적층 예약</dt><dd>1층 키패드에서 갈 층을 먼저 누르면, 그 층에 이미 서기로 한 차, 곧 올 차, 덜 붐비는 차를 따져 차를 정해 줍니다. 손님은 배정된 차만 탑니다. 여기서는 그때그때 가장 나은 차를 고르는 단순한 규칙으로 구현했습니다.</dd>
+    <dt>계단</dt><dd>선택 사항입니다. 켜면 학생마다 참을성(평균 60초)이 있어서, 그 시간을 넘게 기다렸고 가려는 층이 두 층 이내면 계단으로 갑니다. 3편의 에이전트 판단이 들어가는 자리입니다.</dd>
+  </dl>
+  <div class="prose">
+    <p>가속과 감속, 문이 다시 열리는 일, 짐을 든 학생은 버렸습니다. 시간은 1초씩 나아가며 매초 차마다 "문을 열고 닫는 중인가, 이 층에 설 것인가, 어느 쪽으로 갈 것인가"를 정합니다. 사건 기반으로 짤 수도 있지만, 규칙이 "매 순간 차가 무엇을 할까"로 적혀 있어 시간 단계 방식이 더 읽기 쉽습니다.</p>
+  </div>
+</section>
+
+<section class="chap" id="ch2">
+  <h2><span class="n">2</span>데이터와 구현</h2>
+  <p class="intro">도착은 시간에 따라 변하고, 규칙은 부하에 따라 다르게 작동합니다. 둘 다 재야 합니다.</p>
+
+  <h3 id="s2-1"><span class="n">2.1</span>데이터 모으기<span class="lvl">단계 3</span></h3>
+  <div class="prose">
+    <p>8시 30분부터 9시 5분까지 1층 로비에서 5분마다 엘리베이터를 기다리기 시작한 사람 수를 셉니다. 몇 사람에게는 몇 층으로 가는지 묻습니다. 이렇게 하면 4편 2.7절의 시간에 따라 변하는 도착률과 목적층 분포가 나옵니다. 엘리베이터 쪽은 스톱워치로 한 층 이동 시간, 문이 열리고 닫히는 시간, 한 사람이 타는 시간을 몇 번 재면 됩니다. 이 사례에서는 도착률이 8시 30분 분당 3명에서 8시 52분쯤 분당 20명까지 오르고, 9시 직후 분당 2명으로 떨어진다고 가정했습니다.</p>
+  </div>
+
+  <h3 id="s2-2"><span class="n">2.2</span>프로그램 짜기<span class="lvl">단계 4</span></h3>
+  <div class="widget" id="w-ele">
+    <h4>강의동 엘리베이터 30분</h4>
+    <p class="sub">왼쪽 점이 층마다 기다리는 사람, 오른쪽 상자가 엘리베이터입니다. 상자 안 숫자는 탄 사람 수이고, 테두리가 굵으면 문이 열려 있습니다.</p>
+    <canvas data-w="640" data-h="300" role="img" aria-label="층마다 기다리는 사람과 움직이는 엘리베이터"></canvas>
+    <div class="ctrl">
+      <span>엘리베이터</span><div class="seg" data-g="cars"><button type="button" aria-pressed="false" data-v="1">1대</button><button type="button" aria-pressed="true" data-v="2">2대</button><button type="button" aria-pressed="false" data-v="3">3대</button></div>
+      <span>규칙</span><div class="seg" data-g="alg"><button type="button" aria-pressed="true" data-v="look">집합 제어</button><button type="button" aria-pressed="false" data-v="zone">구역 나누기</button><button type="button" aria-pressed="false" data-v="dd">목적층 예약</button></div>
+    </div>
+    <div class="ctrl">
+      <span>교통</span><div class="seg" data-g="traffic"><button type="button" aria-pressed="true" data-v="up">상향 피크</button><button type="button" aria-pressed="false" data-v="down">하향 피크</button></div>
+      <label>도착 (분당) <input type="range" min="2" max="24" step="1" value="12" data-lam> <b></b></label>
+      <label><input type="checkbox" data-stairs> 기다리다 계단으로</label>
+    </div>
+    <div class="ctrl">
+      <button type="button" class="primary" data-act="play">일시정지</button>
+      <button type="button" data-act="new">새 시드</button>
+      <span>속도</span><div class="seg" data-g="spd"><button type="button" aria-pressed="false" data-v="5">5배</button><button type="button" aria-pressed="true" data-v="20">20배</button><button type="button" aria-pressed="false" data-v="80">80배</button></div>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>분당 12명에서 집합 제어와 구역 나누기를 번갈아 보세요. 집합 제어에서는 1층에 먼저 온 차가 모두를 태우고 여러 층에 서며 올라갑니다. 구역 나누기에서는 차마다 서는 층이 적어 빨리 돌아오지만, 자기 구역 손님이 없으면 다른 차가 바빠도 놀고 있습니다.</p>
+  </div>
+
+  <h3 id="s2-3"><span class="n">2.3</span>검증과 타당성<span class="lvl">단계 5</span></h3>
+  <div class="prose">
+    <p><b>검증.</b> 손님이 한 명뿐인 경우를 손으로 따라가 봅니다. 1층에서 5층까지 가는 손님은 타는 데 문 4초와 1초, 네 층 8초가 걸리고 5층에서 문이 열리면 내리므로, 혼자 탔다면 도착부터 14초 안팎이어야 합니다. 시뮬레이터에 손님 한 명만 넣으면 실제로 14초가 나옵니다. 그다음 정원 12명을 넘게 태우는 차가 없는지, 상향 피크에서 모든 손님이 1층에서 탔는지를 확인합니다.</p>
+    <p><b>타당성.</b> 엘리베이터 공학에는 상향 피크의 수송 능력을 손으로 어림하는 방법이 있습니다. 정원 12명이 다 찬 차가 7개 층 중 평균 몇 층에 서는지(약 5.9층), 꼭대기까지 오르내리는 데 몇 초 걸리는지를 더해 한 바퀴 시간을 구하면 약 80초이고, 차 한 대가 분당 9명, 두 대가 분당 18명쯤을 나를 수 있습니다. 3.1절에서 집합 제어가 분당 16~18명 근처에서 무너지기 시작하는 것과 맞습니다. 같은 계산을 구역 나누기에 하면 차마다 서는 층과 꼭대기 층이 줄어 분당 21명쯤까지 버팁니다. 실제 건물이라면 측정한 대기와 줄 길이를 모델과 비교해야 하고, 이 계산은 그 전에 모델이 터무니없지 않은지 보는 첫 확인입니다.</p>
+  </div>
+</section>
+
+<section class="chap" id="ch3">
+  <h2><span class="n">3</span>실험과 결정</h2>
+  <p class="intro">같은 학생들을 세 규칙에 똑같이 보내고, 부하와 시간대를 바꿔 가며 비교합니다.</p>
+
+  <h3 id="s3-1"><span class="n">3.1</span>부하와 규칙<span class="lvl">단계 6</span></h3>
+  <div class="widget" id="w-load">
+    <h4>도착률에 따른 평균 대기 (엘리베이터 두 대, 상향 피크)</h4>
+    <p class="sub">도착률마다 시드 5개로 30분씩 돌렸고, 세 규칙에 같은 시드를 썼습니다(5편의 공통 난수). 150초 위는 잘라서 그렸습니다.</p>
+    <canvas data-w="640" data-h="240" role="img" aria-label="도착률에 따른 세 규칙의 평균 대기"></canvas>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>한산할 때(분당 6명)는 집합 제어가 가장 좋습니다. 평균 대기가 집합 제어 5초, 구역 나누기 10초, 목적층 예약 9초입니다. 호출이 오면 가장 가까운 차가 바로 오기 때문입니다. 그런데 분당 14명을 넘으면 순서가 뒤집혀, 분당 18명에서는 집합 제어 94초, 목적층 예약 51초, 구역 나누기 34초입니다. 붐빌 때는 한 번에 서는 층이 적은 쪽이 한 바퀴를 빨리 돌아 더 많이 나릅니다. 정답이 부하에 따라 다릅니다.</p>
+  </div>
+
+  <h3 id="s3-2"><span class="n">3.2</span>수업 전 30분<span class="lvl">단계 6</span></h3>
+  <div class="prose">
+    <p>이제 2.1절의 도착률로 8시 30분부터 9시 5분까지 돌립니다. 네 번째 안은 평소에는 집합 제어를 쓰다가 8시 45분부터 9시까지만 구역 나누기로 바꾸는 것입니다. 실제 엘리베이터 제어기의 "출근 시간 모드"가 이런 식입니다.</p>
+  </div>
+  <div class="widget" id="w-peak">
+    <h4>8시 30분부터 9시 5분까지 1층 로비의 줄</h4>
+    <p class="sub">회색 막대는 도착률, 선은 1층에서 기다리는 사람 수(시드 10개 평균)입니다. 세로 점선이 9시입니다.</p>
+    <canvas data-w="640" data-h="270" role="img" aria-label="시간에 따른 도착률과 규칙별 로비 대기 인원"></canvas>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="tbl"><table class="num">
+    <thead><tr><th>규칙 (시드 10개 평균)</th><th>평균 대기</th><th>95% 대기</th><th>지각 (8시 59분 전 도착 364명 중)</th></tr></thead>
+    <tbody>
+      <tr><td>집합 제어</td><td>43초</td><td>124초</td><td>31명</td></tr>
+      <tr><td>목적층 예약</td><td>36초</td><td>105초</td><td>21명</td></tr>
+      <tr><td>구역 나누기</td><td>27초</td><td>77초</td><td>11명</td></tr>
+      <tr><td>8시 45분~9시만 구역 나누기</td><td>25초</td><td>76초</td><td>10명</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 id="s3-3"><span class="n">3.3</span>분석과 결정<span class="lvl">단계 7</span></h3>
+  <div class="prose">
+    <p>이 모델로는 <b>평소에는 집합 제어, 수업 직전 15분만 구역 나누기</b>가 가장 낫습니다. 지각이 31명에서 10명으로 줄고, 한산한 시간의 장점도 잃지 않습니다. 엘리베이터를 한 대 더 놓는 공사 없이 제어기 설정만 바꾸면 됩니다.</p>
+    <p>목적층 예약이 기대보다 못한 것은 이 사례의 배정 규칙이 단순하기 때문입니다. 실제 시스템은 같은 층으로 가는 사람을 더 적극적으로 묶고 몇 초 뒤의 도착까지 내다보고 배정합니다. 결론은 "목적층 예약이 나쁘다"가 아니라 "우리가 짠 목적층 예약은 구역 나누기만큼 묶지 못한다"입니다. 결정 전에 비교할 대안을 공정하게 구현했는지 따지는 것도 모델링의 일입니다.</p>
+    <p>지각 31명과 10명의 차이는 시드 10개로 본 것입니다. 이 차이를 보고하려면 같은 시드끼리 짝지은 차이의 신뢰구간을 붙입니다(4.3절의 파이썬 코드가 그렇게 합니다).</p>
+  </div>
+</section>
+
+<section class="chap" id="ch4">
+  <h2><span class="n">4</span>연결과 정리</h2>
+
+  <h3 id="s4-1"><span class="n">4.1</span>모델의 한계</h3>
+  <dl class="terms">
+    <dt>층 사이 이동</dt><dd>아침에는 모두 1층에서 탄다고 했지만, 실제로는 수업 사이에 층과 층을 오가는 사람도 섞입니다.</dd>
+    <dt>무리 지어 오는 학생</dt><dd>버스가 도착하면 수십 명이 한꺼번에 들어옵니다. 포아송 도착보다 몰림이 심하면 줄은 더 길어집니다(1편 2.6절의 <span class="m">C<sub>a</sub></span>²).</dd>
+    <dt>사람의 행동</dt><dd>꽉 찬 차를 보내고 다음 차를 기다리는 사람, 버튼을 두 번 누르는 사람, 문을 잡는 사람은 없습니다.</dd>
+    <dt>단순한 목적층 예약</dt><dd>3.3절에서 말했듯 실제 시스템보다 배정이 단순합니다.</dd>
+  </dl>
+
+  <h3 id="s4-2"><span class="n">4.2</span>쓰인 편들</h3>
+  <div class="link-note"><p><span class="k">1편과 2편</span>엘리베이터는 움직이는 서버이고, 손계산한 수송 능력은 가동률이 1이 되는 지점을 찾는 계산입니다.</p></div>
+  <div class="link-note"><p><span class="k">4편</span>수업 전 몰림은 시간에 따라 변하는 포아송 도착이고, 솎아내기로 만들었습니다.</p></div>
+  <div class="link-note"><p><span class="k">5편과 8편</span>규칙 비교는 공통 난수로, 최종 선택은 여러 대안 중 가장 나은 것을 고르는 문제입니다. 시간대별 전환 시각(8시 45분)도 최적화할 대상입니다.</p></div>
+  <div class="link-note"><p><span class="k">3편</span>기다리다 계단으로 가는 학생은 각자 참을성을 가진 에이전트입니다.</p></div>
+
+  <h3 id="s4-3"><span class="n">4.3</span>파이썬으로 확인하기</h3>
+  <div class="prose"><p>상향 피크만 남긴 짧은 모델로 집합 제어와 구역 나누기를 비교합니다. 같은 시드를 두 규칙에 주고, 짝지은 차이에 t 신뢰구간을 붙입니다.</p></div>
+<pre class="code"><code><span class="com"># elevator.py : 아침 상향 피크. 집합 제어(LOOK)와 구역 나누기를 같은 손님들로 비교한다</span>
+<span class="kw">import</span> random, statistics <span class="kw">as</span> st
+
+F, CAP, T_FLOOR, T_DOOR, T_PER = <span class="num">8</span>, <span class="num">12</span>, <span class="num">2</span>, <span class="num">4</span>, <span class="num">1</span>      <span class="com"># 1층(0)~8층(7), 한 층 2초, 문 4초 + 한 사람 1초</span>
+
+<span class="kw">def</span> <span class="fn">arrivals</span>(lam, T, seed):                            <span class="com"># 1층에서 2~8층으로 가는 손님 (포아송 도착)</span>
+    rng, t, out = random.Random(seed), <span class="num">0.0</span>, []
+    <span class="kw">while</span> <span class="kw">True</span>:
+        t += rng.expovariate(lam / <span class="num">60</span>)
+        <span class="kw">if</span> t &gt; T: <span class="kw">return</span> out
+        out.append({<span class="str">&quot;t&quot;</span>: t, <span class="str">&quot;d&quot;</span>: rng.randint(<span class="num">1</span>, F - <span class="num">1</span>)})
+
+<span class="kw">def</span> <span class="fn">run</span>(alg, lam, cars=<span class="num">2</span>, T=<span class="num">1800</span>, seed=<span class="num">1</span>):
+    people = arrivals(lam, T, seed)                    <span class="com"># 같은 시드면 두 규칙에 같은 손님 (공통 난수)</span>
+    zone = <span class="kw">lambda</span> p: <span class="bi">min</span>(cars - <span class="num">1</span>, (p[<span class="str">&quot;d&quot;</span>] - <span class="num">1</span>) * cars // (F - <span class="num">1</span>))
+    car = [{<span class="str">&quot;pos&quot;</span>: <span class="num">0</span>, <span class="str">&quot;dir&quot;</span>: <span class="num">0</span>, <span class="str">&quot;door&quot;</span>: <span class="num">0</span>, <span class="str">&quot;load&quot;</span>: []} <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(cars)]
+    lobby, waits, i, tick = [], [], <span class="num">0</span>, <span class="num">0</span>
+    <span class="kw">while</span> i &lt; <span class="bi">len</span>(people) <span class="kw">or</span> lobby <span class="kw">or</span> <span class="bi">any</span>(c[<span class="str">&quot;load&quot;</span>] <span class="kw">for</span> c <span class="kw">in</span> car):
+        <span class="kw">while</span> i &lt; <span class="bi">len</span>(people) <span class="kw">and</span> people[i][<span class="str">&quot;t&quot;</span>] &lt;= tick:
+            lobby.append(people[i]); i += <span class="num">1</span>
+        <span class="kw">for</span> k, c <span class="kw">in</span> <span class="bi">enumerate</span>(car):
+            <span class="kw">if</span> c[<span class="str">&quot;door&quot;</span>] &gt; <span class="num">0</span>:
+                c[<span class="str">&quot;door&quot;</span>] -= <span class="num">1</span>; <span class="kw">continue</span>
+            mine = [p <span class="kw">for</span> p <span class="kw">in</span> lobby <span class="kw">if</span> alg == <span class="str">&quot;look&quot;</span> <span class="kw">or</span> zone(p) == k]
+            <span class="kw">if</span> c[<span class="str">&quot;pos&quot;</span>] % T_FLOOR == <span class="num">0</span>:                <span class="com"># 층에 서 있다 (pos는 초 단위 위치, 한 층 = 2)</span>
+                fl = c[<span class="str">&quot;pos&quot;</span>] // T_FLOOR
+                out = [p <span class="kw">for</span> p <span class="kw">in</span> c[<span class="str">&quot;load&quot;</span>] <span class="kw">if</span> p[<span class="str">&quot;d&quot;</span>] == fl]
+                board = mine[:CAP - <span class="bi">len</span>(c[<span class="str">&quot;load&quot;</span>]) + <span class="bi">len</span>(out)] <span class="kw">if</span> fl == <span class="num">0</span> <span class="kw">else</span> []
+                <span class="kw">if</span> out <span class="kw">or</span> board:
+                    c[<span class="str">&quot;load&quot;</span>] = [p <span class="kw">for</span> p <span class="kw">in</span> c[<span class="str">&quot;load&quot;</span>] <span class="kw">if</span> p[<span class="str">&quot;d&quot;</span>] != fl] + board
+                    <span class="kw">for</span> p <span class="kw">in</span> board: waits.append(tick - p[<span class="str">&quot;t&quot;</span>]); lobby.remove(p)
+                    c[<span class="str">&quot;door&quot;</span>] = T_DOOR + T_PER * (<span class="bi">len</span>(out) + <span class="bi">len</span>(board)); <span class="kw">continue</span>
+                <span class="kw">if</span> c[<span class="str">&quot;load&quot;</span>] <span class="kw">and</span> <span class="bi">max</span>(p[<span class="str">&quot;d&quot;</span>] <span class="kw">for</span> p <span class="kw">in</span> c[<span class="str">&quot;load&quot;</span>]) &gt; fl: c[<span class="str">&quot;dir&quot;</span>] = <span class="num">1</span>     <span class="com"># 손님 내릴 층이 위에 있다</span>
+                <span class="kw">elif</span> fl &gt; <span class="num">0</span>: c[<span class="str">&quot;dir&quot;</span>] = -<span class="num">1</span>                                            <span class="com"># 1층으로 돌아간다</span>
+                <span class="kw">else</span>: c[<span class="str">&quot;dir&quot;</span>] = <span class="num">0</span>                                                    <span class="com"># 1층에서 기다린다</span>
+            c[<span class="str">&quot;pos&quot;</span>] += c[<span class="str">&quot;dir&quot;</span>]
+        tick += <span class="num">1</span>
+    <span class="kw">return</span> st.mean(waits)
+
+<span class="kw">for</span> lam <span class="kw">in</span> (<span class="num">8</span>, <span class="num">18</span>):
+    look = [run(<span class="str">&quot;look&quot;</span>, lam, seed=s) <span class="kw">for</span> s <span class="kw">in</span> <span class="bi">range</span>(<span class="num">10</span>)]
+    zone = [run(<span class="str">&quot;zone&quot;</span>, lam, seed=s) <span class="kw">for</span> s <span class="kw">in</span> <span class="bi">range</span>(<span class="num">10</span>)]
+    diff = [a - b <span class="kw">for</span> a, b <span class="kw">in</span> <span class="bi">zip</span>(look, zone)]          <span class="com"># 같은 손님끼리 짝지은 차이</span>
+    hw = <span class="num">2.262</span> * st.stdev(diff) / <span class="bi">len</span>(diff) ** <span class="num">0.5</span>      <span class="com"># t(0.975, 9) = 2.262</span>
+    <span class="bi">print</span>(<span class="str">f&quot;</span><span class="str">분당 </span>{lam}<span class="str">명: 집합 제어 </span>{st.mean(look):<span class="str">.1f</span>}<span class="str">초, 구역 나누기 </span>{st.mean(zone):<span class="str">.1f</span>}<span class="str">초, </span><span class="str">&quot;</span>
+          <span class="str">f&quot;</span><span class="str">차이 </span>{st.mean(diff):<span class="str">+.1f</span>}<span class="str"> ± </span>{hw:<span class="str">.1f</span>}<span class="str">초</span><span class="str">&quot;</span>)</code></pre>
+  <pre class="code"><code>분당 8명: 집합 제어 6.8초, 구역 나누기 12.5초, 차이 -5.7 ± 0.7초
+분당 18명: 집합 제어 84.7초, 구역 나누기 30.0초, 차이 +54.7 ± 20.8초</code></pre>
+  <p class="code-cap">한산할 때는 집합 제어가, 붐빌 때는 구역 나누기가 낫다는 결론이 두 구간 모두에서 0을 포함하지 않는 차이로 확인됩니다. 붐빌 때의 구간이 넓은 것은 줄이 길어질수록 실행마다의 흔들림이 커지기 때문입니다(5편).</p>
+
+  <h3 id="s4-4"><span class="n">4.4</span>연습과 확장</h3>
+  <div class="ex">
+    <details><summary>1. 구역 나누기로 바꾸는 시각을 8시 40분, 8시 45분, 8시 50분으로 바꿔 보면 지각은 어떻게 달라질까요?</summary><div><p>너무 늦게 바꾸면 이미 쌓인 줄을 다 빼지 못하고, 너무 일찍 바꾸면 한산한 시간에 손해를 봅니다. 도착률이 수송 능력을 넘기 시작하는 시각 조금 전이 좋은 후보입니다. 여러 시각을 같은 시드로 비교하는 것은 8편의 최적화 문제입니다.</p></div></details>
+    <details><summary>2. 구역을 2~5층과 6~8층이 아니라 2~4층과 5~8층으로 나누면 어떨까요?</summary><div><p>위 구역은 이동 거리가 길어 한 바퀴가 오래 걸리므로, 위 구역에 층을 많이 주면 그쪽이 먼저 막힙니다. 수송 능력을 구역별로 손계산해 두 차의 부하가 비슷해지도록 나누는 것이 출발점이고, 그다음 시뮬레이션으로 확인합니다. 층마다 수강생 수가 다르면 도착 비율도 함께 고려합니다.</p></div></details>
+    <details><summary>3. 계단을 켜면 평균 대기는 줄어드는데, 그것이 좋은 일일까요?</summary><div><p>오래 기다린 사람이 줄에서 빠지므로 남은 사람의 대기는 짧아지지만, 계단으로 간 사람은 그만큼 불편을 겪었습니다. 평가 지표에 "계단으로 간 사람 수"를 넣지 않으면 규칙을 잘못 고를 수 있습니다. 1편 미용실 문제의 λ<sub>eff</sub>처럼, 누가 상자 밖으로 빠졌는지를 함께 봐야 합니다.</p></div></details>
+    <details><summary>4. 목적층 예약을 더 잘 만들려면 무엇을 바꿔야 할까요?</summary><div><p>같은 층으로 가는 사람을 같은 차에 묶는 보상을 키우고, 차가 1층에서 출발하기 전 몇 초 동안 배정을 바꿀 수 있게 하고, 앞으로 몇 초 안에 올 사람을 예측해 미리 자리를 남겨 두는 방법이 있습니다. 바꿀 때마다 같은 시드로 이전 버전과 비교해 정말 나아졌는지 확인합니다.</p></div></details>
+  </div>
+</section>
+
+<nav class="pager" aria-label="이전 다음 사례">
+  <a href="ch9_simulation-project.html"><span>이전 편</span><b>9. 프로젝트</b></a>
+  <a class="next" href="case2_course-registration.html"><span>다음 사례</span><b>A2. 수강신청 서버</b></a>
+</nav>
+<footer><a href="https://sites.google.com/view/knunextcom">Next-generation Computing Systems Lab</a>, 경북대학교 컴퓨터학부</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ===== 공통 도구: 색, 캔버스, 난수, 통계, 수식 탐색기 ===== */
+var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+var COL = {};
+function readColors(){
+  var s = getComputedStyle(document.documentElement);
+  ["ink","muted","line","soft","panel","bg","acc","c1","c2","c3","miss","t1","t2","t3","t4","t5"].forEach(function(k){ COL[k] = s.getPropertyValue("--"+k).trim(); });
+}
+readColors();
+function rgba(hex, a){
+  var h = hex.replace("#",""); if(h.length===3) h = h.replace(/(.)/g,"$1$1");
+  var n = parseInt(h,16); return "rgba("+(n>>16&255)+","+(n>>8&255)+","+(n&255)+","+a+")";
+}
+function F(size, weight){ return (weight||400)+" "+size+'px "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif'; }
+function txt(c, s, x, y, o){
+  o = o || {}; c.font = o.font || F(o.size||11, o.weight); c.fillStyle = o.color || COL.muted;
+  c.textAlign = o.align || "left"; c.textBaseline = o.base || "alphabetic"; c.fillText(s, x, y);
+  c.textAlign = "left"; c.textBaseline = "alphabetic";
+}
+function line(c, x0, y0, x1, y1, col, w, dash){
+  c.strokeStyle = col; c.lineWidth = w||1; c.setLineDash(dash||[]);
+  c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.setLineDash([]); c.lineWidth = 1;
+}
+function dot(c, x, y, r, col){ c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+function fmt(v, d){ if(!isFinite(v)) return "∞"; return (+v).toFixed(d===undefined?2:d); }
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+var CANVASES = [];
+function setup(rootOrCanvas, draw){
+  var cv = rootOrCanvas.tagName === "CANVAS" ? rootOrCanvas : rootOrCanvas.querySelector("canvas");
+  var c = cv.getContext("2d"), W = +cv.dataset.w, H = +cv.dataset.h;
+  cv.style.aspectRatio = W + " / " + H;
+  var o = {cv:cv, c:c, W:W, H:H};
+  o.redraw = function(){ c.clearRect(0,0,W,H); draw(c, W, H); };
+  o.fit = function(){
+    var w = cv.clientWidth || W, d = window.devicePixelRatio || 1;
+    cv.width = Math.round(w*d); cv.height = Math.round(w*H/W*d);
+    c.setTransform(cv.width/W, 0, 0, cv.height/H, 0, 0); o.redraw();
+  };
+  o.toLocal = function(ev){ var r = cv.getBoundingClientRect(); return {x:(ev.clientX-r.left)/r.width*W, y:(ev.clientY-r.top)/r.height*H}; };
+  new ResizeObserver(o.fit).observe(cv);
+  CANVASES.push(o);
+  return o;
+}
+function seg(root, sel, onPick){
+  var g = typeof sel === "string" ? root.querySelector(sel) : sel;
+  g.addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    g.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x===b ? "true" : "false"); });
+    onPick(b.dataset.v, b);
+  });
+}
+function bindRange(root, sel, onChange, fmtFn){
+  var inp = root.querySelector(sel), out = inp.parentElement.querySelector("b,output");
+  function u(){ if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value; onChange(+inp.value); }
+  inp.addEventListener("input", u); if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value;
+  return inp;
+}
+
+/* 축과 눈금 */
+function scale(box, xr, yr){
+  return {box:box, xr:xr, yr:yr,
+    X:function(v){ return box[0] + (v-xr[0])/(xr[1]-xr[0])*(box[2]-box[0]); },
+    Y:function(v){ return box[3] - (v-yr[0])/(yr[1]-yr[0])*(box[3]-box[1]); }};
+}
+function axes(c, s, o){
+  o = o || {}; var b = s.box;
+  (o.yt||[]).forEach(function(v){ var y = s.Y(v); line(c, b[0], y+.5, b[2], y+.5, COL.soft); txt(c, o.fy ? o.fy(v) : v, b[0]-6, y+4, {align:"right", size:10}); });
+  line(c, b[0], b[3]+.5, b[2], b[3]+.5, COL.line);
+  line(c, b[0]+.5, b[1], b[0]+.5, b[3], COL.line);
+  (o.xt||[]).forEach(function(v){ var x = s.X(v); line(c, x+.5, b[3], x+.5, b[3]+4, COL.line); txt(c, o.fx ? o.fx(v) : v, x, b[3]+15, {align:"center", size:10}); });
+  if(o.xl) txt(c, o.xl, b[2], b[3]+28, {align:"right", size:10});
+  if(o.yl) txt(c, o.yl, b[0], b[1]-6, {size:10});
+}
+function path(c, s, pts, col, w, dash){
+  var bx = s.box; c.save(); c.beginPath(); c.rect(bx[0]-1, bx[1]-3, bx[2]-bx[0]+2, bx[3]-bx[1]+4); c.clip();
+  c.strokeStyle = col; c.lineWidth = w||1.6; c.setLineDash(dash||[]); c.beginPath();
+  var started = false;
+  pts.forEach(function(p){ if(p == null || !isFinite(p[1])){ started = false; return; }
+    var x = s.X(p[0]), y = clamp(s.Y(p[1]), s.box[1]-2, s.box[3]+2); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; });
+  c.stroke(); c.setLineDash([]); c.lineWidth = 1; c.restore();
+}
+function ticks(a, b, n){
+  var span = b - a, step = Math.pow(10, Math.floor(Math.log10(span/n))), err = span/n/step;
+  step *= err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1;
+  var out = [], v = Math.ceil(a/step)*step;
+  for(; v <= b + 1e-9; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+
+/* 난수: 재현 가능한 생성기와 분포 */
+function mulberry(seed){ var a = seed >>> 0; return function(){ a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function U(r){ return (r || Math.random)(); }
+function expo(mean, r){ return -mean*Math.log(1-U(r)); }
+function normal(r){ var u = 1-U(r), v = U(r); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gammaRV(k, theta, r){
+  if(k < 1){ return gammaRV(k+1, theta, r)*Math.pow(U(r), 1/k); }
+  var d = k - 1/3, cc = 1/Math.sqrt(9*d);
+  while(true){ var x, v; do { x = normal(r); v = 1 + cc*x; } while(v <= 0);
+    v = v*v*v; var u = U(r);
+    if(u < 1 - .0331*x*x*x*x || Math.log(u) < .5*x*x + d*(1 - v + Math.log(v))) return d*v*theta; }
+}
+function lognormRV(mu, s, r){ return Math.exp(mu + s*normal(r)); }
+function poissonRV(lam, r){ var L = Math.exp(-lam), k = 0, p = 1; do { k++; p *= U(r); } while(p > L); return k-1; }
+
+/* 통계 */
+function mean(a){ var s = 0; for(var i=0;i<a.length;i++) s += a[i]; return s/a.length; }
+function sd(a){ var m = mean(a), s = 0; for(var i=0;i<a.length;i++) s += (a[i]-m)*(a[i]-m); return Math.sqrt(s/(a.length-1)); }
+function quantile(sorted, p){ var i = (sorted.length-1)*p, lo = Math.floor(i), hi = Math.ceil(i); return sorted[lo] + (sorted[hi]-sorted[lo])*(i-lo); }
+function normInv(p){ // Acklam 근사
+  var a=[-39.6968302866538,220.946098424521,-275.928510446969,138.357751867269,-30.6647980661472,2.50662827745924],
+      b=[-54.4760987982241,161.585836858041,-155.698979859887,66.8013118877197,-13.2806815528857],
+      cc=[-.00778489400243029,-.322396458041136,-2.40075827716184,-2.54973253934373,4.37466414146497,2.93816398269878],
+      d=[.00778469570904146,.32246712907004,2.445134137143,3.75440866190742], q, r;
+  if(p < .02425){ q = Math.sqrt(-2*Math.log(p)); return (((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if(p > .97575){ q = Math.sqrt(-2*Math.log(1-p)); return -(((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  q = p - .5; r = q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+function normCdf(x){ var t = 1/(1+.2316419*Math.abs(x)), y = .3989423*Math.exp(-x*x/2)*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return x > 0 ? 1-y : y; }
+function tcrit(df, conf){ // 양측 신뢰수준 conf의 t 임계값 (Cornish-Fisher 근사)
+  var z = normInv(1 - (1-(conf||.95))/2), z3 = z*z*z, z5 = z3*z*z, z7 = z5*z*z;
+  return z + (z3+z)/(4*df) + (5*z5+16*z3+3*z)/(96*df*df) + (3*z7+19*z5+17*z3-15*z)/(384*df*df*df);
+}
+
+/* 수식 탐색기: 항을 누르면 강조하고 설명을 보여 준다. EQ[id](값) 이 실시간 계산을 맡는다. */
+var EQ = {}, EQRUN = {};
+function refreshEq(id){ if(EQRUN[id]) EQRUN[id](); }
+function initEqx(){
+  document.querySelectorAll(".eqx").forEach(function(box){
+    var detail = box.querySelector(".eq-detail"), btns = box.querySelectorAll(".eq-terms button");
+    function pick(t){
+      var same = box.dataset.on === t;
+      if(same || !t){ delete box.dataset.on; } else box.dataset.on = t;
+      box.querySelectorAll(".eq-big .t").forEach(function(s){ s.classList.toggle("on", !same && s.dataset.t === t); });
+      btns.forEach(function(b){ b.setAttribute("aria-pressed", !same && b.dataset.t === t ? "true" : "false"); });
+      if(detail){ var src = box.querySelector('template[data-t="'+t+'"]'); detail.innerHTML = !same && src ? src.innerHTML : ""; }
+    }
+    btns.forEach(function(b){
+      var t = box.querySelector('.eq-big .t[data-t="'+b.dataset.t+'"]'); if(t) b.dataset.c = t.dataset.c;
+      b.style.setProperty("--tc", "var(--t"+(b.dataset.c||1)+")");
+      b.addEventListener("click", function(){ pick(b.dataset.t); });
+    });
+    box.querySelectorAll(".eq-big .t").forEach(function(s){ s.tabIndex = 0; s.setAttribute("role","button");
+      s.addEventListener("click", function(){ pick(s.dataset.t); });
+      s.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pick(s.dataset.t); } }); });
+    var fn = EQ[box.id];
+    if(fn){
+      var vars = box.querySelectorAll("[data-var]");
+      var run = function(){
+        var v = {}; vars.forEach(function(i){ v[i.dataset.var] = i.type === "checkbox" ? i.checked : +i.value;
+          var o = i.parentElement.querySelector("b"); if(o) o.textContent = i.dataset.fmt ? fmt(+i.value, +i.dataset.fmt) : i.value; });
+        var res = fn(v, box) || {};
+        Object.keys(res).forEach(function(k){ box.querySelectorAll('[data-o="'+k+'"]').forEach(function(el){ el.innerHTML = res[k]; }); });
+      };
+      vars.forEach(function(i){ i.addEventListener("input", run); });
+      EQRUN[box.id] = run; run();
+    }
+  });
+}
+function onTheme(){ readColors(); CANVASES.forEach(function(o){ o.redraw(); }); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onTheme);
+new MutationObserver(onTheme).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+
+/* 감마 함수와 분포 함수 */
+function lgamma(x){
+  var g = 7, cf = [0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(x < .5) return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*x))) - lgamma(1-x);
+  x -= 1; var a = cf[0], t = x + g + .5;
+  for(var i=1;i<g+2;i++) a += cf[i]/(x+i);
+  return .5*Math.log(2*Math.PI) + (x+.5)*Math.log(t) - t + Math.log(a);
+}
+function gammaP(a, x){ // 정규화된 하부 불완전 감마 함수
+  if(x <= 0) return 0;
+  var gln = lgamma(a);
+  if(x < a + 1){ var ap = a, sum = 1/a, del = sum; for(var n=0;n<300;n++){ ap++; del *= x/ap; sum += del; if(Math.abs(del) < Math.abs(sum)*1e-12) break; } return sum*Math.exp(-x + a*Math.log(x) - gln); }
+  var b = x + 1 - a, c = 1e300, d = 1/b, h = d;
+  for(var i=1;i<300;i++){ var an = -i*(i-a); b += 2; d = an*d + b; if(Math.abs(d) < 1e-300) d = 1e-300; c = b + an/c; if(Math.abs(c) < 1e-300) c = 1e-300; d = 1/d; var del2 = d*c; h *= del2; if(Math.abs(del2-1) < 1e-12) break; }
+  return 1 - Math.exp(-x + a*Math.log(x) - gln)*h;
+}
+function gammaPdf(x, k, th){ if(x <= 0) return (k < 1 && x === 0) ? Infinity : 0; return Math.exp((k-1)*Math.log(x) - x/th - lgamma(k) - k*Math.log(th)); }
+function chi2crit(df, z){ z = z || 1.6449; var a = 2/(9*df); return df*Math.pow(1 - a + z*Math.sqrt(a), 3); }
+function seededSample(seed, n, gen){ var r = mulberry(seed), out = []; for(var i=0;i<n;i++) out.push(gen(r)); return out; }
+
+
+/* ===== 응용 사례 A1 엘리베이터 ===== */
+/* ---------- 엘리베이터: 1초 단위 시뮬레이션 ---------- */
+/* 1층(0)부터 8층(7). 한 층 2초, 문 열고 닫기 4초 + 한 사람 타고 내리는 데 1초, 정원 12명 */
+var ELE = {F:8, cap:12, tFloor:2, tDoor:4, tPer:1};
+function eleArrivals(o, seed){
+  var r = mulberry(seed), A = [], t = 0, T = o.T, rate;
+  for(;;){
+    if(o.profile){ // 시간에 따라 변하는 도착: 솎아내기 (4편)
+      var mx = o.lamMax/60; t += expo(1/mx, r); if(t > T) break;
+      if(r() > o.profile(t)/o.lamMax) continue;
+    } else { t += expo(60/o.lam, r); if(t > T) break; }
+    var up = o.traffic === "up" ? true : o.traffic === "down" ? false : r() < .5;
+    var f = 1 + Math.floor(r()*(ELE.F - 1));
+    A.push({t:t, o:up ? 0 : f, d:up ? f : 0, pat:expo(60, r), id:A.length});
+  }
+  return A;
+}
+function eleRun(o, seed){
+  var A = eleArrivals(o, seed), c = o.cars, F = ELE.F, T = o.T + (o.drain || 600), ai = 0, tick = 0;
+  var cars = []; for(var k=0;k<c;k++) cars.push({pos:0, dir:0, door:0, load:[], stops:0, trips:0, target:null});
+  var wait = [], done = [], stairs = 0, waits = [], journeys = [], lobbyQ = [];
+  function zone(p){ var f = p.o === 0 ? p.d : p.o, n = F - 1, z = Math.floor((f - 1)*c/n); return Math.min(c - 1, z); }
+  var ALG = o.alg;
+  function eligible(p, k){ if(ALG === "zone") return zone(p) === k; if(ALG === "dd") return p.car === k; return true; }
+  function dirOf(p){ return p.d > p.o ? 1 : -1; }
+  function assignDD(p){ // 목적층 예약: 이미 그 층에 서는 차, 곧 도착할 차, 덜 붐비는 차를 고른다
+    var best = 0, bs = Infinity;
+    for(var k=0;k<c;k++){
+      var car = cars[k], mine = wait.filter(function(q){ return q.car === k; }), stopsAt = {};
+      mine.forEach(function(q){ stopsAt[q.d] = 1; stopsAt[q.o] = 1; }); car.load.forEach(function(q){ stopsAt[q.d] = 1; });
+      var eta = Math.abs(car.pos - p.o)*ELE.tFloor + car.load.length*1.5 + (car.dir !== 0 && Math.sign(p.o - car.pos) !== car.dir ? 20 : 0);
+      var sc = eta + (stopsAt[p.d] ? 0 : (o.ddPen || 60)) + 1.2*mine.length + (mine.length + car.load.length >= ELE.cap ? 80 : 0);
+      if(sc < bs){ bs = sc; best = k; }
+    }
+    p.car = best;
+  }
+  var trace = o.trace ? [] : null;
+  var recs = [];
+  for(tick=0; tick<T; tick++){
+    if(o.algAt) ALG = o.algAt(tick);
+    while(ai < A.length && A[ai].t <= tick){ var p = A[ai++]; p.car = null; if(ALG === "dd") assignDD(p); wait.push(p); }
+    // 계단: 참을성이 다한 사람 중 두 층 이내면 걸어간다 (에이전트의 선택)
+    if(o.stairs) wait = wait.filter(function(p){ if(tick - p.t > p.pat && Math.abs(p.d - p.o) <= 2){ stairs++; recs.push([p.t, tick + 30*Math.abs(p.d - p.o), 1]); return false; } return true; });
+    for(var k=0;k<c;k++){
+      var car = cars[k];
+      if(car.door > 0){ car.door--; continue; }
+      var atFloor = Math.abs(car.pos - Math.round(car.pos)) < 1e-9, fl = Math.round(car.pos);
+      if(atFloor){
+        var out = car.load.filter(function(p){ return p.d === fl; });
+        var goDir = car.dir;
+        var cand = wait.filter(function(p){ return p.o === fl && eligible(p, k); });
+        if(goDir === 0 && cand.length) goDir = dirOf(cand[0]);
+        // 이 방향으로 더 갈 일이 없으면 반대 방향 손님도 태운다
+        var ahead = function(d){ return car.load.some(function(p){ return (p.d - fl)*d > 0; }) || wait.some(function(p){ return eligible(p, k) && (p.o - fl)*d > 0; }); };
+        if(goDir !== 0 && !ahead(goDir) && !car.load.some(function(p){ return p.d !== fl; })) { var anyDir = cand.filter(function(p){ return dirOf(p) === goDir; }); if(!anyDir.length && cand.length) goDir = dirOf(cand[0]); }
+        var board = cand.filter(function(p){ return dirOf(p) === goDir; }).slice(0, ELE.cap - (car.load.length - out.length));
+        if(out.length || board.length){
+          if(ALG === "dd" && fl === 0 && car.load.length === 0 && board.length) car.holdUntil = tick + (o.hold || 0);
+          car.load = car.load.filter(function(p){ return p.d !== fl; });
+          out.forEach(function(p){ journeys.push(tick - p.t); recs.push([p.t, tick]); });
+          board.forEach(function(p){ waits.push(tick - p.t); car.load.push(p); });
+          wait = wait.filter(function(p){ return board.indexOf(p) < 0; });
+          car.door = ELE.tDoor + out.length + board.length; car.stops++; car.dir = goDir;
+          continue;
+        }
+        // 목적층 예약: 1층에서 같은 차에 배정된 손님을 잠깐 더 기다려 한 번에 태운다
+        if(ALG === "dd" && fl === 0 && car.load.length > 0 && car.load.length < ELE.cap && car.holdUntil && tick < car.holdUntil) continue;
+        // 다음 방향 정하기
+        var hasUp = ahead(1), hasDn = ahead(-1);
+        if(car.dir === 1 && hasUp) car.dir = 1; else if(car.dir === -1 && hasDn) car.dir = -1;
+        else if(hasUp && hasDn){ car.dir = 1; } else if(hasUp) car.dir = 1; else if(hasDn) car.dir = -1;
+        else { car.dir = 0; if(o.traffic === "up" && fl !== 0 && o.park) car.dir = -1; }
+        if(car.dir === 0) continue;
+        // 집합 제어에서 쉬던 차는 다른 차가 이미 가는 호출을 쫓지 않는다
+        if(ALG === "look" && car.load.length === 0){
+          var targets = wait.filter(function(p){ return (p.o - fl)*car.dir > 0; }).map(function(p){ return p.o; });
+          var claimed = cars.some(function(oc, j){ return j !== k && oc.dir === car.dir && (oc.pos - fl)*car.dir >= 0 && targets.every(function(f){ return (f - oc.pos)*car.dir >= 0; }) && oc.load.length < ELE.cap; });
+          if(claimed && targets.length && !(o.traffic === "up" && o.park && fl !== 0 && car.dir === -1)){ car.dir = 0; continue; }
+        }
+      }
+      car.pos += car.dir/ELE.tFloor;
+      if(car.pos < 0){ car.pos = 0; car.dir = 0; } if(car.pos > F - 1){ car.pos = F - 1; car.dir = 0; }
+    }
+    if(trace && tick % (o.traceEvery || 1) === 0) trace.push({t:tick, cars:cars.map(function(cr){ return {pos:cr.pos, n:cr.load.length, door:cr.door > 0}; }), wait:wait.map(function(p){ return p.o; }), lobby:wait.filter(function(p){ return p.o === 0; }).length});
+    if(ai >= A.length && !wait.length && cars.every(function(cr){ return !cr.load.length; }) && tick > o.T) break;
+  }
+  waits.sort(function(a, b){ return a - b; });
+  var m = waits.length ? waits.reduce(function(a, b){ return a + b; }, 0)/waits.length : NaN;
+  var stops = cars.reduce(function(a, cr){ return a + cr.stops; }, 0);
+  return {n:A.length, served:waits.length, wait:m, p95:waits.length ? waits[Math.floor(.95*(waits.length-1))] : NaN, journey:journeys.length ? journeys.reduce(function(a, b){ return a + b; }, 0)/journeys.length : NaN, stops:stops, stopsPer:stops/Math.max(1, waits.length), stairs:stairs, left:wait.length, trace:trace, recs:recs};
+}
+
+function inView(el, cb){ if(!("IntersectionObserver" in window)){ cb(true); return; } new IntersectionObserver(function(es){ cb(es[0].isIntersecting); }, {rootMargin:"60px"}).observe(el); }
+var ALGN = {look:"집합 제어", zone:"구역 나누기", dd:"목적층 예약", sw:"8:45~9:00만 구역"};
+function morning(t){ var mn = t/60; if(mn < 10) return 3 + mn/10*5; if(mn < 22) return 8 + (mn - 10)/12*12; if(mn < 29) return 20; if(mn < 30) return 12; return 2; }
+
+/* ---------- 2.2 강의동 30분 ---------- */
+(function(){
+  var root = document.getElementById("w-ele"); if(!root) return;
+  var P = {cars:2, alg:"look", traffic:"up", lam:12, stairs:false, spd:20, seed:1}, res, tt = 0, playing = !REDUCED, visible = false;
+  function rerun(){ res = eleRun({cars:P.cars, alg:P.alg, traffic:P.traffic, lam:P.lam, T:1800, drain:0, park:true, stairs:P.stairs, trace:true}, P.seed); tt = REDUCED ? res.trace.length - 1 : 0; }
+  var view = setup(root, function(c, W, H){
+    var fr = res.trace[Math.min(Math.floor(tt), res.trace.length - 1)], F = ELE.F, fh = 32, y0 = 16, yb = y0 + F*fh;
+    for(var f=0; f<F; f++){
+      var y = yb - (f + 1)*fh;
+      line(c, 40, y + fh + .5, 600, y + fh + .5, COL.soft);
+      txt(c, (f + 1) + "층", 34, y + fh/2 + 4, {align:"right", size:11, color:COL.ink});
+      var n = fr.wait.filter(function(o){ return o === f; }).length, show = Math.min(n, 22);
+      for(var i=0;i<show;i++) dot(c, 280 - i*10, y + fh/2, 3.6, COL.c1);
+      if(n > 22) txt(c, "+" + (n - 22), 280 - 22*10 - 4, y + fh/2 + 4, {align:"right", size:10, color:COL.ink});
+    }
+    fr.cars.forEach(function(car, k){
+      var x = 330 + k*80, y = yb - (car.pos + 1)*fh + 3;
+      c.fillStyle = COL.soft; c.fillRect(x - 4, y0, 52, F*fh);
+      c.fillStyle = COL.panel; c.fillRect(x, y, 44, fh - 6);
+      c.strokeStyle = car.door ? COL.acc : COL.ink; c.lineWidth = car.door ? 3 : 1.2; c.strokeRect(x + .5, y + .5, 43, fh - 7); c.lineWidth = 1;
+      txt(c, String(car.n), x + 22, y + fh/2 + 1, {align:"center", size:12, weight:500, color:COL.ink});
+      txt(c, (k + 1) + "호기", x + 22, yb + 14, {align:"center", size:10});
+    });
+    var mm = Math.floor(fr.t/60), ss = Math.floor(fr.t % 60);
+    txt(c, "경과 " + mm + "분 " + (ss < 10 ? "0" : "") + ss + "초", 600, 12, {align:"right", size:11, color:COL.ink});
+    if(P.alg === "zone" && P.cars > 1){ txt(c, "구역: " + zonesText(), 600, 28, {align:"right", size:10}); }
+  });
+  function zonesText(){ var out = [], c = P.cars, n = ELE.F - 1; for(var k=0;k<c;k++){ var fl = []; for(var f=1; f<ELE.F; f++) if(Math.min(c - 1, Math.floor((f - 1)*c/n)) === k) fl.push(f + 1); out.push((k + 1) + "호기 " + fl[0] + "~" + fl[fl.length - 1] + "층"); } return out.join(", "); }
+  function report(){
+    var fr = res.trace[Math.min(Math.floor(tt), res.trace.length - 1)];
+    root.querySelector("[data-out]").innerHTML = "지금 기다리는 사람 <b>" + fr.wait.length + "명</b>. 30분 전체: 평균 대기 <b>" + fmt(res.wait, 1) + "초</b>, 95% 대기 " + fmt(res.p95, 0) + "초, 평균 이동시간(기다림 포함) " + fmt(res.journey, 0) + "초" + (P.stairs ? ", 계단으로 간 사람 " + res.stairs + "명" : "") + ".";
+  }
+  function upd(){ rerun(); view.redraw(); report(); }
+  seg(root, '[data-g="cars"]', function(v){ P.cars = +v; upd(); });
+  seg(root, '[data-g="alg"]', function(v){ P.alg = v; upd(); });
+  seg(root, '[data-g="traffic"]', function(v){ P.traffic = v; upd(); });
+  seg(root, '[data-g="spd"]', function(v){ P.spd = +v; });
+  bindRange(root, "[data-lam]", function(v){ P.lam = v; upd(); }, function(v){ return v + "명"; });
+  root.querySelector("[data-stairs]").addEventListener("change", function(e){ P.stairs = e.target.checked; upd(); });
+  var pb = root.querySelector('[data-act="play"]');
+  pb.onclick = function(){ playing = !playing; if(playing && tt >= res.trace.length - 1) tt = 0; pb.textContent = playing ? "일시정지" : "재생"; };
+  pb.textContent = playing ? "일시정지" : "재생";
+  root.querySelector('[data-act="new"]').onclick = function(){ P.seed++; upd(); };
+  inView(root, function(v){ visible = v; });
+  upd();
+  var last = performance.now(), rep = 0;
+  (function frame(now){
+    var dt = Math.min(.1, (now - last)/1000); last = now;
+    if(playing && visible && tt < res.trace.length - 1){ tt = Math.min(res.trace.length - 1, tt + dt*P.spd); view.redraw(); rep += dt; if(rep > .25){ rep = 0; report(); } }
+    requestAnimationFrame(frame);
+  })(last);
+})();
+
+/* ---------- 3.1 부하와 규칙 ---------- */
+(function(){
+  var root = document.getElementById("w-load"); if(!root) return;
+  var ALGS = [["look","miss"],["dd","c1"],["zone","c3"]], L = [], D = {look:[], dd:[], zone:[]};
+  for(var l=4; l<=22; l+=2) L.push(l);
+  var view = setup(root, function(c, W, H){
+    var s = scale([52, 14, 600, 196], [4, 22], [0, 150]);
+    axes(c, s, {xt:L, yt:[0,30,60,90,120,150], xl:"분당 도착", yl:"평균 대기 (초)"});
+    ALGS.forEach(function(a){ if(D[a[0]].length) path(c, s, D[a[0]], COL[a[1]], 2.2); D[a[0]].forEach(function(p){ dot(c, s.X(p[0]), s.Y(Math.min(150, p[1])), 2.8, COL[a[1]]); }); });
+    var lx = 70; ALGS.forEach(function(a){ line(c, lx, 226, lx + 16, 226, COL[a[1]], 2.2); txt(c, ALGN[a[0]], lx + 20, 230, {size:10.5}); lx += 110; });
+  });
+  function go(){
+    var jobs = []; L.forEach(function(l){ ALGS.forEach(function(a){ jobs.push([l, a[0]]); }); });
+    (function next(){ var j = jobs.shift(); if(!j){ report(); return; }
+      var w = 0; for(var s=1;s<=5;s++) w += eleRun({cars:2, alg:j[1], traffic:"up", lam:j[0], T:1800, park:true}, s).wait;
+      D[j[1]].push([j[0], w/5]); view.redraw(); setTimeout(next, 0); })();
+  }
+  function report(){
+    var cross = null; for(var i=0;i<L.length;i++){ if(D.zone[i][1] < D.look[i][1]){ cross = L[i]; break; } }
+    root.querySelector("[data-out]").innerHTML = "분당 " + (cross || "?") + "명부터 구역 나누기가 집합 제어보다 짧게 기다립니다. 그 아래에서는 집합 제어가 낫습니다. 분당 18명에서 평균 대기: 집합 제어 " + fmt(D.look[7][1], 0) + "초, 목적층 예약 " + fmt(D.dd[7][1], 0) + "초, 구역 나누기 " + fmt(D.zone[7][1], 0) + "초.";
+  }
+  root.querySelector("[data-out]").innerHTML = "화면에 보이면 계산을 시작합니다…";
+  var started = false; inView(root, function(v){ if(v && !started){ started = true; go(); } });
+})();
+
+/* ---------- 3.2 수업 전 30분 ---------- */
+(function(){
+  var root = document.getElementById("w-peak"); if(!root) return;
+  var V = [["look","miss",{alg:"look"}],["dd","c1",{alg:"dd"}],["zone","c3",{alg:"zone"}],["sw","ink",{alg:"look", algAt:function(t){ return t >= 900 && t < 1800 ? "zone" : "look"; }}]], R = {}, late = {};
+  var view = setup(root, function(c, W, H){
+    var s = scale([52, 14, 600, 200], [0, 2100], [0, 60]);
+    var X = function(t){ return s.X(t); };
+    for(var t=0; t<2100; t+=60){ var r = morning(t + 30); c.fillStyle = rgba(COL.muted, .18); c.fillRect(X(t) + 1, s.Y(r*2.5), X(t + 60) - X(t) - 2, s.Y(0) - s.Y(r*2.5)); }
+    axes(c, s, {xt:[0,300,600,900,1200,1500,1800,2100], yt:[0,20,40,60], fx:function(v){ var m = 30 + v/60, h = 8 + Math.floor(m/60); m = m % 60; return h + ":" + (m < 10 ? "0" : "") + m; }, yl:"1층 대기 인원"});
+    line(c, X(1800), s.box[1], X(1800), s.box[3], COL.ink, 1, [4,3]); txt(c, "9:00 수업", X(1800) + 4, s.box[1] + 10, {size:10, color:COL.ink});
+    V.forEach(function(v){ if(R[v[0]]) path(c, s, R[v[0]], COL[v[1]], v[0] === "sw" ? 2.4 : 1.8, v[0] === "sw" ? [6,3] : null); });
+    var lx = 60; V.forEach(function(v){ line(c, lx, 240, lx + 16, 240, COL[v[1]], 2); txt(c, ALGN[v[0]], lx + 20, 244, {size:10.5}); lx += 132; });
+    txt(c, "회색 막대 높이 = 분당 도착률 × 2.5", 600, 262, {align:"right", size:9.5});
+  });
+  function go(){
+    var jobs = V.slice();
+    (function next(){ var v = jobs.shift(); if(!v){ report(); return; }
+      var sum = [], nl = 0;
+      for(var sd=1; sd<=10; sd++){
+        var r = eleRun(Object.assign({cars:2, traffic:"up", T:2100, park:true, profile:morning, lamMax:20, trace:true, traceEvery:30}, v[2]), sd);
+        r.trace.forEach(function(fr, i){ sum[i] = (sum[i] || 0) + fr.lobby; });
+        nl += r.recs.filter(function(x){ return x[0] < 1740 && x[1] > 1800; }).length;
+      }
+      R[v[0]] = sum.map(function(x, i){ return [i*30, x/10]; }); late[v[0]] = nl/10;
+      view.redraw(); setTimeout(next, 0); })();
+  }
+  function report(){
+    root.querySelector("[data-out]").innerHTML = "9시를 넘겨 강의실 층에 닿은 학생(8시 59분 전 도착, 시드 10개 평균): " + V.map(function(v){ return ALGN[v[0]] + " <b>" + fmt(late[v[0]], 1) + "명</b>"; }).join(", ") + ".";
+  }
+  root.querySelector("[data-out]").innerHTML = "화면에 보이면 계산을 시작합니다…";
+  var started = false; inView(root, function(v){ if(v && !started){ started = true; go(); } });
+})();
+
+initEqx();
+})();
+</script>
+</body>
+</html>

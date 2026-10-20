@@ -3,939 +3,1261 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>리틀의 법칙: 대기행렬 이론 입문</title>
+<title>큐잉 이론과 리틀의 법칙</title>
+<!--
+  모델링과 시뮬레이션 학습 자료, 1편: 큐잉 이론과 리틀의 법칙
+  이 페이지가 연결하는 사이트 안 파일: index.html, ch0_simulation-101.html, ch2_DES.html
+  큐 공식(qmath)과 잭슨 네트워크 시뮬레이터는 맨 아래 <script> 안에 있습니다.
+-->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#F3F5F8; --panel:#FFFFFF; --ink:#17202E; --muted:#5A6577; --line:#D5DBE3; --soft:#E8ECF1;
-  --wait:#C27C00; --serve:#0E7C6B; --arrive:#3557C9; --block:#C8372D; --on:#FFFFFF;
-  --code-k:#7A3EB1; --code-s:#0E7C6B; --code-c:#6B7685; --code-n:#B35C00; --code-f:#2F55C4; --code-b:#A6326E;
+  --acc:#3557C9; --c1:#3557C9; --c2:#C27C00; --c3:#0E7C6B; --miss:#C8372D;
+  --t1:#2E62D0; --t2:#C2410C; --t3:#0E8A6B; --t4:#8B3FD9; --t5:#B91C5C;
+  --k-kw:#8A3FA8; --k-fn:#2457C5; --k-str:#2E7D32; --k-num:#B5560F; --k-com:#7A8494; --k-bi:#0F7C86;
   --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --math:"STIX Two Text","Times New Roman",Times,serif;
+  --code:"D2Coding","Consolas","SFMono-Regular",Menlo,monospace;
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
-    --wait:#F0A928; --serve:#2DB59D; --arrive:#7690F2; --block:#EE5D52; --on:#10151C;
-    --code-k:#C79BF2; --code-s:#5CD1B5; --code-c:#8893A3; --code-n:#F5B062; --code-f:#8FA8F7; --code-b:#F08DBE;
+    --acc:#7690F2; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+    --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+    --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
-  --wait:#F0A928; --serve:#2DB59D; --arrive:#7690F2; --block:#EE5D52; --on:#10151C;
-    --code-k:#C79BF2; --code-s:#5CD1B5; --code-c:#8893A3; --code-n:#F5B062; --code-f:#8FA8F7; --code-b:#F08DBE;
+  --acc:#7690F2; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+  --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+  --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
   color-scheme:dark;
 }
-:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
-html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth;}
-@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+:root{box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
 *,*::before,*::after{box-sizing:inherit}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.75;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:break-word}
-.wrap{max-width:1080px;margin:0 auto;padding:0 clamp(16px,4vw,40px)}
-.prose{max-width:68ch}
-h1{font-size:clamp(2rem,5vw,3.1rem);line-height:1.2;font-weight:700;letter-spacing:-0.02em;margin:0 0 .5em}
-h2{font-size:clamp(1.4rem,3vw,1.8rem);line-height:1.3;font-weight:700;letter-spacing:-0.01em;margin:0 0 .7em}
-h3{font-size:1.1rem;font-weight:700;margin:1.6em 0 .5em}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 16px); scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+body{margin:0; background:var(--bg); color:var(--ink); font:400 17px/1.75 var(--sans); -webkit-font-smoothing:antialiased; word-break:keep-all; overflow-wrap:break-word}
+a{color:var(--acc)}
+.wrap{max-width:980px; margin:0 auto; padding:40px 24px 48px}
+.prose{max-width:42em}
 p{margin:0 0 1em}
-.m{font-family:var(--math);font-style:italic;font-size:1.08em;letter-spacing:.01em}
-.eq{font-family:var(--math);font-size:1.25rem;margin:1.1em 0 1.2em;padding-left:1.2em;border-left:3px solid var(--line);line-height:1.9;overflow-x:auto}
-.eq .m{font-size:1em}
-sub{font-size:.7em;line-height:0}
-a{color:var(--arrive)}
-:focus-visible{outline:2px solid var(--arrive);outline-offset:2px;border-radius:4px}
+code{font-family:var(--code); font-size:.9em; background:var(--soft); padding:1px 5px; border-radius:4px}
 
-header{padding:clamp(40px,7vw,80px) 0 28px}
-.lede{font-size:1.1rem;color:var(--muted);max-width:62ch}
+/* 머리말 */
+.back{font-size:15px; margin:0 0 36px}
+.back a{color:var(--muted)}
+.series{margin:0 0 10px; color:var(--muted); font-size:15px}
+h1{margin:0; font-weight:700; font-size:clamp(34px,6vw,54px); line-height:1.12; letter-spacing:-0.02em}
+h1 .n{font-family:var(--math); font-weight:500; color:var(--acc); margin-right:.2em}
+.lead{margin:18px 0 0; color:var(--muted); max-width:38em; font-size:18px}
+.goals{display:grid; grid-template-columns:1.4fr 1fr; gap:24px; margin:32px 0 0}
+.goals > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px}
+.goals h2{font-size:15px; margin:0 0 6px}
+.goals ul{margin:0; padding-left:1.1em; font-size:15px; line-height:1.65}
+.goals .pre a{display:inline-block; margin:2px 6px 2px 0; font-size:14px; text-decoration:none; padding:2px 9px; border-radius:5px; background:var(--soft); color:var(--ink)}
+.goals .pre a:hover{background:var(--acc); color:var(--panel)}
+.goals .pre p{font-size:14.5px; color:var(--muted); margin:6px 0 0}
+.toc{margin:28px 0 0; display:grid; grid-template-columns:repeat(4,1fr); gap:0 24px; border-top:2px solid var(--ink); padding-top:16px}
+.toc h2{font-size:15px; margin:0 0 6px}
+.toc h2 a{color:var(--ink); text-decoration:none}
+.toc ol{list-style:none; margin:0; padding:0; font-size:14px; line-height:1.65}
+.toc ol a{color:var(--muted); text-decoration:none}
+.toc a:hover{color:var(--acc); text-decoration:underline}
 
-/* the law */
-.law{display:flex;align-items:flex-start;gap:clamp(10px,3vw,36px);margin:28px 0 6px;flex-wrap:nowrap}
-.term{display:flex;flex-direction:column;align-items:flex-start;min-width:0}
-.sym{font-family:var(--math);font-style:italic;font-size:clamp(3.6rem,11vw,7.5rem);line-height:1;font-weight:400}
-.op{font-family:var(--math);font-size:clamp(2.6rem,8vw,5.5rem);line-height:1.15;color:var(--muted)}
-.val{font-variant-numeric:tabular-nums;font-size:clamp(1.1rem,2.6vw,1.6rem);font-weight:500;margin-top:6px}
-.cap{font-size:.82rem;color:var(--muted);line-height:1.4}
-.check{font-size:1rem;color:var(--muted);margin:14px 0 0;font-variant-numeric:tabular-nums}
-.check b{color:var(--ink);font-weight:500}
+/* 장, 절 */
+.chap{margin-top:88px}
+.chap > h2{display:flex; align-items:baseline; gap:16px; font-size:clamp(28px,4.4vw,38px); line-height:1.2; margin:0 0 12px; letter-spacing:-0.01em}
+.chap > h2 .n{font:500 1.5em/1 var(--math); color:var(--acc)}
+.chap > .intro{color:var(--muted); font-size:18px; max-width:40em; margin-bottom:8px}
+h3{font-size:22px; line-height:1.35; margin:56px 0 12px}
+h3 .n{font:500 1em var(--math); color:var(--acc); margin-right:10px}
+h4{font-size:17px; margin:24px 0 6px}
+.m{font-family:var(--math); font-style:italic; font-size:1.08em; white-space:nowrap}
+.mr{font-family:var(--math); font-size:1.08em; white-space:nowrap}
+.note{max-width:42em; margin:20px 0; padding:14px 18px; border-radius:8px; background:var(--soft); font-size:15.5px; line-height:1.7}
+.note > :last-child{margin-bottom:0}
+.link-note{max-width:42em; margin:20px 0; padding:12px 18px 12px 16px; border-left:3px solid var(--acc); background:var(--panel); border-radius:0 8px 8px 0; font-size:15.5px}
+.link-note > :last-child{margin-bottom:0}
+.link-note .k{font-weight:700; color:var(--acc); margin-right:6px}
+dl.terms{display:grid; grid-template-columns:auto 1fr; gap:6px 18px; max-width:42em; margin:0; font-size:15.5px}
+dl.terms dt{font-weight:700}
+dl.terms dd{margin:0; color:var(--muted)}
+.cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:20px 0}
+.cards.two{grid-template-columns:1fr 1fr}
+.cards > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; font-size:15.5px}
+.cards h4{margin:0 0 6px}
+.cards p{margin:0}
+ol.steps{list-style:none; margin:20px 0; padding:0; counter-reset:s; max-width:44em}
+ol.steps > li{counter-increment:s; position:relative; padding:0 0 14px 44px}
+ol.steps > li::before{content:counter(s); position:absolute; left:0; top:-2px; width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font:500 17px/1 var(--math); background:var(--acc); color:var(--panel)}
+ol.steps > li b{display:block}
 
-/* bench */
-.bench{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:clamp(14px,2.4vw,24px);margin:26px 0 0}
-canvas{display:block;width:100%;touch-action:pan-y}
-.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.85rem;color:var(--muted);margin:8px 0 0}
-.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
-.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 26px;margin:20px 0 4px}
-.ctl{display:flex;flex-direction:column;gap:4px;font-size:.92rem;border:0;margin:0;padding:0;min-width:0}
-.ctl .row{display:flex;justify-content:space-between;gap:8px}
-.ctl output{font-variant-numeric:tabular-nums;color:var(--muted)}
-.ctl legend{padding:0;margin-bottom:4px}
-input[type=range]{width:100%;accent-color:var(--ink)}
-.seg{display:flex;flex-wrap:wrap;gap:0}
-.seg .opts{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;width:max-content;max-width:100%}
-.seg label{position:relative;cursor:pointer}
-.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
-.seg span{display:block;padding:5px 14px;font-size:.88rem;border-right:1px solid var(--line)}
-.seg label:last-child span{border-right:0}
-.seg input:checked + span{background:var(--ink);color:var(--bg)}
-.seg input:focus-visible + span{outline:2px solid var(--arrive);outline-offset:-2px}
-.buttons{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 0}
-button{font:inherit;font-size:.92rem;padding:7px 16px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
-button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-button:hover{border-color:var(--muted)}
+/* 사례 연구 머리 */
+.case{margin:56px 0 0; padding-top:18px; border-top:1px solid var(--line)}
+.case h3{margin-top:0}
+.lvl{display:inline-block; font-size:13px; font-weight:500; padding:1px 8px; border-radius:4px; margin-left:8px; vertical-align:3px; background:var(--soft); color:var(--muted)}
+.lvl.real{background:var(--acc); color:var(--panel)}
 
-.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;margin-top:22px}
-@media (max-width:820px){.split{grid-template-columns:1fr}}
-.tbl{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
-th,td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
-th:first-child,td:first-child{text-align:left}
-thead th{font-weight:500;color:var(--muted)}
-.subhead{font-size:.95rem;font-weight:700;margin:0 0 6px}
-.note{font-size:.85rem;color:var(--muted)}
+/* 수식 탐색기 */
+.eqx{margin:28px 0; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px 16px}
+.eqx > .cap{margin:0 0 4px; font-size:14px; color:var(--muted)}
+.eq-big{font-family:var(--math); font-size:clamp(24px,3.6vw,36px); line-height:1.6; padding:12px 0 14px; overflow-x:auto; white-space:nowrap; text-align:center}
+.eq-big .t{--tc:var(--ink); border-bottom:3px solid var(--tc); padding:0 3px; border-radius:4px; cursor:pointer; transition:background .15s}
+.eq-big .t:hover, .eqx[data-on] .eq-big .t.on{background:color-mix(in srgb, var(--tc) 22%, transparent)}
+.eqx[data-on] .eq-big .t:not(.on){opacity:.4}
+.eq-big .op{color:var(--muted); padding:0 .12em}
+.eq-big sub, .eq-big sup{font-size:.6em}
+.eq-big .frac{display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; line-height:1.15; margin:0 .1em}
+.eq-big .frac > span:first-child{border-bottom:2px solid currentColor; padding:0 .15em .05em}
+.eq-big .frac > span:last-child{padding:.08em .15em 0}
+.t[data-c="1"]{--tc:var(--t1)} .t[data-c="2"]{--tc:var(--t2)} .t[data-c="3"]{--tc:var(--t3)} .t[data-c="4"]{--tc:var(--t4)} .t[data-c="5"]{--tc:var(--t5)}
+.eq-terms{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; margin:4px 0 0}
+.eq-terms button{
+  --tc:var(--ink); text-align:left; font:400 14px/1.5 var(--sans); color:var(--ink); background:var(--bg);
+  border:1px solid var(--line); border-left:4px solid var(--tc); border-radius:6px; padding:8px 10px; cursor:pointer;
+}
+.eq-terms button b{display:block; font-family:var(--math); font-size:17px; font-weight:500; color:var(--tc)}
+.eq-terms button[aria-pressed="true"]{background:color-mix(in srgb, var(--tc) 14%, var(--panel)); border-color:var(--tc)}
+.eq-terms button:focus-visible{outline:2px solid var(--tc); outline-offset:2px}
+.eq-detail{margin:12px 0 0; padding:12px 14px; border-radius:8px; background:var(--soft); font-size:15px; min-height:3em}
+.eq-detail:empty{display:none}
+.eq-live{margin-top:14px; padding-top:12px; border-top:1px dashed var(--line)}
+.eq-live .sub{font-size:14px; color:var(--muted); margin:0 0 6px}
+.eqx canvas{display:block; width:100%; height:auto; margin-top:8px}
+.hat{position:relative; display:inline-block}
+.hat::after{content:"ˆ"; position:absolute; left:50%; top:-.42em; transform:translateX(-45%); font-style:normal}
+.lim{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; line-height:1; margin:0 .08em; font-size:1.3em}
+.lim small{font-size:.34em; line-height:1.15}
+.eq-num{font-family:var(--math); font-size:22px; text-align:center; margin:10px 0 2px; overflow-x:auto; white-space:nowrap}
+.eq-num .t{border-bottom:2px solid var(--tc); padding:0 2px}
 
-section{padding:clamp(48px,7vw,80px) 0 0}
-dl{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;margin:0 0 1.2em}
-dt{font-family:var(--math);font-style:italic;font-size:1.3rem;line-height:1.5}
-dd{margin:0}
-.readout{font-size:.95rem;color:var(--muted);min-height:1.6em;font-variant-numeric:tabular-nums;margin:8px 0 0}
-.readout b{color:var(--ink);font-weight:500}
-.pair{display:flex;flex-wrap:wrap;gap:8px 32px;margin:14px 0 0;font-variant-numeric:tabular-nums}
-.pair div{font-size:.95rem}
-.pair strong{display:block;font-size:1.35rem;font-weight:500}
+/* 위젯 */
+.widget{margin:24px 0 28px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px 14px}
+.widget > h4{margin:0 0 2px; font-size:16px}
+.widget > .sub{margin:0 0 12px; color:var(--muted); font-size:14.5px}
+.widget canvas{display:block; width:100%; height:auto; touch-action:manipulation}
+.ctrl, .eq-live .ctrl{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin-top:12px; font-size:14px}
+.ctrl button, .seg button{font:500 14px/1 var(--sans); color:var(--ink); background:var(--soft); border:1px solid var(--line); border-radius:7px; padding:8px 12px; cursor:pointer}
+.ctrl button:hover, .seg button:hover{border-color:var(--acc)}
+.ctrl button.primary{background:var(--acc); border-color:var(--acc); color:var(--panel)}
+.ctrl button:disabled{opacity:.5; cursor:default}
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+.seg{display:inline-flex; flex-wrap:wrap; gap:4px}
+.seg button[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--panel)}
+.ctrl label{display:inline-flex; align-items:center; gap:8px; color:var(--muted)}
+.ctrl label b, .ctrl label output{color:var(--ink); font-weight:500; min-width:2.8em; font-variant-numeric:tabular-nums}
+.ctrl input[type=range]{width:150px; accent-color:var(--acc)}
+.ctrl input[type=checkbox]{accent-color:var(--acc); width:16px; height:16px}
+.ctrl select{font:400 14px var(--sans); color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px 8px}
+textarea.data{width:100%; min-height:90px; font:400 13.5px/1.5 var(--code); color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px; resize:vertical}
+.readout{margin:12px 0 0; font-size:14.5px; line-height:1.6; color:var(--muted); font-variant-numeric:tabular-nums}
+.readout b{color:var(--ink); font-weight:500}
+.readout .good{color:var(--c3); font-weight:500}
+.readout .bad{color:var(--miss); font-weight:500}
+.split{display:grid; grid-template-columns:1fr 1fr; gap:14px}
 
-.calc{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:flex-end;margin:10px 0}
-.calc label{display:flex;flex-direction:column;font-size:.9rem;gap:4px}
-.calc input{font:inherit;width:9em;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
-.calc .op{font-size:1.6rem;line-height:1.6}
-details{border-top:1px solid var(--line);padding:12px 0}
-details:last-of-type{border-bottom:1px solid var(--line)}
-summary{cursor:pointer;font-weight:500}
-details .ans{margin:10px 0 0;padding-left:1em;border-left:3px solid var(--serve)}
-.problem{margin:6px 0 0}
+/* 표 */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:15px; line-height:1.55}
+th,td{padding:9px 12px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line)}
+thead th{font-weight:700; color:var(--muted); font-size:14px}
+tbody tr:last-child th, tbody tr:last-child td{border-bottom:0}
+table.num td{font-variant-numeric:tabular-nums}
+.tbl{background:var(--panel); border:1px solid var(--line); border-radius:10px; margin:20px 0; max-width:46em}
 
-.log{list-style:none;margin:0;padding:0;font-size:.88rem;font-variant-numeric:tabular-nums;max-height:300px;overflow:hidden}
-.log li{display:grid;grid-template-columns:5.5em 1fr;gap:10px;padding:4px 0;border-bottom:1px solid var(--soft)}
-.log li span:first-child{color:var(--muted);text-align:right}
-pre{background:var(--soft);border-radius:10px;padding:16px 18px;overflow-x:auto;font-size:.84rem;line-height:1.6;margin:0}
-code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
-.py{color:var(--ink)}
-.py .k{color:var(--code-k);font-weight:500}
-.py .s{color:var(--code-s)}
-.py .c{color:var(--code-c);font-style:italic}
-.py .n{color:var(--code-n)}
-.py .f{color:var(--code-f);font-weight:500}
-.py .b{color:var(--code-b)}
-footer{padding:80px 0 60px;color:var(--muted);font-size:.85rem}
+/* 연습 문제 */
+.ex{max-width:44em; margin:16px 0}
+.ex details{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 16px; margin:0 0 8px}
+.ex summary{cursor:pointer; font-weight:500}
+.ex summary::marker{color:var(--acc)}
+.ex details > div{margin-top:8px; color:var(--muted); font-size:15.5px}
+.ex details > div > :last-child{margin-bottom:0}
+
+/* 코드 */
+pre.code{margin:20px 0; padding:16px 18px; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow-x:auto; font:400 14px/1.65 var(--code); tab-size:4; max-width:46em}
+pre.code code{background:none; padding:0; font-size:1em}
+pre.code .kw{color:var(--k-kw); font-weight:500}
+pre.code .fn{color:var(--k-fn)}
+pre.code .bi{color:var(--k-bi)}
+pre.code .str{color:var(--k-str)}
+pre.code .num{color:var(--k-num)}
+pre.code .com{color:var(--k-com); font-style:italic}
+.code-cap{font-size:14px; color:var(--muted); margin:-12px 0 20px}
+
+/* 이전 / 다음 */
+.pager{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:72px}
+.pager a{display:block; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; text-decoration:none; color:var(--ink)}
+.pager a:hover{border-color:var(--acc)}
+.pager span{display:block; font-size:13.5px; color:var(--muted)}
+.pager b{font-size:17px}
+.pager .next{text-align:right}
+footer{margin-top:40px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:14px}
+footer a{color:inherit}
+
+@media (max-width:760px){
+  .wrap{padding:28px 18px 40px}
+  .toc{grid-template-columns:1fr 1fr; gap:14px}
+  .goals, .cards, .cards.two, .split, .pager{grid-template-columns:1fr}
+  .widget, .eqx{padding:14px 12px 12px; margin-left:-6px; margin-right:-6px}
+  .ctrl input[type=range]{width:120px}
+}
+.kd-out{margin-top:6px; padding-top:6px; border-top:1px dashed var(--line)}
+
 </style>
 </head>
 <body>
-
-<header class="wrap">
-  <h1>리틀의 법칙, 직접 돌려보기</h1>
-  <p class="lede">편의점 계산대 앞의 줄을 생각해 보자. 줄에 평균 몇 명이 있는지, 1분에 몇 명이 들어오는지, 한 사람이 평균 얼마나 머무는지. 이 세 숫자는 도착이 얼마나 불규칙하든, 계산대가 몇 개든 하나의 식으로 묶인다. 아래 숫자는 시뮬레이션에서 실시간으로 잰 값이다.</p>
-
-  <div class="law" aria-label="리틀의 법칙 L = λW 실시간 측정값">
-    <div class="term"><span class="sym">L</span><span class="val" id="eqL">–</span><span class="cap">상자 안 평균 인원</span></div>
-    <div class="op">=</div>
-    <div class="term"><span class="sym">λ</span><span class="val" id="eqLam">–</span><span class="cap">들어오는 비율 (명/분)</span></div>
-    <div class="op">·</div>
-    <div class="term"><span class="sym">W</span><span class="val" id="eqW">–</span><span class="cap">평균 체류 시간 (분)</span></div>
+<div class="wrap">
+<p class="back"><a href="index.html">모델링과 시뮬레이션 목차</a></p>
+<header>
+  <p class="series">모델링과 시뮬레이션, 1편</p>
+  <h1><span class="n">1</span>큐잉 이론과 리틀의 법칙</h1>
+  <p class="lead">편의점 계산대, 학생식당 배식구, 웹 서버의 요청 대기열. 줄이 생기는 곳에는 같은 규칙이 있습니다. 어떤 줄에도 성립하는 리틀의 법칙에서 출발해, 대표적인 큐 모델의 공식과 그 공식이 언제 맞고 언제 근사가 되는지를 다룹니다. 공식이 멈추는 곳에서 2편의 시뮬레이션이 시작합니다.</p>
+  <div class="goals">
+    <div>
+      <h2>이 편을 마치면</h2>
+      <ul>
+        <li>시스템 경계를 정하고 리틀의 법칙 <span class="m">L</span> = <span class="m">λW</span>로 세 양 중 하나를 구할 수 있습니다.</li>
+        <li>켄달 표기(M/G/1, M/M/c/K)를 읽고, 어떤 공식을 쓸 수 있는지 고를 수 있습니다.</li>
+        <li>M/M/1, M/M/c, M/G/1, M/M/1/K의 평균 대기를 계산하고, 이용률과 변동이 대기를 키우는 방식을 설명할 수 있습니다.</li>
+        <li>잭슨 네트워크의 트래픽 방정식을 풀어 병목 노드를 찾을 수 있습니다.</li>
+      </ul>
+    </div>
+    <div class="pre">
+      <h2>먼저 보면 좋은 것</h2>
+      <a href="ch0_simulation-101.html#s2-3">0편 2.3 분포</a><a href="ch0_simulation-101.html#s2-4">0편 2.4 평균과 퍼짐</a>
+      <p>지수분포와 포아송 도착, 평균과 변동계수만 알면 충분합니다.</p>
+    </div>
   </div>
-  <p class="check" id="eqCheck">시뮬레이션을 시작하는 중</p>
+  <nav class="toc" aria-label="목차">
+    <div><h2><a href="#ch1">1. 왜 큐잉인가</a></h2><ol><li><a href="#s1-1">줄은 왜 생기나</a></li><li><a href="#s1-2">큐잉 이론이 답하는 질문</a></li></ol></div>
+    <div><h2><a href="#ch2">2. 이론</a></h2><ol><li><a href="#s2-1">리틀의 법칙</a></li><li><a href="#s2-2">경계 고르기</a></li><li><a href="#s2-3">켄달 표기</a></li><li><a href="#s2-4">M/M/1</a></li><li><a href="#s2-5">M/M/c와 풀링</a></li><li><a href="#s2-6">M/G/1과 세 손잡이</a></li><li><a href="#s2-7">자리가 모자랄 때</a></li><li><a href="#s2-8">큐의 네트워크</a></li></ol></div>
+    <div><h2><a href="#ch3">3. 예제와 사례 연구</a></h2><ol><li><a href="#s3-1">여섯 모델 한눈에</a></li><li><a href="#s3-2">손으로 풀어 보기</a></li><li><a href="#s3-3">학생식당 배식구</a></li></ol></div>
+    <div><h2><a href="#ch4">4. 연결과 정리</a></h2><ol><li><a href="#s4-1">앞뒤 편과의 연결</a></li><li><a href="#s4-2">요약</a></li><li><a href="#s4-3">연습 문제</a></li><li><a href="#s4-4">파이썬으로 확인하기</a></li></ol></div>
+  </nav>
 </header>
 
-<div class="wrap">
-  <div class="bench" id="sim">
-    <canvas id="simCanvas" role="img" aria-label="대기열 시뮬레이션: 왼쪽에서 고객이 도착해 줄을 서고 오른쪽 창구에서 서비스받은 뒤 떠난다"></canvas>
-    <div class="legend">
-      <span><i class="dot" style="background:var(--wait)"></i>기다리는 중</span>
-      <span><i class="dot" style="background:var(--serve)"></i>서비스받는 중</span>
-      <span><i class="dot" style="background:var(--muted)"></i>떠나는 중</span>
-      <span><i class="dot" style="background:var(--block)"></i>자리가 없어 돌아감</span>
-    </div>
+<!-- ===================== 1 ===================== -->
+<section class="chap" id="ch1">
+  <h2><span class="n">1</span>왜 큐잉인가</h2>
+  <p class="intro">줄은 평균적으로 바빠서가 아니라, 가끔 몰리고 가끔 늘어져서 생깁니다. 이 한 문장이 이 편 전체의 요약입니다.</p>
 
-    <div class="controls">
-      <label class="ctl"><span class="row"><span>도착률 <span class="m">λ</span></span><output id="oLam"></output></span>
-        <input type="range" id="iLam" min="0.1" max="3" step="0.05" value="0.8"></label>
-      <label class="ctl"><span class="row"><span>창구당 서비스율 <span class="m">μ</span></span><output id="oMu"></output></span>
-        <input type="range" id="iMu" min="0.2" max="3" step="0.05" value="1"></label>
-      <label class="ctl"><span class="row"><span>대기 공간 (줄 설 수 있는 인원)</span><output id="oCap"></output></span>
-        <input type="range" id="iCap" min="0" max="21" step="1" value="21"></label>
-      <fieldset class="ctl seg"><legend>창구 수 <span class="m">c</span></legend>
-        <div class="opts">
-          <label><input type="radio" name="c" value="1" checked><span>1</span></label>
-          <label><input type="radio" name="c" value="2"><span>2</span></label>
-          <label><input type="radio" name="c" value="3"><span>3</span></label>
-        </div></fieldset>
-      <fieldset class="ctl seg"><legend>도착 간격</legend>
-        <div class="opts">
-          <label><input type="radio" name="arr" value="exp" checked><span>무작위 (지수분포)</span></label>
-          <label><input type="radio" name="arr" value="det"><span>일정</span></label>
-        </div></fieldset>
-      <fieldset class="ctl seg"><legend>서비스 시간</legend>
-        <div class="opts">
-          <label><input type="radio" name="svc" value="exp" checked><span>무작위 (지수분포)</span></label>
-          <label><input type="radio" name="svc" value="det"><span>일정</span></label>
-        </div></fieldset>
-      <label class="ctl"><span class="row"><span>재생 속도</span><output id="oSpd"></output></span>
-        <input type="range" id="iSpd" min="0.5" max="40" step="0.5" value="4"></label>
+  <h3 id="s1-1"><span class="n">1.1</span>줄은 왜 생기나</h3>
+  <div class="prose">
+    <p>아래 시뮬레이터에서 손님은 왼쪽에서 들어와 줄을 서고, 오른쪽 창구에서 서비스를 받고 떠납니다. 도착률 <span class="m">λ</span>(1분에 오는 손님 수)와 창구 하나의 서비스율 <span class="m">μ</span>(1분에 처리하는 손님 수)를 바꿔 보세요. <span class="m">λ</span>가 <span class="m">μ</span>보다 작아도 줄은 생깁니다. 도착 간격과 서비스 시간을 모두 "일정"으로 바꾸면 줄이 사라지는 것도 확인해 보세요.</p>
+  </div>
+  <div class="widget" id="w-live">
+    <h4>창구 앞 대기열</h4>
+    <p class="sub">표의 이론값은 공식이 있는 경우에만 나옵니다. 아래 그래프에서 측정한 <span class="m">L</span>과 <span class="m">λ</span> × <span class="m">W</span>가 시간이 지나면 하나로 모입니다.</p>
+    <canvas data-w="640" data-h="236" role="img" aria-label="손님이 도착해 줄을 서고 창구에서 서비스를 받는 대기열 애니메이션과, 측정한 L과 λW의 수렴 그래프"></canvas>
+    <div class="ctrl">
+      <label>도착률 <span class="m">λ</span> <input type="range" min="0.1" max="3" step="0.05" value="0.8" data-k="lam"> <b></b></label>
+      <label>창구당 서비스율 <span class="m">μ</span> <input type="range" min="0.2" max="3" step="0.05" value="1" data-k="mu"> <b></b></label>
+      <label>대기 공간 <input type="range" min="0" max="21" step="1" value="21" data-k="cap"> <b></b></label>
     </div>
-    <div class="buttons">
-      <button class="primary runToggle" type="button">일시정지</button>
-      <button id="btnReset" type="button">처음부터</button>
+    <div class="ctrl">
+      <span>창구 수</span><div class="seg" data-g="c"><button type="button" aria-pressed="true" data-v="1">1</button><button type="button" aria-pressed="false" data-v="2">2</button><button type="button" aria-pressed="false" data-v="3">3</button></div>
+      <span>도착 간격</span><div class="seg" data-g="arr"><button type="button" aria-pressed="true" data-v="exp">무작위</button><button type="button" aria-pressed="false" data-v="det">일정</button></div>
+      <span>서비스 시간</span><div class="seg" data-g="svc"><button type="button" aria-pressed="true" data-v="exp">무작위</button><button type="button" aria-pressed="false" data-v="det">일정</button></div>
     </div>
+    <div class="ctrl">
+      <button type="button" class="primary" data-act="play">일시정지</button>
+      <button type="button" data-act="reset">처음부터</button>
+      <span>속도</span><div class="seg" data-g="spd"><button type="button" aria-pressed="false" data-v="1">1배</button><button type="button" aria-pressed="true" data-v="4">4배</button><button type="button" aria-pressed="false" data-v="20">20배</button></div>
+    </div>
+    <div class="scroll" style="margin-top:12px"><table class="num" data-tbl></table></div>
+    <p class="readout" data-out></p>
+  </div>
 
-    <div class="split">
-      <div>
-        <p class="subhead">측정값과 이론값 <span class="note" id="thName"></span></p>
-        <div class="tbl"><table>
-          <thead><tr><th></th><th>시뮬레이션</th><th>이론</th></tr></thead>
-          <tbody id="statBody"></tbody>
-        </table></div>
+  <h3 id="s1-2"><span class="n">1.2</span>큐잉 이론이 답하는 질문</h3>
+  <div class="cards two">
+    <div><h4>얼마나 기다리나</h4><p>평균 줄 대기 <span class="m">W<sub>q</sub></span>와 체류시간 <span class="m">W</span>. 손님 입장에서 가장 먼저 묻는 숫자입니다.</p></div>
+    <div><h4>몇 대가 필요한가</h4><p>목표 대기를 지키는 데 필요한 서버 수 <span class="m">c</span>. 콜센터 상담원, 계산대, 클라우드 인스턴스 수를 정할 때 씁니다.</p></div>
+    <div><h4>몇 명이 돌아가나</h4><p>자리가 차서 들어오지 못하는 비율. 주차장, 병상, 접속 제한이 있는 서버에서 중요합니다.</p></div>
+    <div><h4>어디가 병목인가</h4><p>여러 단계를 거치는 시스템에서 가장 먼저 막히는 곳. 주문, 제조, 픽업으로 이어진 커피점이 그렇습니다.</p></div>
+  </div>
+  <div class="prose">
+    <p>이 질문들에 공식으로 답하는 것이 큐잉 이론입니다. 공식은 계산이 빠르고 원인을 보여 주지만, 가정이 맞을 때만 정확합니다. 가정이 어긋나는 곳을 아는 것이 공식을 아는 것만큼 중요합니다.</p>
+  </div>
+</section>
+
+<!-- ===================== 2 ===================== -->
+<section class="chap" id="ch2">
+  <h2><span class="n">2</span>이론</h2>
+  <p class="intro">어디에나 성립하는 법칙 하나와, 가정을 하나씩 바꿔 가는 모델 다섯 개를 봅니다.</p>
+
+  <h3 id="s2-1"><span class="n">2.1</span>리틀의 법칙</h3>
+  <div class="prose">
+    <p>시스템 둘레에 상자를 하나 그립시다. 상자 안의 평균 인원을 <span class="m">L</span>, 상자에 들어오는 비율을 <span class="m">λ</span>, 한 사람이 상자 안에 머무는 평균 시간을 <span class="m">W</span>라고 하면, 오래 관측했을 때 언제나 다음이 성립합니다.</p>
+  </div>
+  <div class="eq-num" style="font-size:30px; margin:18px 0"><i>L</i> = <i>λ</i> <i>W</i></div>
+  <div class="prose">
+    <p>도착이 얼마나 불규칙한지, 창구가 몇 개인지, 누가 먼저 서비스를 받는지와 상관이 없습니다. 조건은 두 가지뿐입니다. 관측을 충분히 오래 하고, 그동안 상자 안 인원이 끝없이 늘어나지 않으면 됩니다. 왜 그런지는 그림으로 보면 바로 보입니다. 손님마다 머문 시간을 막대로 그리면, 막대 넓이의 합은 "시각마다 상자 안에 몇 명이 있었나"를 시간에 대해 더한 넓이와 같습니다. 같은 넓이를 두 방향에서 센 것입니다.</p>
+  </div>
+  <div class="widget" id="w-area">
+    <h4>같은 넓이를 두 번 세기</h4>
+    <p class="sub">위는 손님별로 머문 시간(회색은 줄에서, 색칠한 부분은 서비스), 아래는 시각마다 상자 안의 인원 <span class="m">N</span>(<span class="m">t</span>)입니다. 두 그림의 칠한 넓이는 같습니다.</p>
+    <canvas data-w="640" data-h="290" role="img" aria-label="손님별 체류 막대와 시스템 안 인원의 계단 그래프"></canvas>
+    <div class="ctrl"><button type="button" data-act="new">다른 손님들</button></div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>관측 구간을 <span class="m">T</span>, 그동안 들어온 사람을 <span class="m">n</span>명, 칠한 넓이를 <span class="m">A</span>라고 하면 <span class="m">L</span> = <span class="m">A</span>/<span class="m">T</span>, <span class="m">λ</span> = <span class="m">n</span>/<span class="m">T</span>, <span class="m">W</span> = <span class="m">A</span>/<span class="m">n</span>입니다. 곱하면 <span class="m">λW</span> = <span class="m">A</span>/<span class="m">T</span> = <span class="m">L</span>. 위 예처럼 처음과 끝에 상자가 비어 있으면 정확히 같고, 그렇지 않아도 관측이 길어지면 가장자리에 걸친 몇 사람의 영향은 사라집니다.</p>
+  </div>
+
+  <h3 id="s2-2"><span class="n">2.2</span>경계는 어디에 그어도 된다</h3>
+  <div class="prose">
+    <p>상자는 마음대로 그릴 수 있습니다. 다만 세 양을 같은 상자에 대해 재야 합니다.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>상자</th><th>안의 평균 인원</th><th>들어오는 비율</th><th>머무는 시간</th></tr></thead>
+    <tbody>
+      <tr><td>시스템 전체</td><td><span class="m">L</span></td><td><span class="m">λ</span></td><td><span class="m">W</span></td></tr>
+      <tr><td>줄만</td><td><span class="m">L<sub>q</sub></span></td><td><span class="m">λ</span></td><td><span class="m">W<sub>q</sub></span></td></tr>
+      <tr><td>창구만</td><td>바쁜 창구 수의 평균</td><td><span class="m">λ</span></td><td>서비스 시간 1/<span class="m">μ</span></td></tr>
+    </tbody>
+  </table></div>
+  <div class="prose">
+    <p>세 번째 줄에서 바로 가동률이 나옵니다. 바쁜 창구 수의 평균은 <span class="m">λ</span>/<span class="m">μ</span>이고, 창구가 <span class="m">c</span>개면 한 창구가 바쁜 비율은 <span class="m">ρ</span> = <span class="m">λ</span>/<span class="m">cμ</span>입니다. <span class="m">ρ</span>가 1 이상이면 창구가 처리할 수 있는 것보다 많이 들어오므로 줄이 끝없이 길어집니다. 또 <span class="m">W</span> = <span class="m">W<sub>q</sub></span> + 1/<span class="m">μ</span>이므로 넷 중 하나만 알면 나머지가 모두 나옵니다.</p>
+  </div>
+  <div class="link-note"><p><span class="k">주의</span>자리가 없어 돌아간 손님은 상자에 들어오지 않았습니다. 이때는 <span class="m">λ</span> 대신 실제로 들어온 비율 <span class="m">λ</span><sub>eff</sub>를 씁니다. 2.7절과 3.2절의 미용실 문제가 이 경우입니다.</p></div>
+
+  <h3 id="s2-3"><span class="n">2.3</span>켄달 표기: 큐의 이름 읽기</h3>
+  <div class="prose">
+    <p>M/G/1, M/M/c/K 같은 이름은 켄달(Kendall) 표기법입니다. 빗금으로 나눈 칸마다 큐의 성질을 하나씩 적습니다. 첫 칸은 도착 과정, 둘째 칸은 서비스 시간 분포, 셋째 칸은 서버 수, 넷째 칸은 시스템 정원입니다. 정원이 무제한이고 선착순이면 넷째 칸부터는 생략합니다. 칸을 골라 보면 그 큐에 정확한 공식이 있는지, 근사만 있는지, 시뮬레이션이 필요한지가 나옵니다.</p>
+  </div>
+  <div class="widget" id="w-kendall">
+    <h4>큐 이름 조합해 보기</h4>
+    <div data-pick></div>
+    <div class="kd-out" data-out aria-live="polite"></div>
+  </div>
+  <dl class="terms">
+    <dt>M</dt><dd>마르코프(Markov), 즉 기억이 없는 지수분포. 도착 칸에서는 포아송 도착입니다. 변동계수 제곱 <span class="m">C</span>² = 1.</dd>
+    <dt>D</dt><dd>결정적(Deterministic). 간격이나 시간이 늘 같습니다. <span class="m">C</span>² = 0.</dd>
+    <dt>E<sub>k</sub></dt><dd>얼랑(Erlang) 분포. 지수 단계 <span class="m">k</span>개를 이은 것으로 M과 D 사이입니다. <span class="m">C</span>² = 1/<span class="m">k</span>.</dd>
+    <dt>G</dt><dd>일반(General) 분포. 평균과 분산만 알면 되는 공식이 많습니다. 도착 칸에서는 GI라고도 씁니다.</dd>
+    <dt>M<sub>t</sub></dt><dd>도착률이 시간에 따라 바뀌는 포아송 도착. 점심 피크가 있는 카페가 그렇습니다.</dd>
+  </dl>
+
+  <h3 id="s2-4"><span class="n">2.4</span>M/M/1: 이용률이 1에 가까워지면</h3>
+  <div class="prose">
+    <p>포아송 도착, 지수분포 서비스, 서버 한 대. 가장 단순한 이 큐에서 시스템 안 인원이 <span class="m">n</span>명일 확률은 <span class="m">P</span>(<span class="m">n</span>) = (1 − <span class="m">ρ</span>)<span class="m">ρ</span><sup><span class="m">n</span></sup>이고, 평균은 다음과 같습니다.</p>
+  </div>
+  <div class="eq-num" style="font-size:22px; margin:14px 0">
+    <i>L</i> = <i>ρ</i> / (1 − <i>ρ</i>),&nbsp;&nbsp; <i>W</i> = 1 / (<i>μ</i> − <i>λ</i>),&nbsp;&nbsp; <i>W</i><sub>q</sub> = <i>ρ</i> / (<i>μ</i> − <i>λ</i>)
+  </div>
+  <div class="widget" id="w-mm1">
+    <h4>이용률과 체류시간</h4>
+    <p class="sub">세로축은 체류시간을 서비스 시간 한 번의 몇 배인지로 나타낸 값 <span class="m">W</span>/E[<span class="m">S</span>] = 1/(1 − <span class="m">ρ</span>)입니다.</p>
+    <canvas data-w="640" data-h="230" role="img" aria-label="M/M/1 대기열의 이용률에 따른 체류시간 곡선"></canvas>
+    <div class="ctrl"><label>이용률 <span class="m">ρ</span> <input type="range" min="0.1" max="0.97" step="0.01" value="0.8" data-rho> <b></b></label></div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>곡선은 <span class="m">ρ</span> = 0.8 근처부터 가팔라집니다. 밀린 손님은 창구가 한가한 짧은 틈, 시간의 1 − <span class="m">ρ</span>만큼에만 빠지기 때문입니다. 그 틈이 반으로 줄면 대기는 두 배보다 더 늘어납니다. 서버를 90%까지 쓰는 것이 "효율적"으로 보여도 손님 입장에서는 서비스 시간의 열 배를 머무는 시스템이라는 뜻입니다.</p>
+  </div>
+
+  <h3 id="s2-5"><span class="n">2.5</span>M/M/c와 풀링</h3>
+  <div class="prose">
+    <p>서버가 <span class="m">c</span>대이고 줄은 하나라면, 도착한 손님은 모든 서버가 바쁠 때만 기다립니다. 그 확률 <span class="m">P</span><sub>대기</sub>를 구하는 식이 얼랑 C 공식이고, 평균 줄 대기는 <span class="m">W<sub>q</sub></span> = <span class="m">P</span><sub>대기</sub> / (<span class="m">cμ</span> − <span class="m">λ</span>)입니다. 이 공식으로 질문 하나에 답해 봅시다. 같은 서버 <span class="m">c</span>대를 둘 때, 줄을 하나로 세우는 것과 서버마다 따로 세우는 것은 얼마나 다를까요? 아예 <span class="m">c</span>배 빠른 서버 한 대로 바꾸면 어떨까요?</p>
+  </div>
+  <div class="widget" id="w-pool">
+    <h4>줄 하나, 줄 여럿, 빠른 서버 하나</h4>
+    <p class="sub">세 설계 모두 처리 능력의 합은 같습니다. 시간 단위는 느린 서버 한 대의 평균 서비스 시간입니다.</p>
+    <canvas data-w="640" data-h="230" role="img" aria-label="세 가지 서버 배치의 평균 줄 대기와 체류시간 막대그래프"></canvas>
+    <div class="ctrl">
+      <label>서버 수 <span class="m">c</span> <input type="range" min="2" max="6" step="1" value="2" data-c> <b></b></label>
+      <label>이용률 <span class="m">ρ</span> <input type="range" min="0.5" max="0.97" step="0.01" value="0.8" data-rho> <b></b></label>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>줄을 하나로 묶는 효과를 풀링(pooling)이라 합니다. 따로 선 줄에서는 옆 창구가 놀고 있어도 내 줄은 줄지 않지만, 줄이 하나면 놀고 있는 서버가 생기지 않습니다. 은행과 공항 체크인이 줄을 하나로 세우는 이유입니다. 빠른 서버 한 대는 줄 대기는 풀링보다 길지만 서비스 자체가 빨라 체류시간은 가장 짧습니다. 어느 쪽이 나은지는 손님이 무엇을 싫어하는지, 즉 줄에 서 있는 시간인지 전체 시간인지에 달렸습니다.</p>
+  </div>
+
+  <h3 id="s2-6"><span class="n">2.6</span>M/G/1과 세 손잡이</h3>
+  <div class="prose">
+    <p>서비스 시간이 지수분포가 아니면 어떨까요? 도착이 포아송이고 서버가 한 대라면 폴라체크-힌친(P-K) 공식 <span class="m">W<sub>q</sub></span> = <span class="m">λ</span>E[<span class="m">S</span>²] / 2(1 − <span class="m">ρ</span>)이 정확한 답을 줍니다. 정리하면 아래 꼴이 되는데, 도착 쪽 변동까지 넣은 이 모양이 킹맨(Kingman)의 G/G/1 근사이기도 합니다. M/M/1, M/D/1, M/G/1, G/G/1이 모두 이 식 하나로 읽힙니다.</p>
+  </div>
+  <figure class="eqx" id="eq-vut">
+    <p class="cap">평균 줄 대기 = 혼잡도 × 변동 × 서비스 시간. 항을 누르면 설명이 나옵니다.</p>
+    <div class="eq-big">
+      <span class="t" data-t="w" data-c="4"><i>W</i><sub>q</sub></span><span class="op"> ≈ </span>
+      <span class="t" data-t="u" data-c="1"><span class="frac"><span><i>ρ</i></span><span>1 − <i>ρ</i></span></span></span><span class="op"> × </span>
+      <span class="t" data-t="v" data-c="2"><span class="frac"><span><i>C</i><sub>a</sub><sup>2</sup> + <i>C</i><sub>s</sub><sup>2</sup></span><span>2</span></span></span><span class="op"> × </span>
+      <span class="t" data-t="s" data-c="3"><i>E</i>[<i>S</i>]</span>
+    </div>
+    <div class="eq-terms">
+      <button type="button" data-t="w"><b>W<sub>q</sub></b>줄에서 기다리는 평균 시간</button>
+      <button type="button" data-t="u"><b>ρ / (1 − ρ)</b>혼잡도: 얼마나 바쁜가</button>
+      <button type="button" data-t="v"><b>(C<sub>a</sub>² + C<sub>s</sub>²) / 2</b>변동: 얼마나 들쭉날쭉한가</button>
+      <button type="button" data-t="s"><b>E[S]</b>한 명의 평균 서비스 시간</button>
+    </div>
+    <template data-t="w">세 요인의 곱입니다. 어느 하나가 두 배가 되면 대기도 두 배가 됩니다. 도착이 포아송(<i>C</i><sub>a</sub>² = 1)이면 등호가 성립하는 P-K 공식이고, 그렇지 않으면 근사입니다.</template>
+    <template data-t="u">ρ = 0.5이면 1, 0.8이면 4, 0.9이면 9, 0.95이면 19. 앞 사람 몇 명분을 기다리는지의 기본값이 이 항입니다. 2.4절의 곡선이 바로 이것입니다.</template>
+    <template data-t="v"><i>C</i><sub>a</sub>²는 도착 간격, <i>C</i><sub>s</sub>²는 서비스 시간의 변동계수 제곱(분산 ÷ 평균²)입니다. 둘 다 지수분포면 1이라 이 항은 1이고, 서비스가 늘 같으면 <i>C</i><sub>s</sub>² = 0이라 M/D/1의 대기는 M/M/1의 정확히 절반입니다. 둘 다 0이면 대기도 0입니다.</template>
+    <template data-t="s">단위를 정하는 항입니다. 앞 두 항을 곱한 "앞 사람 몇 명분"에 한 명의 서비스 시간을 곱하면 분 단위의 대기가 됩니다.</template>
+    <div class="eq-detail"></div>
+    <div class="eq-live">
+      <p class="sub">값을 바꿔 보세요. 평균 서비스 시간은 2편 카페 1단계와 같은 1.4분으로 고정했습니다.</p>
+      <div class="ctrl">
+        <label>이용률 ρ <input type="range" min="0.3" max="0.95" step="0.01" value="0.7" data-var="rho" data-fmt="2"> <b></b></label>
+        <label><span>C<sub>a</sub>²</span> <input type="range" min="0" max="2" step="0.05" value="1" data-var="ca" data-fmt="2"> <b></b></label>
+        <label><span>C<sub>s</sub>²</span> <input type="range" min="0" max="2" step="0.05" value="0.6" data-var="cs" data-fmt="2"> <b></b></label>
       </div>
-      <div>
-        <p class="subhead">시간이 지나면 두 값이 만난다</p>
-        <canvas id="convCanvas" role="img" aria-label="누적 측정값 L과 λ·W의 시간에 따른 변화"></canvas>
-        <div class="legend">
-          <span><i class="dot" style="background:var(--ink)"></i><span class="m">L</span> 측정값</span>
-          <span><i class="dot" style="background:var(--arrive)"></i><span class="m">λ</span> × <span class="m">W</span> 측정값</span>
-          <span><i class="dot" style="background:var(--serve)"></i>이론 <span class="m">L</span></span>
-        </div>
-      </div>
+      <div class="eq-num"><span class="t" style="--tc:var(--t4)" data-o="w"></span> = <span class="t" style="--tc:var(--t1)" data-o="u"></span> × <span class="t" style="--tc:var(--t2)" data-o="v"></span> × <span class="t" style="--tc:var(--t3)">1.4분</span></div>
+      <p class="readout" data-o="hint" style="text-align:center"></p>
+    </div>
+  </figure>
+  <div class="prose">
+    <p>P-K 공식에 왜 제곱 E[<span class="m">S</span>²]이 들어갈까요? 버스가 평균 10분 간격으로 오는데 간격이 들쭉날쭉하면, 아무 때나 정류장에 간 사람은 짧은 간격보다 긴 간격에 걸릴 가능성이 큽니다. 긴 간격이 시간을 더 많이 차지하니까요. 카페에서도 서비스가 오래 걸리는 손님은 그 자체로 오래 걸리고, 다음 손님이 그 손님의 서비스 도중에 도착할 가능성도 그만큼 큽니다. 길이가 두 번 곱해져 제곱이 됩니다. 평균이 같아도 가끔 아주 오래 걸리는 주문이 섞이면 대기가 크게 느는 이유입니다.</p>
+    <p>서버가 여러 대면 정확한 식이 없고, M/M/c의 값에 변동 항을 곱하는 근사 <span class="m">W<sub>q</sub></span>(M/G/c) ≈ (<span class="m">C<sub>a</sub></span>² + <span class="m">C<sub>s</sub></span>²)/2 × <span class="m">W<sub>q</sub></span>(M/M/c)를 흔히 씁니다.</p>
+  </div>
+
+  <h3 id="s2-7"><span class="n">2.7</span>자리가 모자랄 때: M/M/1/K</h3>
+  <div class="prose">
+    <p>시스템 안에 최대 <span class="m">K</span>명까지만 있을 수 있다면, <span class="m">K</span>명이 찬 순간에 온 손님은 돌아갑니다. 이 큐는 상태가 0부터 <span class="m">K</span>까지뿐이라 <span class="m">ρ</span>가 1보다 커도 안정합니다. 대신 돌아가는 손님이 늘어납니다. 상태 확률은 <span class="m">P</span>(<span class="m">n</span>) = (1 − <span class="m">ρ</span>)<span class="m">ρ</span><sup><span class="m">n</span></sup> / (1 − <span class="m">ρ</span><sup><span class="m">K</span>+1</sup>)이고, 돌아갈 확률은 <span class="m">P</span>(<span class="m">K</span>)입니다.</p>
+  </div>
+  <div class="widget" id="w-mm1k">
+    <h4>정원이 있는 큐의 상태 분포</h4>
+    <p class="sub">막대는 시스템 안 인원이 <span class="m">n</span>명일 확률입니다. 빨간 막대가 꽉 찬 상태, 즉 도착한 손님이 돌아가는 확률입니다.</p>
+    <canvas data-w="640" data-h="220" role="img" aria-label="M/M/1/K 대기열의 상태 확률 막대그래프"></canvas>
+    <div class="ctrl">
+      <label>부하 <span class="m">ρ</span> = <span class="m">λ</span>/<span class="m">μ</span> <input type="range" min="0.3" max="2" step="0.05" value="0.9" data-rho> <b></b></label>
+      <label>정원 <span class="m">K</span> <input type="range" min="1" max="15" step="1" value="5" data-k> <b></b></label>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>정원이 작으면 대기는 짧아지지만 그만큼 손님을 잃습니다. 리틀의 법칙을 쓸 때는 실제로 들어온 비율 <span class="m">λ</span><sub>eff</sub> = <span class="m">λ</span>(1 − <span class="m">P</span>(<span class="m">K</span>))로 나눠야 합니다. 서버가 여러 대인 M/M/c/K도 같은 방식(출생-사망 과정)으로 풀리며, 1.1절 시뮬레이터의 이론값이 이 계산입니다.</p>
+  </div>
+
+  <h3 id="s2-8"><span class="n">2.8</span>큐의 네트워크: 잭슨 네트워크</h3>
+  <div class="prose">
+    <p>현실의 시스템은 큐 여러 개가 이어져 있습니다. 커피점이라면 키오스크 주문, 바리스타 제조, 픽업대로 이어지고, 디저트만 산 손님은 제조를 건너뛰며, 잘못 만든 음료는 다시 만듭니다. 외부 도착이 포아송이고, 각 노드가 지수분포 서비스의 M/M/c이고, 다음 노드를 확률로 고른다면 이것을 잭슨(Jackson) 네트워크라고 합니다.</p>
+    <p>먼저 노드마다 들어오는 총 흐름을 구합니다. 노드 <span class="m">j</span>의 도착률은 바깥에서 오는 양과 다른 노드에서 넘어오는 양의 합입니다(트래픽 방정식). 잭슨의 정리에 따르면 그다음에는 각 노드를 그 도착률을 가진 독립된 M/M/c처럼 계산해도 됩니다. 되먹임 때문에 노드로 들어오는 흐름이 실제로는 포아송이 아닌데도 결과는 정확합니다. 아래에서 시뮬레이션으로 확인해 보세요.</p>
+  </div>
+  <div class="widget" id="w-jk">
+    <h4>커피점 세 단계의 병목 찾기</h4>
+    <p class="sub">상자 안 숫자는 그 노드의 이용률입니다. 1에 가까울수록 진하게, 1을 넘으면 빨갛게 표시합니다.</p>
+    <canvas data-w="640" data-h="230" role="img" aria-label="주문, 제조, 픽업 세 노드로 이루어진 큐 네트워크"></canvas>
+    <div class="ctrl">
+      <label>도착률 <span class="m">λ</span> (명/분) <input type="range" min="0.2" max="1.4" step="0.05" value="0.8" data-lam> <b></b></label>
+      <label>제조 건너뜀 <span class="m">q</span> <input type="range" min="0" max="0.5" step="0.05" value="0.2" data-q> <b></b></label>
+      <label>다시 만듦 <span class="m">r</span> <input type="range" min="0" max="0.4" step="0.05" value="0.1" data-r> <b></b></label>
+    </div>
+    <div class="ctrl">
+      <span>바리스타 수</span><div class="seg" data-g="c2"><button type="button" aria-pressed="false" data-v="1">1</button><button type="button" aria-pressed="true" data-v="2">2</button><button type="button" aria-pressed="false" data-v="3">3</button></div>
+      <button type="button" data-act="sim">시뮬레이션으로 확인 (손님 2만 명)</button>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>트래픽 방정식은 이 예에서 손으로도 풉니다. 주문 노드에는 <span class="m">λ</span>, 픽업 노드에도 결국 모두가 오므로 <span class="m">λ</span>가 들어옵니다. 제조 노드에는 건너뛰지 않은 <span class="m">λ</span>(1 − <span class="m">q</span>)가 들어오는데, 그중 <span class="m">r</span>만큼은 다시 돌아오므로 <span class="m">λ</span><sub>2</sub> = <span class="m">λ</span>(1 − <span class="m">q</span>) + <span class="m">rλ</span><sub>2</sub>, 즉 <span class="m">λ</span><sub>2</sub> = <span class="m">λ</span>(1 − <span class="m">q</span>)/(1 − <span class="m">r</span>)입니다. 다시 만드는 비율이 조금만 늘어도 제조 노드의 이용률이 먼저 1에 다가가는 것을 볼 수 있습니다. 네트워크 전체의 평균 체류시간은 노드별 평균 인원을 더한 뒤 리틀의 법칙으로 <span class="m">W</span> = Σ<span class="m">L<sub>j</sub></span> / <span class="m">λ</span>입니다.</p>
+  </div>
+  <div class="link-note"><p><span class="k">공식이 멈추는 곳</span>서비스가 지수분포가 아니거나, 여러 품목을 동시에 만들거나, 손님이 줄을 보고 포기하면 잭슨의 정리는 더 이상 정확하지 않습니다. 2편의 커피점이 바로 그런 네트워크이고, 그래서 시뮬레이션으로 풉니다.</p></div>
+</section>
+
+<!-- ===================== 3 ===================== -->
+<section class="chap" id="ch3">
+  <h2><span class="n">3</span>예제와 사례 연구</h2>
+  <p class="intro">공식을 나란히 놓고, 손으로 풀고, 실제 결정에 써 봅니다.</p>
+
+  <h3 id="s3-1"><span class="n">3.1</span>여섯 모델 한눈에</h3>
+  <div class="prose">
+    <p>2.6절의 세 손잡이로 보면 여섯 모델은 같은 식의 변주입니다. 아래 그래프는 같은 서비스 시간에서 이용률에 따른 평균 줄 대기를 서비스 시간 단위로 그린 것입니다. 변동 손잡이와 서버 수를 바꿔 보세요.</p>
+  </div>
+  <div class="widget" id="w-six">
+    <h4>같은 조건, 여섯 가지 가정</h4>
+    <p class="sub">서버가 여럿인 모델의 이용률은 서버 한 대 기준입니다. 점선은 지금 고른 <span class="m">ρ</span>입니다.</p>
+    <canvas data-w="640" data-h="260" role="img" aria-label="여섯 큐 모델의 이용률에 따른 평균 줄 대기 곡선"></canvas>
+    <div class="ctrl">
+      <label>이용률 <span class="m">ρ</span> <input type="range" min="0.3" max="0.92" step="0.01" value="0.8" data-rho> <b></b></label>
+      <label><span><span class="m">C<sub>a</sub></span>²</span> <input type="range" min="0" max="2" step="0.05" value="1" data-ca> <b></b></label>
+      <label><span><span class="m">C<sub>s</sub></span>²</span> <input type="range" min="0" max="2" step="0.05" value="0.5" data-cs> <b></b></label>
+      <label>서버 수 <span class="m">c</span> <input type="range" min="2" max="5" step="1" value="2" data-c> <b></b></label>
+    </div>
+    <div class="scroll" style="margin-top:10px"><table class="num" data-tbl></table></div>
+  </div>
+
+  <h3 id="s3-2"><span class="n">3.2</span>손으로 풀어 보기</h3>
+  <div class="prose">
+    <p>리틀의 법칙은 세 칸 중 두 칸을 알면 나머지를 줍니다. <span class="m">λ</span>와 <span class="m">W</span>의 시간 단위를 같게 맞추는 것만 잊지 마세요.</p>
+  </div>
+  <div class="widget" id="w-calc">
+    <h4>리틀의 법칙 계산기</h4>
+    <p class="sub">두 칸을 채우면 나머지 한 칸이 계산됩니다. 시간 단위는 마음대로 고르되 <span class="m">λ</span>와 <span class="m">W</span>를 같은 단위로 넣으세요.</p>
+    <div class="ctrl">
+      <label><span class="m">L</span> (명) <input type="number" step="any" min="0" data-f="L" style="width:7em"></label>
+      <label><span class="m">λ</span> (명/시간 단위) <input type="number" step="any" min="0" data-f="lam" style="width:7em"></label>
+      <label><span class="m">W</span> (시간 단위) <input type="number" step="any" min="0" data-f="W" style="width:7em"></label>
+      <button type="button" data-act="clear">비우기</button>
+    </div>
+    <p class="readout" data-out>예: <span class="m">L</span> = 60, <span class="m">λ</span> = 4를 넣으면 <span class="m">W</span> = 15가 나옵니다.</p>
+  </div>
+  <div class="ex">
+    <details><summary>1. 학생식당 안에 평균 60명이 있고 1분에 4명씩 들어옵니다. 한 사람은 평균 몇 분 머무를까요?</summary><div><p><span class="m">W</span> = <span class="m">L</span>/<span class="m">λ</span> = 60/4 = 15분입니다. 배식 시간 분포도, 줄 구조도 몰라도 됩니다.</p></div></details>
+    <details><summary>2. API 서버에 초당 200개의 요청이 들어오고 평균 응답 시간은 50ms입니다. 동시에 처리 중인 요청은 평균 몇 개일까요? 워커가 8개라면?</summary><div><p>단위를 맞추면 <span class="m">W</span> = 0.05초, <span class="m">L</span> = 200 × 0.05 = 10개입니다. 평균만으로도 워커 8개를 넘으므로 요청이 쌓이기 시작하고, 그러면 <span class="m">W</span>가 더 늘어납니다. 처리량 계획에서 리틀의 법칙이 가장 자주 쓰이는 방식입니다.</p></div></details>
+    <details><summary>3. 생산 라인에 재공품이 평균 120개 있고 시간당 40개가 완성됩니다. 리드타임은? 처리량은 그대로 두고 리드타임을 2시간으로 줄이려면?</summary><div><p><span class="m">W</span> = 120/40 = 3시간입니다. 2시간으로 줄이려면 <span class="m">L</span> = 40 × 2 = 80개로 줄여야 합니다. 린 생산에서 "재공품을 줄이면 리드타임이 준다"는 말의 근거가 이 식입니다.</p></div></details>
+    <details><summary>4. 연구실 프린터에 인쇄 작업이 시간당 10건 들어오고(포아송), 프린터는 시간당 12건을 처리합니다(지수분포). ρ, L, W는? 작업이 시간당 11건으로 10% 늘면?</summary><div><p><span class="m">ρ</span> = 10/12 ≈ 0.83, <span class="m">L</span> = 0.83/0.17 = 5건, <span class="m">W</span> = 1/(12 − 10) = 0.5시간입니다. 11건이면 <span class="m">ρ</span> ≈ 0.92, <span class="m">L</span> = 11건, <span class="m">W</span> = 1시간. 도착이 10% 늘었을 뿐인데 체류시간은 두 배가 됩니다. 2.4절 곡선의 가파른 구간입니다.</p></div></details>
+    <details><summary>5. 대기 의자가 3개뿐인 미용실에 손님이 시간당 6명 오지만 그중 3분의 1은 자리가 없어 돌아갑니다. 가게 안에는 평균 2명이 있습니다. 들어온 손님은 평균 얼마나 머무를까요?</summary><div><p>실제로 들어온 비율은 <span class="m">λ</span><sub>eff</sub> = 6 × 2/3 = 4명/시간이므로 <span class="m">W</span> = 2/4 = 0.5시간입니다. <span class="m">λ</span> = 6을 그대로 쓰면 20분이라는 틀린 답이 나옵니다. 1.1절 시뮬레이터에서 대기 공간을 줄여 보면 표의 <span class="m">λ</span><sub>eff</sub>가 이 값에 해당합니다.</p></div></details>
+  </div>
+
+  <h3 id="s3-3"><span class="n">3.3</span>사례: 학생식당 배식구를 하나 더 열까</h3>
+  <div class="case">
+    <div class="prose">
+      <p>점심 피크에 학생이 1분에 3명씩 오고, 배식은 한 명당 평균 0.6분이 걸립니다. 지금은 배식구 두 곳에 줄을 따로 세우는데 줄이 길다는 불만이 많습니다. 배식구를 하나 더 열려면 사람이 한 명 더 필요합니다. 그 전에 할 수 있는 것은 없을까요? 배식 시간이 지수분포에 가깝다고 보고(<span class="m">C<sub>s</sub></span>² = 1) 공식으로 비교해 봅시다.</p>
+    </div>
+    <div class="tbl"><table class="num">
+      <thead><tr><th>안</th><th>모델</th><th>평균 줄 대기</th><th>필요한 것</th></tr></thead>
+      <tbody>
+        <tr><td>지금: 두 곳, 줄 따로</td><td>M/M/1 두 개, 각 <span class="m">λ</span> = 1.5</td><td>5.4분</td><td>없음</td></tr>
+        <tr><td>두 곳, 줄 하나로</td><td>M/M/2</td><td>2.6분</td><td>줄 안내선</td></tr>
+        <tr><td>줄 하나 + 배식 편차 줄이기</td><td>M/G/2, <span class="m">C<sub>s</sub></span>² = 0.25</td><td>약 1.6분</td><td>메뉴 미리 담기</td></tr>
+        <tr><td>세 곳, 줄 따로</td><td>M/M/1 세 개, 각 <span class="m">λ</span> = 1</td><td>0.9분</td><td>배식 인력 1명</td></tr>
+      </tbody>
+    </table></div>
+    <div class="prose">
+      <p>이용률이 0.9로 같은데도 줄을 하나로 합치기만 해도 대기가 절반 아래로 줍니다. 배식 시간의 편차를 줄이면(<span class="m">C<sub>s</sub></span>² = 1 → 0.25) 변동 손잡이가 1에서 0.625로 내려가 다시 40% 가까이 줍니다. 인력을 늘리는 안이 가장 효과가 크지만, 앞의 두 안은 거의 돈이 들지 않습니다. 단, 이 숫자는 점심 피크가 일정하게 이어진다는 가정에서 나온 것입니다. 피크가 20분만 이어진다면 줄은 정상 상태에 이르지 못하므로, 실제 결정 전에는 2편처럼 시간대별 도착을 넣은 시뮬레이션으로 확인합니다.</p>
     </div>
   </div>
+</section>
+
+<!-- ===================== 4 ===================== -->
+<section class="chap" id="ch4">
+  <h2><span class="n">4</span>연결과 정리</h2>
+
+  <h3 id="s4-1"><span class="n">4.1</span>앞뒤 편과의 연결</h3>
+  <div class="link-note"><p><span class="k">2편으로</span>도착률이 시간대마다 바뀌고, 한 손님이 여러 품목을 주문하고, 줄을 보고 포기하는 커피점에는 닫힌 공식이 없습니다. 2편은 그 커피점을 사건 단위로 시뮬레이션하고, 단순한 단계에서는 이 편의 P-K 공식으로 시뮬레이터를 검증합니다.</p></div>
+  <div class="link-note"><p><span class="k">3편으로</span>큐잉 이론의 손님은 모두 같은 규칙을 따릅니다. 손님마다 참을성이 다르고 서로 영향을 주고받는다면 에이전트 기반 모델이 필요합니다.</p></div>
+  <div class="link-note"><p><span class="k">4편과 5편으로</span>공식에 넣을 <span class="m">C<sub>s</sub></span>²는 데이터에서 추정해야 하고(4편), 시뮬레이션 결과는 반복과 신뢰구간으로 말해야 합니다(5편).</p></div>
+  <div class="link-note"><p><span class="k">8편으로</span>리틀의 법칙은 분포와 상관없이 성립하므로, 공식이 없는 모델에서도 시뮬레이터가 맞게 도는지 점검하는 도구가 됩니다. 측정한 <span class="m">L</span>과 <span class="m">λW</span>가 다르면 코드에 버그가 있습니다.</p></div>
+
+  <h3 id="s4-2"><span class="n">4.2</span>요약</h3>
+  <dl class="terms">
+    <dt>리틀의 법칙</dt><dd><span class="m">L</span> = <span class="m">λW</span>. 분포, 서버 수, 순서 규칙과 상관없이, 같은 경계에 대해 잰 세 양 사이에 성립한다. 돌아간 손님이 있으면 <span class="m">λ</span><sub>eff</sub>.</dd>
+    <dt>가동률</dt><dd><span class="m">ρ</span> = <span class="m">λ</span>/<span class="m">cμ</span> &lt; 1이어야 줄이 끝없이 늘지 않는다. 1에 가까울수록 대기는 1/(1 − <span class="m">ρ</span>)로 폭증한다.</dd>
+    <dt>세 손잡이</dt><dd>평균 줄 대기 ≈ 혼잡도 × 변동 × 서비스 시간. M/G/1에서는 등호(P-K), G/G/1에서는 근사(킹맨).</dd>
+    <dt>풀링</dt><dd>같은 서버라면 줄은 하나가 낫다. 빠른 서버 하나는 체류시간이 가장 짧다.</dd>
+    <dt>정원</dt><dd>M/M/1/K는 <span class="m">ρ</span> &gt; 1이어도 안정하지만 손님을 잃는다.</dd>
+    <dt>네트워크</dt><dd>트래픽 방정식으로 노드별 도착률을 구하고, 잭슨 네트워크라면 노드마다 M/M/c로 계산한다. 이용률이 가장 높은 노드가 병목이다.</dd>
+  </dl>
+
+  <h3 id="s4-3"><span class="n">4.3</span>연습 문제</h3>
+  <div class="ex">
+    <details><summary>1. M/M/1에서 이용률을 0.8에서 0.9로 올리면 평균 체류시간은 몇 배가 될까요? 0.9에서 0.95로 올리면?</summary><div><p><span class="m">W</span> ∝ 1/(1 − <span class="m">ρ</span>)이므로 0.8 → 0.9는 5 → 10으로 두 배, 0.9 → 0.95는 10 → 20으로 다시 두 배입니다. 이용률은 각각 12.5%, 5.6%만 올랐습니다.</p></div></details>
+    <details><summary>2. 서비스 시간이 평균 2분, 표준편차 2분인 M/G/1과 표준편차 1분인 M/G/1이 있습니다. 이용률이 같다면 줄 대기는 몇 배 차이일까요?</summary><div><p><span class="m">C<sub>s</sub></span>²는 각각 1과 0.25입니다. 변동 손잡이는 (1 + 1)/2 = 1과 (1 + 0.25)/2 = 0.625이므로 줄 대기는 1.6배 차이입니다. 평균은 같습니다.</p></div></details>
+    <details><summary>3. 콜센터에 전화가 분당 4통 오고 통화는 평균 2분(지수분포)입니다. 상담원이 몇 명 이상이어야 안정할까요? 9명과 10명 중 어느 쪽이 "도착한 전화의 80% 이상이 바로 연결"을 만족할까요?</summary><div><p>바쁜 상담원 수의 평균이 <span class="m">λ</span>/<span class="m">μ</span> = 8명이므로 9명 이상이어야 합니다. 얼랑 C로 계산하면 9명일 때 기다릴 확률이 약 0.65, 10명일 때 약 0.41입니다. 바로 연결되는 비율은 각각 약 35%와 59%로 둘 다 목표에 못 미치고, 12명(약 86%)은 되어야 합니다. 2.5절 위젯에서 <span class="m">c</span>와 <span class="m">ρ</span>를 맞춰 확인해 보세요.</p></div></details>
+    <details><summary>4. 정원이 5명인 M/M/1/5에서 <span class="m">λ</span> = <span class="m">μ</span>이면 돌아가는 비율은?</summary><div><p><span class="m">ρ</span> = 1이면 모든 상태의 확률이 같아 1/(<span class="m">K</span> + 1) = 1/6 ≈ 17%입니다. 2.7절 위젯에서 <span class="m">ρ</span> = 1, <span class="m">K</span> = 5로 확인할 수 있습니다.</p></div></details>
+    <details><summary>5. 2.8절 네트워크에서 바리스타가 2명일 때, 다시 만드는 비율 <span class="m">r</span>을 얼마까지 견딜 수 있을까요? (<span class="m">λ</span> = 0.8, <span class="m">q</span> = 0.2)</summary><div><p>제조 노드가 안정하려면 <span class="m">λ</span><sub>2</sub> = 0.64/(1 − <span class="m">r</span>) &lt; 2 × (1/1.5) = 1.33이어야 하므로 1 − <span class="m">r</span> &gt; 0.48, 즉 <span class="m">r</span> &lt; 0.52입니다. 하지만 <span class="m">r</span> = 0.4만 되어도 이용률이 0.8이라 체류시간이 크게 늘어납니다. 안정과 쾌적은 다른 기준입니다.</p></div></details>
+  </div>
+
+  <h3 id="s4-4"><span class="n">4.4</span>파이썬으로 확인하기</h3>
+  <div class="prose">
+    <p>사건 목록 하나로 M/M/c/K를 시뮬레이션하고, 측정값을 2.7절의 출생-사망 공식과 비교하는 코드입니다. 표준 라이브러리만 씁니다. 2편에서 같은 구조를 커피점 전체로 키웁니다.</p>
+  </div>
+<pre class="code"><code><span class="com"># mmck_sim.py : 사건 리스트로 M/M/c/K를 돌리고 리틀의 법칙과 이론값을 확인한다</span>
+<span class="kw">import</span> heapq, random
+
+<span class="kw">def</span> <span class="fn">simulate</span>(lam, mu, c, K, T=<span class="num">200_000</span>, seed=<span class="num">1</span>):
+    rng = random.Random(seed)
+    fel = [(rng.expovariate(lam), <span class="str">&quot;arr&quot;</span>)]       <span class="com"># 미래 사건 목록: (시각, 종류)</span>
+    t = area = <span class="num">0.0</span>                               <span class="com"># area = 사람 수를 시간으로 적분한 값</span>
+    n = accepted = blocked = <span class="num">0</span>
+    waits, queue, busy = [], [], <span class="num">0</span>
+    <span class="kw">while</span> fel:
+        t_next, kind = heapq.heappop(fel)
+        <span class="kw">if</span> t_next &gt; T:
+            <span class="kw">break</span>
+        area += n * (t_next - t)
+        t = t_next
+        <span class="kw">if</span> kind == <span class="str">&quot;arr&quot;</span>:
+            heapq.heappush(fel, (t + rng.expovariate(lam), <span class="str">&quot;arr&quot;</span>))
+            <span class="kw">if</span> n == K:                            <span class="com"># 정원이 차면 돌아간다</span>
+                blocked += <span class="num">1</span>
+                <span class="kw">continue</span>
+            n += <span class="num">1</span>
+            accepted += <span class="num">1</span>
+            <span class="kw">if</span> busy &lt; c:
+                busy += <span class="num">1</span>
+                heapq.heappush(fel, (t + rng.expovariate(mu), (<span class="str">&quot;dep&quot;</span>, t)))
+            <span class="kw">else</span>:
+                queue.append(t)
+        <span class="kw">else</span>:                                     <span class="com"># 떠남: (&quot;dep&quot;, 도착 시각)</span>
+            waits.append(t - kind[<span class="num">1</span>])
+            n -= <span class="num">1</span>
+            <span class="kw">if</span> queue:
+                heapq.heappush(fel, (t + rng.expovariate(mu), (<span class="str">&quot;dep&quot;</span>, queue.pop(<span class="num">0</span>))))
+            <span class="kw">else</span>:
+                busy -= <span class="num">1</span>
+    L, lam_eff, W = area / t, accepted / t, <span class="bi">sum</span>(waits) / <span class="bi">len</span>(waits)
+    <span class="kw">return</span> L, lam_eff, W, blocked / (accepted + blocked)
+
+<span class="kw">def</span> <span class="fn">theory</span>(lam, mu, c, K):                        <span class="com"># 출생-사망 과정의 정상 분포</span>
+    p = [<span class="num">1.0</span>]
+    <span class="kw">for</span> k <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, K + <span class="num">1</span>):
+        p.append(p[-<span class="num">1</span>] * lam / (mu * <span class="bi">min</span>(k, c)))
+    s = <span class="bi">sum</span>(p)
+    p = [x / s <span class="kw">for</span> x <span class="kw">in</span> p]
+    L = <span class="bi">sum</span>(k * x <span class="kw">for</span> k, x <span class="kw">in</span> <span class="bi">enumerate</span>(p))
+    lam_eff = lam * (<span class="num">1</span> - p[K])
+    <span class="kw">return</span> L, lam_eff, L / lam_eff, p[K]
+
+lam, mu, c, K = <span class="num">1.8</span>, <span class="num">1.0</span>, <span class="num">2</span>, <span class="num">6</span>                   <span class="com"># 서버 2대, 정원 6명</span>
+sim, th = simulate(lam, mu, c, K), theory(lam, mu, c, K)
+<span class="kw">for</span> name, s, t <span class="kw">in</span> <span class="bi">zip</span>([<span class="str">&quot;L&quot;</span>, <span class="str">&quot;λ_eff&quot;</span>, <span class="str">&quot;W&quot;</span>, <span class="str">&quot;돌아간 비율&quot;</span>], sim, th):
+    <span class="bi">print</span>(<span class="str">f&quot;</span>{name}<span class="str">: 시뮬레이션 </span>{s:<span class="str">.3f</span>}<span class="str">, 이론 </span>{t:<span class="str">.3f</span>}<span class="str">&quot;</span>)
+<span class="bi">print</span>(<span class="str">f&quot;</span><span class="str">리틀의 법칙 확인: L = </span>{sim[<span class="num">0</span>]:<span class="str">.3f</span>}<span class="str">,  λ_eff × W = </span>{sim[<span class="num">1</span>] * sim[<span class="num">2</span>]:<span class="str">.3f</span>}<span class="str">&quot;</span>)</code></pre>
+  <p class="code-cap">실행 결과 (시드 1): <code>L: 시뮬레이션 2.847, 이론 2.856</code>, <code>W: 시뮬레이션 1.783, 이론 1.788</code>, <code>돌아간 비율: 시뮬레이션 0.112, 이론 0.113</code>, 그리고 <code>L = 2.847, λ_eff × W = 2.847</code>. 마지막 줄의 두 값은 같은 넓이를 두 번 센 것이라 시드와 상관없이 거의 일치합니다.</p>
+</section>
+
+<nav class="pager" aria-label="이전 다음 편">
+  <a href="ch0_simulation-101.html"><span>이전 편</span><b>0. 시뮬레이션 101</b></a>
+  <a class="next" href="ch2_DES.html"><span>다음 편</span><b>2. 이산사건 시뮬레이션</b></a>
+</nav>
+<footer><a href="https://sites.google.com/view/knunextcom">Next-generation Computing Systems Lab</a>, 경북대학교 컴퓨터학부</footer>
 </div>
 
-<section class="wrap" id="s1">
-  <div class="prose">
-    <h2>1. 상자 하나를 그린다</h2>
-    <p>어떤 시스템이든 주위에 경계를 하나 긋는다. 편의점이라면 줄 끝부터 계산대까지, 웹 서버라면 요청이 들어와서 응답이 나갈 때까지다. 위 시뮬레이션의 점선 상자가 그 경계다. 경계를 정하면 세 가지를 잴 수 있다.</p>
-    <dl>
-      <dt>L</dt><dd>상자 안에 있는 인원의 <em>시간 평균</em>. 매 순간의 인원 <span class="m">N</span>(<span class="m">t</span>)를 관측 시간 동안 평균한 값이다.</dd>
-      <dt>λ</dt><dd>상자에 들어오는 비율 (단위 시간당 인원). 자리가 없어 돌아간 사람은 상자에 들어오지 않았으므로 세지 않는다.</dd>
-      <dt>W</dt><dd>한 사람이 상자 안에 머무는 시간의 평균.</dd>
-    </dl>
-    <p>John D. C. Little은 1961년에, 장기 평균이 존재하기만 하면 이 셋 사이에 다음 관계가 늘 성립함을 증명했다.</p>
-    <div class="eq"><span class="m">L</span> = <span class="m">λ</span><span class="m">W</span></div>
-    <p>도착 간격과 서비스 시간이 어떤 분포를 따르든, 창구가 몇 개든, 선착순이든 아니든 상관없다. 필요한 조건은 시스템이 안정적이라는 것, 곧 사람이 상자 안에 끝없이 쌓이지 않는다는 것뿐이다. 위에서 분포를 &lsquo;일정&rsquo;으로 바꾸거나 창구를 늘려 보면 두 값이 여전히 만나는 것을 볼 수 있다. 반대로 <span class="m">λ</span>를 <span class="m">c</span><span class="m">μ</span>보다 크게 하고 대기 공간을 무제한으로 두면 줄이 계속 길어져 평균 자체가 수렴하지 않는다.</p>
-  </div>
-</section>
-
-<section class="wrap" id="s2">
-  <div class="prose">
-    <h2>2. 왜 성립할까: 같은 넓이를 두 번 센다</h2>
-    <p>관측 시간 <span class="m">T</span> 동안 <span class="m">n</span>명이 상자를 거쳐 갔다고 하자. 아래 위쪽 그림은 고객 한 명을 가로 막대 하나로 그린 것이다. 막대의 길이가 그 사람의 체류 시간 <span class="m">W</span><sub>i</sub>이고, 주황 부분은 기다린 시간, 초록 부분은 서비스받은 시간이다. 아래쪽 그림은 매 순간 상자 안의 인원 <span class="m">N</span>(<span class="m">t</span>)이다.</p>
-    <p>어느 순간 <span class="m">τ</span>에 세로선을 그으면, 그 선을 지나는 막대의 개수가 바로 <span class="m">N</span>(<span class="m">τ</span>)다. 그러니 막대 길이를 모두 더한 값과 <span class="m">N</span>(<span class="m">t</span>) 아래 넓이는 같은 양을 다른 방향으로 센 것이다. 이 넓이를 <span class="m">A</span>라 하면</p>
-    <div class="eq"><span class="m">L</span> = <span class="m">A</span>/<span class="m">T</span>,&ensp; <span class="m">W</span> = <span class="m">A</span>/<span class="m">n</span>,&ensp; <span class="m">λ</span> = <span class="m">n</span>/<span class="m">T</span><br>
-      ⇒&ensp;<span class="m">L</span> = (<span class="m">n</span>/<span class="m">T</span>)(<span class="m">A</span>/<span class="m">n</span>) = <span class="m">λ</span><span class="m">W</span></div>
-    <p>그래프 위에 마우스를 올리거나 터치해서 세로선을 움직여 보자. 일시정지하면 천천히 볼 수 있다.</p>
-  </div>
-  <div class="bench">
-    <canvas id="areaCanvas" role="img" aria-label="고객별 체류 막대와 시스템 내 인원 N(t) 계단 그래프"></canvas>
-    <p class="readout" id="hoverOut">세로선을 움직이면 그 순간의 막대 개수와 <span class="m">N</span>(<span class="m">τ</span>)를 보여 준다.</p>
-    <div class="pair">
-      <div>막대 길이의 합 <span class="m">Σ</span><span class="m">W</span><sub>i</sub><strong id="aBars">–</strong></div>
-      <div><span class="m">N</span>(<span class="m">t</span>) 아래 넓이<strong id="aCurve">–</strong></div>
-      <div>보이는 구간 길이<strong id="aSpan">–</strong></div>
-    </div>
-    <div class="buttons"><button class="runToggle" type="button">일시정지</button></div>
-  </div>
-</section>
-
-<section class="wrap" id="s3">
-  <div class="prose">
-    <h2>3. 경계는 어디에 그어도 된다</h2>
-    <p>상자를 대기열만 감싸게 그리면 <span class="m">L</span><sub>q</sub> = <span class="m">λ</span><span class="m">W</span><sub>q</sub>이고, 창구만 감싸게 그리면 &lsquo;평균적으로 바쁜 창구 수 = <span class="m">λ</span> × 평균 서비스 시간&rsquo;이 된다. 마지막 식이 곧 이용률의 정의다. 창구가 <span class="m">c</span>개이고 손님을 거절하지 않으면 <span class="m">c</span><span class="m">ρ</span> = <span class="m">λ</span>/<span class="m">μ</span>가 된다.</p>
-    <p>아래 표는 위 시뮬레이션에서 세 경계를 동시에 잰 값이다. 세 줄 모두 마지막 두 열이 같아지는지 보자.</p>
-  </div>
-  <div class="bench tbl">
-    <table>
-      <thead><tr><th>경계</th><th>평균 인원 <span class="m">L</span></th><th>들어오는 비율 <span class="m">λ</span></th><th>평균 체류 <span class="m">W</span></th><th><span class="m">λ</span> × <span class="m">W</span></th></tr></thead>
-      <tbody id="boundBody"></tbody>
-    </table>
-  </div>
-</section>
-
-<section class="wrap" id="s4">
-  <div class="prose">
-    <h2>4. M/M/1: 이용률이 1에 가까워지면</h2>
-    <p>리틀의 법칙은 세 양 사이의 관계일 뿐, 셋 중 어느 하나를 혼자 알려 주지는 않는다. 하나를 구하려면 모형이 필요하다. 가장 간단한 M/M/1 (지수분포 도착, 지수분포 서비스, 창구 1개)에서는 이용률 <span class="m">ρ</span> = <span class="m">λ</span>/<span class="m">μ</span> &lt; 1일 때 다음이 성립한다.</p>
-    <div class="eq"><span class="m">L</span> = <span class="m">ρ</span>/(1 − <span class="m">ρ</span>),&ensp; <span class="m">L</span><sub>q</sub> = <span class="m">ρ</span><sup>2</sup>/(1 − <span class="m">ρ</span>)<br>
-      <span class="m">W</span> = <span class="m">L</span>/<span class="m">λ</span> = 1/(<span class="m">μ</span> − <span class="m">λ</span>),&ensp; <span class="m">W</span><sub>q</sub> = <span class="m">W</span> − 1/<span class="m">μ</span></div>
-    <p><span class="m">W</span>를 구할 때 리틀의 법칙을 쓴 것에 주목하자. 그리고 곡선의 모양을 보자. <span class="m">ρ</span>가 0.8이면 <span class="m">L</span> = 4, 0.9면 9, 0.95면 19다. 창구가 80% 바쁠 때와 95% 바쁠 때 줄 길이는 다섯 배 가까이 차이 난다.</p>
-  </div>
-  <div class="bench">
-    <div class="controls" style="margin-top:0">
-      <label class="ctl"><span class="row"><span>도착률 <span class="m">λ</span></span><output id="oL2"></output></span>
-        <input type="range" id="iL2" min="0.05" max="2" step="0.01" value="0.8"></label>
-      <label class="ctl"><span class="row"><span>서비스율 <span class="m">μ</span></span><output id="oM2"></output></span>
-        <input type="range" id="iM2" min="0.2" max="2" step="0.01" value="1"></label>
-    </div>
-    <canvas id="mm1Canvas" role="img" aria-label="M/M/1에서 이용률에 따른 평균 인원 L과 평균 대기 인원 Lq 곡선"></canvas>
-    <div class="legend">
-      <span><i class="dot" style="background:var(--ink)"></i><span class="m">L</span> (시스템 전체)</span>
-      <span><i class="dot" style="background:var(--wait)"></i><span class="m">L</span><sub>q</sub> (대기열만)</span>
-    </div>
-    <div class="pair" id="mm1Out"></div>
-    <div class="buttons"><button id="btnApply" type="button">이 값으로 위 시뮬레이션 돌리기</button></div>
-  </div>
-</section>
-
-<section class="wrap" id="s5">
-  <div class="prose">
-    <h2>5. 손으로 풀어보기</h2>
-    <p>세 칸 중 두 칸을 채우면 나머지 하나를 계산한다. <span class="m">λ</span>와 <span class="m">W</span>의 시간 단위를 같게 맞추는 것을 잊지 말자.</p>
-    <div class="calc">
-      <label><span class="m">L</span><input id="cL" inputmode="decimal" placeholder="평균 인원"></label>
-      <span class="op">=</span>
-      <label><span class="m">λ</span><input id="cLam" inputmode="decimal" placeholder="명/단위시간"></label>
-      <span class="op">×</span>
-      <label><span class="m">W</span><input id="cW" inputmode="decimal" placeholder="단위시간"></label>
-    </div>
-    <p class="readout" id="cOut" aria-live="polite">두 칸을 채우면 나머지 하나를 계산한다.</p>
-
-    <h3>연습 문제</h3>
-    <details><summary>학생식당</summary>
-      <p class="problem">점심시간 학생식당 안에는 평균 60명이 있고, 1분에 4명씩 들어온다. 한 사람은 평균 몇 분 머무를까?</p>
-      <div class="ans"><span class="m">W</span> = <span class="m">L</span>/<span class="m">λ</span> = 60/4 = 15분. 대기열 모형도, 배식 시간 분포도 몰라도 된다.</div></details>
-    <details><summary>웹 서버의 동시 요청 수</summary>
-      <p class="problem">어떤 API 서버에 초당 200개의 요청이 들어오고 평균 응답 시간은 50ms다. 서버 안에서 동시에 처리 중인 요청은 평균 몇 개일까? 워커 스레드가 8개라면?</p>
-      <div class="ans">단위를 맞추면 <span class="m">W</span> = 0.05초. <span class="m">L</span> = 200 × 0.05 = 10개. 평균만으로도 워커 8개를 넘으므로 요청이 쌓이기 시작하고, 그러면 <span class="m">W</span>가 더 늘어난다. 처리량 계획에서 리틀의 법칙이 가장 자주 쓰이는 방식이다.</div></details>
-    <details><summary>생산 라인의 리드타임</summary>
-      <p class="problem">한 생산 라인에 재공품(WIP)이 평균 120개 있고 시간당 40개가 완성된다. 리드타임은? 처리량은 그대로 두고 리드타임을 2시간으로 줄이려면 재공품을 몇 개로 줄여야 할까?</p>
-      <div class="ans"><span class="m">W</span> = 120/40 = 3시간. 2시간으로 줄이려면 <span class="m">L</span> = 40 × 2 = 80개. 린 생산에서 &lsquo;재공품을 줄이면 리드타임이 준다&rsquo;는 말의 근거가 이 식이다.</div></details>
-    <details><summary>공용 프린터 (M/M/1)</summary>
-      <p class="problem">연구실 프린터에 인쇄 작업이 시간당 10건 들어오고(포아송 도착), 프린터는 시간당 12건을 처리한다(지수분포 서비스). <span class="m">ρ</span>, <span class="m">L</span>, <span class="m">W</span>는? 도착이 시간당 11건으로 10% 늘면?</p>
-      <div class="ans"><span class="m">ρ</span> = 10/12 ≈ 0.833, <span class="m">L</span> = 0.833/0.167 = 5건, <span class="m">W</span> = 1/(12 − 10) = 0.5시간 = 30분.<br>
-        도착이 11건이면 <span class="m">ρ</span> ≈ 0.917, <span class="m">L</span> = 11건, <span class="m">W</span> = 1시간. 도착이 10% 늘었을 뿐인데 체류 시간은 두 배가 된다. 4절 곡선의 가파른 구간이다.</div></details>
-    <details><summary>자리가 없으면 돌아가는 미용실</summary>
-      <p class="problem">대기 의자가 3개뿐인 미용실에 손님이 시간당 6명 오지만, 그중 3분의 1은 자리가 없어 그냥 돌아간다. 가게 안에는 평균 2명이 있다. 들어온 손님은 평균 얼마나 머무를까?</p>
-      <div class="ans">상자에 실제로 들어온 비율은 <span class="m">λ</span><sub>eff</sub> = 6 × 2/3 = 4명/시간. <span class="m">W</span> = 2/4 = 0.5시간. <span class="m">λ</span> = 6을 그대로 쓰면 20분이라는 틀린 답이 나온다. 위 시뮬레이션에서 대기 공간을 줄여 보면 표의 &lsquo;실효 도착률&rsquo;이 이 값에 해당한다.</div></details>
-  </div>
-</section>
-
-<section class="wrap" id="s6">
-  <div class="prose">
-    <h2>6. 다음 단계: DES와 ABM</h2>
-    <p>맨 위 시뮬레이터는 이산사건 시뮬레이션(DES)이다. 시계가 일정한 간격으로 흐르지 않는다. 미래 사건 목록(FEL)에서 가장 이른 사건, 곧 &lsquo;다음 도착&rsquo;이나 &lsquo;어느 창구의 서비스 종료&rsquo;를 꺼내 시계를 그 시각으로 옮기고, 상태를 바꾸고, 그 결과로 생기는 새 사건을 목록에 넣는다. 두 사건 사이에는 아무 일도 일어나지 않으므로 그 구간의 <span class="m">N</span>(<span class="m">t</span>)는 상수이고, 넓이 <span class="m">A</span>는 사건마다 &lsquo;현재 인원 × 경과 시간&rsquo;을 더해 정확히 계산된다.</p>
-  </div>
-  <div class="bench">
-    <p class="subhead">같은 구조를 파이썬으로 (M/M/1)</p>
-<pre class="py"><code><span class="k">import</span> heapq, random
-
-<span class="k">def</span> <span class="f">simulate_mm1</span>(lam, mu, t_end=<span class="n">10_000</span>, seed=<span class="n">0</span>):
-    rng = random.Random(seed)
-    fel = [(rng.expovariate(lam), <span class="s">"arr"</span>)]  <span class="c"># 미래 사건 목록</span>
-    queue = []         <span class="c"># 기다리는 사람의 도착 시각</span>
-    in_service = <span class="k">None</span>  <span class="c"># 서비스 중인 사람의 도착 시각</span>
-    last = area = sum_w = <span class="n">0.0</span>
-    n_in = n_out = <span class="n">0</span>
-
-    <span class="k">while</span> fel:
-        t, kind = heapq.heappop(fel)
-        <span class="k">if</span> t &gt; t_end:
-            <span class="k">break</span>
-        n = <span class="b">len</span>(queue) + (in_service <span class="k">is</span> <span class="k">not</span> <span class="k">None</span>)
-        area += n * (t - last)       <span class="c"># ∫N(t)dt 누적</span>
-        last = t
-        <span class="k">if</span> kind == <span class="s">"arr"</span>:
-            n_in += <span class="n">1</span>
-            heapq.heappush(fel, (t + rng.expovariate(lam), <span class="s">"arr"</span>))
-            <span class="k">if</span> in_service <span class="k">is</span> <span class="k">None</span>:
-                in_service = t
-                heapq.heappush(fel, (t + rng.expovariate(mu), <span class="s">"dep"</span>))
-            <span class="k">else</span>:
-                queue.append(t)
-        <span class="k">else</span>:                        <span class="c"># 서비스 종료</span>
-            n_out += <span class="n">1</span>
-            sum_w += t - in_service
-            <span class="k">if</span> queue:
-                in_service = queue.pop(<span class="n">0</span>)
-                heapq.heappush(fel, (t + rng.expovariate(mu), <span class="s">"dep"</span>))
-            <span class="k">else</span>:
-                in_service = <span class="k">None</span>
-
-    L, lam_hat, W = area / last, n_in / last, sum_w / n_out
-    <span class="b">print</span>(<span class="s">f"</span><span class="s">L = </span>{L:<span class="s">.3f</span>}<span class="s">,  λ·W = </span>{lam_hat * W:<span class="s">.3f</span>}<span class="s">"</span>)
-
-simulate_mm1(<span class="n">0.8</span>, <span class="n">1.0</span>)   <span class="c"># 이론값 L = 4</span></code></pre>
-  </div>
-  <div class="bench">
-    <p class="subhead">지금 돌고 있는 시뮬레이터의 사건 기록</p>
-    <ul class="log" id="log" aria-live="off"></ul>
-  </div>
-  <div class="prose" style="margin-top:28px">
-    <p>ABM으로 넘어가면 고객 하나하나가 자기 규칙을 가진 에이전트가 된다. 줄이 길면 처음부터 포기하고(balking), 기다리다 지치면 떠나고(reneging), 옆 줄이 짧으면 옮긴다(jockeying). 위의 &lsquo;대기 공간&rsquo; 제한은 가장 단순한 포기 규칙이다. 규칙이 이렇게 복잡해지면 4절 같은 닫힌 식은 더 이상 쓸 수 없지만, 리틀의 법칙은 여전히 성립한다.</p>
-    <p>그래서 DES든 ABM이든 모델을 만들면 <span class="m">L</span>, <span class="m">λ</span>, <span class="m">W</span>를 서로 독립적으로 측정해 <span class="m">L</span> ≈ <span class="m">λ</span><span class="m">W</span>인지부터 확인하는 것이 좋은 첫 번째 검증이 된다. 어긋난다면 통계 수집 코드에 버그가 있거나, 초기 과도 구간(warm-up)을 버리지 않았거나, 실행 시간이 너무 짧은 경우가 대부분이다. 맨 위 그래프에서 처음 몇십 분 동안 두 선이 벌어져 있는 것이 바로 과도 구간과 경계 효과다.</p>
-  </div>
-</section>
-
-<footer class="wrap">대기행렬 이론 입문 학습 자료. 시뮬레이션의 시간 단위는 &lsquo;분&rsquo;이다.</footer>
-
 <script>
-(() => {
-'use strict';
-const $ = (s) => document.querySelector(s);
-const $$ = (s) => Array.from(document.querySelectorAll(s));
-const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const fmt = (x, d = 2) => (x == null || !isFinite(x)) ? '–' : x.toFixed(d);
-const pct = (x) => (x == null || !isFinite(x)) ? '–' : (x * 100).toFixed(1) + '%';
-const FONT = '"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif';
-const MATH = '"STIX Two Text","Times New Roman",serif';
-
-/* ---------- colors ---------- */
-let C = {};
-function readColors() {
-  const cs = getComputedStyle(document.documentElement);
-  ['bg','panel','ink','muted','line','soft','wait','serve','arrive','block','on'].forEach(k => C[k] = cs.getPropertyValue('--' + k).trim());
+(function(){
+"use strict";
+/* ===== 공통 도구: 색, 캔버스, 난수, 통계, 수식 탐색기 ===== */
+var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+var COL = {};
+function readColors(){
+  var s = getComputedStyle(document.documentElement);
+  ["ink","muted","line","soft","panel","bg","acc","c1","c2","c3","miss","t1","t2","t3","t4","t5"].forEach(function(k){ COL[k] = s.getPropertyValue("--"+k).trim(); });
 }
 readColors();
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColors(); drawMM1(); });
-new MutationObserver(() => { readColors(); drawMM1(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-
-/* ---------- model parameters ---------- */
-const P = { lambda: 0.8, mu: 1, c: 1, qcap: Infinity, arr: 'exp', svc: 'exp', speed: 4 };
-const sample = (dist, rate) => dist === 'exp' ? -Math.log(1 - Math.random()) / rate : 1 / rate;
-
-/* ---------- theory ---------- */
-function theory(p) {
-  const l = p.lambda, m = p.mu, c = p.c, a = l / m, rho = a / c;
-  if (p.qcap === Infinity && rho >= 1) return { unstable: true, rho };
-  if (p.arr === 'exp' && p.svc === 'exp') {
-    if (p.qcap === Infinity) {
-      let sum = 0, term = 1;
-      for (let k = 0; k < c; k++) { if (k > 0) term *= a / k; sum += term; }
-      const termC = term * a / c;
-      const tail = termC / (1 - rho);
-      const P0 = 1 / (sum + tail);
-      const Cw = tail * P0;
-      const Lq = Cw * rho / (1 - rho), Wq = Lq / l, W = Wq + 1 / m;
-      return { name: `M/M/${c}`, rho, L: l * W, Lq, W, Wq, lamEff: l, pBlock: 0 };
-    }
-    const K = c + p.qcap, pr = [1];
-    for (let n = 1; n <= K; n++) pr[n] = pr[n - 1] * l / (Math.min(n, c) * m);
-    const s = pr.reduce((x, y) => x + y, 0);
-    let L = 0, Lq = 0;
-    for (let n = 0; n <= K; n++) { pr[n] /= s; L += n * pr[n]; Lq += Math.max(0, n - c) * pr[n]; }
-    const lamEff = l * (1 - pr[K]);
-    return { name: `M/M/${c}/${K}`, rho: lamEff / (c * m), L, Lq, W: L / lamEff, Wq: Lq / lamEff, lamEff, pBlock: pr[K] };
-  }
-  if (p.arr === 'exp' && c === 1 && p.qcap === Infinity) {
-    const varS = p.svc === 'exp' ? 1 / (m * m) : 0;
-    const Lq = (l * l * varS + rho * rho) / (2 * (1 - rho));
-    const Wq = Lq / l, W = Wq + 1 / m;
-    return { name: 'M/D/1 (P-K 공식)', rho, L: l * W, Lq, W, Wq, lamEff: l, pBlock: 0 };
-  }
-  if (p.arr === 'det' && p.svc === 'det' && rho < 1) {
-    return { name: `D/D/${c}`, rho, L: a, Lq: 0, W: 1 / m, Wq: 0, lamEff: l, pBlock: 0 };
-  }
-  return { none: true, rho };
+function rgba(hex, a){
+  var h = hex.replace("#",""); if(h.length===3) h = h.replace(/(.)/g,"$1$1");
+  var n = parseInt(h,16); return "rgba("+(n>>16&255)+","+(n>>8&255)+","+(n&255)+","+a+")";
 }
+function F(size, weight){ return (weight||400)+" "+size+'px "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif'; }
+function txt(c, s, x, y, o){
+  o = o || {}; c.font = o.font || F(o.size||11, o.weight); c.fillStyle = o.color || COL.muted;
+  c.textAlign = o.align || "left"; c.textBaseline = o.base || "alphabetic"; c.fillText(s, x, y);
+  c.textAlign = "left"; c.textBaseline = "alphabetic";
+}
+function line(c, x0, y0, x1, y1, col, w, dash){
+  c.strokeStyle = col; c.lineWidth = w||1; c.setLineDash(dash||[]);
+  c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.setLineDash([]); c.lineWidth = 1;
+}
+function dot(c, x, y, r, col){ c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+function fmt(v, d){ if(!isFinite(v)) return "∞"; return (+v).toFixed(d===undefined?2:d); }
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
 
-/* ---------- discrete-event simulation ---------- */
-let S, V, TH;
-function resetSim() {
-  S = {
-    t: 0, lastT: 0, nextId: 1, fel: [], queue: [], servers: new Array(P.c).fill(null), hist: [],
-    areaN: 0, areaQ: 0, areaB: 0, arrivals: 0, accepted: 0, blocked: 0, departed: 0, started: 0,
-    sumW: 0, sumWq: 0, sumS: 0, log: [], logVer: 0, series: [], sampleStep: 0.5, nextSample: 0.5
+var CANVASES = [];
+function setup(rootOrCanvas, draw){
+  var cv = rootOrCanvas.tagName === "CANVAS" ? rootOrCanvas : rootOrCanvas.querySelector("canvas");
+  var c = cv.getContext("2d"), W = +cv.dataset.w, H = +cv.dataset.h;
+  cv.style.aspectRatio = W + " / " + H;
+  var o = {cv:cv, c:c, W:W, H:H};
+  o.redraw = function(){ c.clearRect(0,0,W,H); draw(c, W, H); };
+  o.fit = function(){
+    var w = cv.clientWidth || W, d = window.devicePixelRatio || 1;
+    cv.width = Math.round(w*d); cv.height = Math.round(w*H/W*d);
+    c.setTransform(cv.width/W, 0, 0, cv.height/H, 0, 0); o.redraw();
   };
-  V = new Map();
-  S.fel.push({ time: sample(P.arr, P.lambda), type: 'arr' });
-  TH = theory(P);
+  o.toLocal = function(ev){ var r = cv.getBoundingClientRect(); return {x:(ev.clientX-r.left)/r.width*W, y:(ev.clientY-r.top)/r.height*H}; };
+  new ResizeObserver(o.fit).observe(cv);
+  CANVASES.push(o);
+  return o;
 }
-const busyCount = () => S.servers.reduce((b, s) => b + (s ? 1 : 0), 0);
-function accumulate(to) {
-  const dt = to - S.lastT; if (dt <= 0) return;
-  const q = S.queue.length, b = busyCount();
-  S.areaN += (q + b) * dt; S.areaQ += q * dt; S.areaB += b * dt; S.lastT = to;
-}
-function addLog(text) {
-  S.log.push({ t: S.t, text }); S.logVer++;
-  if (S.log.length > 40) S.log.splice(0, S.log.length - 40);
-}
-function startService(cu, k) {
-  cu.tStart = S.t; cu.server = k; S.servers[k] = cu; S.started++; S.sumWq += cu.tStart - cu.tArr;
-  S.fel.push({ time: S.t + sample(P.svc, P.mu), type: 'dep', server: k });
-}
-function processEvent(ev) {
-  accumulate(ev.time); S.t = ev.time;
-  if (ev.type === 'arr') {
-    S.arrivals++;
-    S.fel.push({ time: S.t + sample(P.arr, P.lambda), type: 'arr' });
-    const cu = { id: S.nextId++, tArr: S.t, tStart: null, tDep: null, server: -1 };
-    const free = S.servers.indexOf(null);
-    if (free >= 0) {
-      S.accepted++; S.hist.push(cu); startService(cu, free);
-      addLog(`도착 #${cu.id}, 창구 ${free + 1}에서 바로 서비스 시작`); spawnVis(cu, false);
-    } else if (S.queue.length < P.qcap) {
-      S.accepted++; S.hist.push(cu); S.queue.push(cu);
-      addLog(`도착 #${cu.id}, 대기열 ${S.queue.length}번째`); spawnVis(cu, false);
-    } else {
-      S.blocked++; addLog(`도착 #${cu.id}, 대기 공간이 가득 차 돌아감`); spawnVis(cu, true);
-    }
-  } else {
-    const k = ev.server, cu = S.servers[k];
-    cu.tDep = S.t; S.servers[k] = null; S.departed++;
-    S.sumW += cu.tDep - cu.tArr; S.sumS += cu.tDep - cu.tStart;
-    addLog(`창구 ${k + 1} 서비스 종료 #${cu.id}, 체류 ${fmt(cu.tDep - cu.tArr)}분`);
-    const v = V.get(cu.id); if (v) v.state = 'leave';
-    if (S.queue.length) {
-      const nx = S.queue.shift(); startService(nx, k);
-      addLog(`창구 ${k + 1} 서비스 시작 #${nx.id}, ${fmt(nx.tStart - nx.tArr)}분 기다림`);
-    }
-  }
-}
-function estimates() {
-  const T = S.lastT;
-  if (T <= 0) return {};
-  return {
-    L: S.areaN / T, Lq: S.areaQ / T, Ls: S.areaB / T, lam: S.accepted / T,
-    W: S.departed ? S.sumW / S.departed : NaN, Wq: S.started ? S.sumWq / S.started : NaN,
-    Ws: S.departed ? S.sumS / S.departed : NaN, rho: S.areaB / (P.c * T),
-    pB: S.arrivals ? S.blocked / S.arrivals : 0
-  };
-}
-function sampleSeries() {
-  while (S.lastT >= S.nextSample) {
-    const e = estimates();
-    S.series.push({ t: S.nextSample, L: e.L, LW: e.lam * e.W });
-    S.nextSample += S.sampleStep;
-    if (S.series.length > 500) {
-      S.series = S.series.filter((_, i) => i % 2 === 1);
-      S.sampleStep *= 2;
-      S.nextSample = S.series[S.series.length - 1].t + S.sampleStep;
-    }
-  }
-}
-function advance(T) {
-  let n = 0;
-  for (;;) {
-    let mi = -1, mt = Infinity;
-    for (let i = 0; i < S.fel.length; i++) if (S.fel[i].time < mt) { mt = S.fel[i].time; mi = i; }
-    if (mi < 0 || mt > T) break;
-    if (++n > 20000) { T = S.t; break; }
-    processEvent(S.fel.splice(mi, 1)[0]);
-    sampleSeries();
-  }
-  accumulate(T); S.t = T; sampleSeries();
-  if (S.hist.length > 1500) {
-    const cut = S.t - 2 * windowLen();
-    S.hist = S.hist.filter(c => c.tDep == null || c.tDep > cut);
-  }
-}
-const windowLen = () => Math.min(150, Math.max(12, 30 / P.lambda));
-
-/* ---------- canvases ---------- */
-const SC = { cv: $('#simCanvas') }, AC = { cv: $('#areaCanvas') }, CC = { cv: $('#convCanvas') }, MC = { cv: $('#mm1Canvas') };
-let G = {}, narrow = false;
-function fit(o, h) {
-  const r = o.cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
-  o.w = r.width; o.h = h;
-  o.cv.width = Math.max(1, Math.round(r.width * dpr)); o.cv.height = Math.round(h * dpr);
-  o.cv.style.height = h + 'px';
-  o.ctx = o.cv.getContext('2d'); o.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
-function layout() {
-  narrow = SC.cv.getBoundingClientRect().width < 560;
-  fit(SC, narrow ? 230 : 270); fit(AC, narrow ? 290 : 330); fit(CC, 160); fit(MC, narrow ? 230 : 270);
-  G = { w: SC.w, h: SC.h, enterX: 18, midY: SC.h / 2 - 6, r: narrow ? 10 : 12, spacing: narrow ? 25 : 31 };
-  G.serverX = SC.w - (narrow ? 70 : 108);
-  G.boxL = G.enterX + 28; G.boxR = G.serverX + (narrow ? 38 : 46); G.boxT = 22; G.boxB = SC.h - 28;
-  G.slot0 = G.serverX - (narrow ? 46 : 56);
-  G.maxSlots = Math.max(1, Math.floor((G.slot0 - (G.boxL + 34)) / G.spacing) + 1);
-  drawMM1();
-}
-window.addEventListener('resize', layout);
-
-function serverY(k) {
-  const sp = Math.min(70, (G.boxB - G.boxT - 44) / P.c);
-  return G.midY + (k - (P.c - 1) / 2) * sp;
-}
-function spawnVis(cu, blocked) {
-  if (V.size > 400) for (const [id, v] of V) if (v.state === 'leave' || v.state === 'blocked') V.delete(id);
-  V.set(cu.id, { id: cu.id, x: G.enterX, y: G.midY, tx: G.enterX, ty: G.midY, a: 1, life: 0, hidden: false, state: blocked ? 'blocked' : 'in' });
-}
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
-}
-
-function drawSim(dt) {
-  const ctx = SC.ctx, w = G.w, h = G.h;
-  ctx.clearRect(0, 0, w, h);
-  // targets
-  S.queue.forEach((cu, i) => {
-    const v = V.get(cu.id); if (!v) return;
-    v.state = 'queue';
-    if (i < G.maxSlots) { v.tx = G.slot0 - i * G.spacing; v.ty = G.midY; v.hidden = false; }
-    else { v.tx = G.slot0 - (G.maxSlots - 1) * G.spacing; v.ty = G.midY; v.hidden = true; }
+function seg(root, sel, onPick){
+  var g = typeof sel === "string" ? root.querySelector(sel) : sel;
+  g.addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    g.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x===b ? "true" : "false"); });
+    onPick(b.dataset.v, b);
   });
-  S.servers.forEach((cu, k) => {
-    if (!cu) return; const v = V.get(cu.id); if (!v) return;
-    v.state = 'serve'; v.tx = G.serverX; v.ty = serverY(k); v.hidden = false;
+}
+function bindRange(root, sel, onChange, fmtFn){
+  var inp = root.querySelector(sel), out = inp.parentElement.querySelector("b,output");
+  function u(){ if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value; onChange(+inp.value); }
+  inp.addEventListener("input", u); if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value;
+  return inp;
+}
+
+/* 축과 눈금 */
+function scale(box, xr, yr){
+  return {box:box, xr:xr, yr:yr,
+    X:function(v){ return box[0] + (v-xr[0])/(xr[1]-xr[0])*(box[2]-box[0]); },
+    Y:function(v){ return box[3] - (v-yr[0])/(yr[1]-yr[0])*(box[3]-box[1]); }};
+}
+function axes(c, s, o){
+  o = o || {}; var b = s.box;
+  (o.yt||[]).forEach(function(v){ var y = s.Y(v); line(c, b[0], y+.5, b[2], y+.5, COL.soft); txt(c, o.fy ? o.fy(v) : v, b[0]-6, y+4, {align:"right", size:10}); });
+  line(c, b[0], b[3]+.5, b[2], b[3]+.5, COL.line);
+  line(c, b[0]+.5, b[1], b[0]+.5, b[3], COL.line);
+  (o.xt||[]).forEach(function(v){ var x = s.X(v); line(c, x+.5, b[3], x+.5, b[3]+4, COL.line); txt(c, o.fx ? o.fx(v) : v, x, b[3]+15, {align:"center", size:10}); });
+  if(o.xl) txt(c, o.xl, b[2], b[3]+28, {align:"right", size:10});
+  if(o.yl) txt(c, o.yl, b[0], b[1]-6, {size:10});
+}
+function path(c, s, pts, col, w, dash){
+  var bx = s.box; c.save(); c.beginPath(); c.rect(bx[0]-1, bx[1]-3, bx[2]-bx[0]+2, bx[3]-bx[1]+4); c.clip();
+  c.strokeStyle = col; c.lineWidth = w||1.6; c.setLineDash(dash||[]); c.beginPath();
+  var started = false;
+  pts.forEach(function(p){ if(p == null || !isFinite(p[1])){ started = false; return; }
+    var x = s.X(p[0]), y = clamp(s.Y(p[1]), s.box[1]-2, s.box[3]+2); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; });
+  c.stroke(); c.setLineDash([]); c.lineWidth = 1; c.restore();
+}
+function ticks(a, b, n){
+  var span = b - a, step = Math.pow(10, Math.floor(Math.log10(span/n))), err = span/n/step;
+  step *= err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1;
+  var out = [], v = Math.ceil(a/step)*step;
+  for(; v <= b + 1e-9; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+
+/* 난수: 재현 가능한 생성기와 분포 */
+function mulberry(seed){ var a = seed >>> 0; return function(){ a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function U(r){ return (r || Math.random)(); }
+function expo(mean, r){ return -mean*Math.log(1-U(r)); }
+function normal(r){ var u = 1-U(r), v = U(r); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gammaRV(k, theta, r){
+  if(k < 1){ return gammaRV(k+1, theta, r)*Math.pow(U(r), 1/k); }
+  var d = k - 1/3, cc = 1/Math.sqrt(9*d);
+  while(true){ var x, v; do { x = normal(r); v = 1 + cc*x; } while(v <= 0);
+    v = v*v*v; var u = U(r);
+    if(u < 1 - .0331*x*x*x*x || Math.log(u) < .5*x*x + d*(1 - v + Math.log(v))) return d*v*theta; }
+}
+function lognormRV(mu, s, r){ return Math.exp(mu + s*normal(r)); }
+function poissonRV(lam, r){ var L = Math.exp(-lam), k = 0, p = 1; do { k++; p *= U(r); } while(p > L); return k-1; }
+
+/* 통계 */
+function mean(a){ var s = 0; for(var i=0;i<a.length;i++) s += a[i]; return s/a.length; }
+function sd(a){ var m = mean(a), s = 0; for(var i=0;i<a.length;i++) s += (a[i]-m)*(a[i]-m); return Math.sqrt(s/(a.length-1)); }
+function quantile(sorted, p){ var i = (sorted.length-1)*p, lo = Math.floor(i), hi = Math.ceil(i); return sorted[lo] + (sorted[hi]-sorted[lo])*(i-lo); }
+function normInv(p){ // Acklam 근사
+  var a=[-39.6968302866538,220.946098424521,-275.928510446969,138.357751867269,-30.6647980661472,2.50662827745924],
+      b=[-54.4760987982241,161.585836858041,-155.698979859887,66.8013118877197,-13.2806815528857],
+      cc=[-.00778489400243029,-.322396458041136,-2.40075827716184,-2.54973253934373,4.37466414146497,2.93816398269878],
+      d=[.00778469570904146,.32246712907004,2.445134137143,3.75440866190742], q, r;
+  if(p < .02425){ q = Math.sqrt(-2*Math.log(p)); return (((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if(p > .97575){ q = Math.sqrt(-2*Math.log(1-p)); return -(((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  q = p - .5; r = q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+function normCdf(x){ var t = 1/(1+.2316419*Math.abs(x)), y = .3989423*Math.exp(-x*x/2)*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return x > 0 ? 1-y : y; }
+function tcrit(df, conf){ // 양측 신뢰수준 conf의 t 임계값 (Cornish-Fisher 근사)
+  var z = normInv(1 - (1-(conf||.95))/2), z3 = z*z*z, z5 = z3*z*z, z7 = z5*z*z;
+  return z + (z3+z)/(4*df) + (5*z5+16*z3+3*z)/(96*df*df) + (3*z7+19*z5+17*z3-15*z)/(384*df*df*df);
+}
+
+/* 수식 탐색기: 항을 누르면 강조하고 설명을 보여 준다. EQ[id](값) 이 실시간 계산을 맡는다. */
+var EQ = {}, EQRUN = {};
+function refreshEq(id){ if(EQRUN[id]) EQRUN[id](); }
+function initEqx(){
+  document.querySelectorAll(".eqx").forEach(function(box){
+    var detail = box.querySelector(".eq-detail"), btns = box.querySelectorAll(".eq-terms button");
+    function pick(t){
+      var same = box.dataset.on === t;
+      if(same || !t){ delete box.dataset.on; } else box.dataset.on = t;
+      box.querySelectorAll(".eq-big .t").forEach(function(s){ s.classList.toggle("on", !same && s.dataset.t === t); });
+      btns.forEach(function(b){ b.setAttribute("aria-pressed", !same && b.dataset.t === t ? "true" : "false"); });
+      if(detail){ var src = box.querySelector('template[data-t="'+t+'"]'); detail.innerHTML = !same && src ? src.innerHTML : ""; }
+    }
+    btns.forEach(function(b){
+      var t = box.querySelector('.eq-big .t[data-t="'+b.dataset.t+'"]'); if(t) b.dataset.c = t.dataset.c;
+      b.style.setProperty("--tc", "var(--t"+(b.dataset.c||1)+")");
+      b.addEventListener("click", function(){ pick(b.dataset.t); });
+    });
+    box.querySelectorAll(".eq-big .t").forEach(function(s){ s.tabIndex = 0; s.setAttribute("role","button");
+      s.addEventListener("click", function(){ pick(s.dataset.t); });
+      s.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pick(s.dataset.t); } }); });
+    var fn = EQ[box.id];
+    if(fn){
+      var vars = box.querySelectorAll("[data-var]");
+      var run = function(){
+        var v = {}; vars.forEach(function(i){ v[i.dataset.var] = i.type === "checkbox" ? i.checked : +i.value;
+          var o = i.parentElement.querySelector("b"); if(o) o.textContent = i.dataset.fmt ? fmt(+i.value, +i.dataset.fmt) : i.value; });
+        var res = fn(v, box) || {};
+        Object.keys(res).forEach(function(k){ box.querySelectorAll('[data-o="'+k+'"]').forEach(function(el){ el.innerHTML = res[k]; }); });
+      };
+      vars.forEach(function(i){ i.addEventListener("input", run); });
+      EQRUN[box.id] = run; run();
+    }
   });
-  const overflow = Math.max(0, S.queue.length - G.maxSlots);
-  const kk = reduceMotion ? 1 : 1 - Math.exp(-dt * 12);
-  for (const v of V.values()) {
-    if (v.state === 'leave') { v.tx = w + 30; v.ty = v.y; v.a -= dt * 1.6; }
-    else if (v.state === 'blocked') { v.tx = G.boxL - 4; v.ty = G.midY - 48; v.life += dt; if (v.life > 0.5) v.a -= dt * 1.8; }
-    v.x += (v.tx - v.x) * kk; v.y += (v.ty - v.y) * kk;
-    if (v.a <= 0) V.delete(v.id);
+}
+function onTheme(){ readColors(); CANVASES.forEach(function(o){ o.redraw(); }); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onTheme);
+new MutationObserver(onTheme).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+
+/* 감마 함수와 분포 함수 */
+function lgamma(x){
+  var g = 7, cf = [0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(x < .5) return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*x))) - lgamma(1-x);
+  x -= 1; var a = cf[0], t = x + g + .5;
+  for(var i=1;i<g+2;i++) a += cf[i]/(x+i);
+  return .5*Math.log(2*Math.PI) + (x+.5)*Math.log(t) - t + Math.log(a);
+}
+function gammaP(a, x){ // 정규화된 하부 불완전 감마 함수
+  if(x <= 0) return 0;
+  var gln = lgamma(a);
+  if(x < a + 1){ var ap = a, sum = 1/a, del = sum; for(var n=0;n<300;n++){ ap++; del *= x/ap; sum += del; if(Math.abs(del) < Math.abs(sum)*1e-12) break; } return sum*Math.exp(-x + a*Math.log(x) - gln); }
+  var b = x + 1 - a, c = 1e300, d = 1/b, h = d;
+  for(var i=1;i<300;i++){ var an = -i*(i-a); b += 2; d = an*d + b; if(Math.abs(d) < 1e-300) d = 1e-300; c = b + an/c; if(Math.abs(c) < 1e-300) c = 1e-300; d = 1/d; var del2 = d*c; h *= del2; if(Math.abs(del2-1) < 1e-12) break; }
+  return 1 - Math.exp(-x + a*Math.log(x) - gln)*h;
+}
+function gammaPdf(x, k, th){ if(x <= 0) return (k < 1 && x === 0) ? Infinity : 0; return Math.exp((k-1)*Math.log(x) - x/th - lgamma(k) - k*Math.log(th)); }
+function chi2crit(df, z){ z = z || 1.6449; var a = 2/(9*df); return df*Math.pow(1 - a + z*Math.sqrt(a), 3); }
+function seededSample(seed, n, gen){ var r = mulberry(seed), out = []; for(var i=0;i<n;i++) out.push(gen(r)); return out; }
+
+
+/* ===== 1편 큐잉 이론 ===== */
+/* ---------- 큐 공식 (1편 전체가 공유) ---------- */
+function erlangC(c, a){ // a = λ/μ, ρ = a/c < 1
+  var rho = a/c; if(rho >= 1) return 1;
+  var sum = 0, term = 1;
+  for(var k=0;k<c;k++){ sum += term; term *= a/(k+1); }
+  var top = term/(1-rho); return top/(sum+top);
+}
+function mmc(lam, mu, c){ // 무한 대기 M/M/c
+  var a = lam/mu, rho = a/c;
+  if(rho >= 1) return {stable:false, rho:rho};
+  var P = erlangC(c, a), Wq = P/(c*mu - lam), W = Wq + 1/mu;
+  return {stable:true, rho:rho, P:P, Wq:Wq, W:W, Lq:lam*Wq, L:lam*W};
+}
+function mmck(lam, mu, c, Ktot){ // 시스템 정원 Ktot (줄 + 서비스 중), Ktot >= c
+  var a = lam/mu, p = [1], s = 1;
+  for(var n=1;n<=Ktot;n++){ p[n] = p[n-1]*a/Math.min(n, c); s += p[n]; }
+  var L = 0, Lq = 0;
+  for(n=0;n<=Ktot;n++){ p[n] /= s; L += n*p[n]; Lq += Math.max(0, n-c)*p[n]; }
+  var lamE = lam*(1 - p[Ktot]);
+  return {p:p, Pb:p[Ktot], lamE:lamE, L:L, Lq:Lq, W:L/lamE, Wq:Lq/lamE, rho:lamE/(c*mu)};
+}
+function kingman(rho, ca2, cs2, es){ return rho/(1-rho)*(ca2+cs2)/2*es; } // G/G/1 (M/G/1이면 정확)
+function mgcApprox(lam, mu, c, cs2){ var r = mmc(lam, mu, c); if(!r.stable) return r; var Wq = (1+cs2)/2*r.Wq; return {stable:true, rho:r.rho, Wq:Wq, W:Wq+1/mu, P:r.P}; }
+
+/* ---------- 잭슨 네트워크: 이론과 사건 기반 시뮬레이션 ---------- */
+var JK_NODES = [
+  {name:"키오스크 주문", c:2, es:0.8},
+  {name:"바리스타 제조", c:2, es:1.5},
+  {name:"픽업대", c:1, es:0.3}
+];
+function jacksonTheory(lam, q, r, c2){
+  var lams = [lam, lam*(1-q)/(1-r), lam], cs = [2, c2, 1], out = [], L = 0, ok = true;
+  for(var i=0;i<3;i++){
+    var mu = 1/JK_NODES[i].es, m = mmc(lams[i], mu, cs[i]);
+    out.push({lam:lams[i], c:cs[i], rho:m.rho, L:m.stable ? m.L : Infinity, W:m.stable ? m.W : Infinity, stable:m.stable});
+    if(!m.stable) ok = false; else L += m.L;
   }
+  return {nodes:out, stable:ok, L:L, W:ok ? L/lam : Infinity, visits2:(1-q)/(1-r)};
+}
+function jacksonSim(lam, q, r, c2, nCust, rng){
+  var cs = [2, c2, 1], mus = JK_NODES.map(function(n){ return 1/n.es; });
+  var busy = [0,0,0], queue = [[],[],[]], ev = [], t = 0, done = 0, sumW = 0, born = {}, id = 0, warm = Math.floor(nCust*0.1);
+  function push(e){ ev.push(e); var i = ev.length-1; while(i>0){ var p = (i-1)>>1; if(ev[p].t <= ev[i].t) break; var tmp = ev[p]; ev[p] = ev[i]; ev[i] = tmp; i = p; } }
+  function pop(){ var top = ev[0], last = ev.pop(); if(ev.length){ ev[0] = last; var i = 0; for(;;){ var l = 2*i+1, rr = l+1, m = i; if(l < ev.length && ev[l].t < ev[m].t) m = l; if(rr < ev.length && ev[rr].t < ev[m].t) m = rr; if(m === i) break; var tmp = ev[m]; ev[m] = ev[i]; ev[i] = tmp; i = m; } } return top; }
+  function exp(m){ return -m*Math.log(1-rng()); }
+  function arriveAt(k, cid){ if(busy[k] < cs[k]){ busy[k]++; push({t:t+exp(1/mus[k]), k:"dep", node:k, cid:cid}); } else queue[k].push(cid); }
+  push({t:exp(1/lam), k:"arr"});
+  while(done < nCust){
+    var e = pop(); t = e.t;
+    if(e.k === "arr"){ id++; born[id] = t; arriveAt(0, id); push({t:t+exp(1/lam), k:"arr"}); continue; }
+    var k = e.node;
+    if(queue[k].length){ push({t:t+exp(1/mus[k]), k:"dep", node:k, cid:queue[k].shift()}); } else busy[k]--;
+    if(k === 0){ arriveAt(rng() < q ? 2 : 1, e.cid); }
+    else if(k === 1){ arriveAt(rng() < r ? 1 : 2, e.cid); }
+    else { done++; if(done > warm) sumW += t - born[e.cid]; delete born[e.cid]; }
+  }
+  return {W: sumW/(nCust - warm), n:nCust - warm};
+}
 
-  // boundary box
-  ctx.save();
-  ctx.setLineDash([5, 5]); ctx.strokeStyle = C.muted; ctx.globalAlpha = 0.55; ctx.lineWidth = 1;
-  roundRect(ctx, G.boxL, G.boxT, G.boxR - G.boxL, G.boxB - G.boxT, 10); ctx.stroke();
-  ctx.restore();
-  const N = S.queue.length + busyCount();
-  ctx.fillStyle = C.muted; ctx.font = `12px ${FONT}`; ctx.textBaseline = 'alphabetic';
-  ctx.fillText(`시스템 경계 안: ${N}명`, G.boxL + 8, G.boxT - 7);
-  ctx.textAlign = 'left';
-  ctx.fillText(`t = ${S.t.toFixed(1)}분`, G.boxL + 8, h - 9);
-  ctx.textAlign = 'right';
-  ctx.fillText(`들어옴 ${S.accepted}  돌아감 ${S.blocked}  나감 ${S.departed}`, G.boxR, h - 9);
-  ctx.textAlign = 'left';
+function inView(el, cb){ if(!("IntersectionObserver" in window)){ cb(true); return; } new IntersectionObserver(function(es){ cb(es[0].isIntersecting); }, {rootMargin:"60px"}).observe(el); }
 
-  // queue rail
-  ctx.strokeStyle = C.line; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(G.boxL + 14, G.midY + G.r + 7); ctx.lineTo(G.slot0 + G.r, G.midY + G.r + 7); ctx.stroke();
-
-  // counters
-  for (let k = 0; k < P.c; k++) {
-    const y = serverY(k);
-    roundRect(ctx, G.serverX - 21, y - 19, 42, 38, 8);
-    ctx.fillStyle = C.soft; ctx.fill(); ctx.strokeStyle = C.line; ctx.stroke();
-    ctx.fillStyle = C.muted; ctx.font = `11px ${FONT}`; ctx.textAlign = 'left';
-    ctx.fillText(`창구 ${k + 1}`, G.serverX + 25, y + 4);
-    const cu = S.servers[k];
-    if (cu) {
-      const dep = S.fel.find(e => e.type === 'dep' && e.server === k);
-      if (dep) {
-        const frac = Math.min(1, Math.max(0, (S.t - cu.tStart) / (dep.time - cu.tStart)));
-        ctx.beginPath(); ctx.strokeStyle = C.serve; ctx.lineWidth = 2;
-        ctx.arc(G.serverX, y, G.r + 5, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * frac); ctx.stroke(); ctx.lineWidth = 1;
+/* ---------- 1.1 창구 앞 대기열 ---------- */
+(function(){
+  var root = document.getElementById("w-live"); if(!root) return;
+  var P = {lam:.8, mu:1, cap:21, c:1, arr:"exp", svc:"exp", spd:4}, S, playing = !REDUCED, visible = false;
+  var rng = mulberry(7), tbl = root.querySelector("[data-tbl]"), out = root.querySelector("[data-out]");
+  function iat(){ return P.arr === "exp" ? expo(1/P.lam, rng) : 1/P.lam; }
+  function svt(){ return P.svc === "exp" ? expo(1/P.mu, rng) : 1/P.mu; }
+  function reset(){
+    S = {t:0, q:[], srv:[], nextA:iat(), area:0, busyArea:0, acc:0, blk:0, dep:0, sumW:0, sumWq:0, nWq:0, hist:[], lastH:0, gone:[], blocked:[]};
+    for(var i=0;i<P.c;i++) S.srv.push(null);
+  }
+  function inSys(){ var n = S.q.length; S.srv.forEach(function(s){ if(s) n++; }); return n; }
+  function busyN(){ var n = 0; S.srv.forEach(function(s){ if(s) n++; }); return n; }
+  function cap(){ return P.cap >= 21 ? Infinity : P.c + P.cap; }
+  function startSvc(i, cu){ cu.start = S.t; S.sumWq += S.t - cu.a; S.nWq++; S.srv[i] = {cu:cu, end:S.t + svt()}; }
+  function advance(to){
+    for(;;){
+      var nx = S.nextA, who = -1;
+      S.srv.forEach(function(s, i){ if(s && s.end < nx){ nx = s.end; who = i; } });
+      if(nx > to) break;
+      var n = inSys(); S.area += n*(nx - S.t); S.busyArea += busyN()*(nx - S.t); S.t = nx;
+      if(who < 0){
+        S.nextA = S.t + iat();
+        if(n >= cap()){ S.blk++; S.blocked.push(S.t); continue; }
+        S.acc++; var cu = {a:S.t}, free = S.srv.indexOf(null);
+        if(free >= 0) startSvc(free, cu); else S.q.push(cu);
+      } else {
+        var d = S.srv[who].cu; S.dep++; S.sumW += S.t - d.a; S.gone.push(S.t); S.srv[who] = null;
+        if(S.q.length) startSvc(who, S.q.shift());
       }
     }
+    var n2 = inSys(); S.area += n2*(to - S.t); S.busyArea += busyN()*(to - S.t); S.t = to;
+    if(S.t - S.lastH >= Math.max(.5, S.t/300)){
+      S.lastH = S.t;
+      if(S.dep > 5) S.hist.push([S.t, S.area/S.t, (S.acc/S.t)*(S.sumW/S.dep)]);
+      if(S.hist.length > 600) S.hist = S.hist.filter(function(_, i){ return i % 2 === 0; });
+    }
+    S.gone = S.gone.filter(function(g){ return S.t - g < 1.2; });
+    S.blocked = S.blocked.filter(function(g){ return S.t - g < 1.5; });
   }
-  if (narrow) { /* labels might crowd; keep */ }
-
-  // customers
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.font = `600 ${narrow ? 9 : 10}px ${FONT}`;
-  for (const v of V.values()) {
-    if (v.hidden) continue;
-    const col = v.state === 'blocked' ? C.block : v.state === 'serve' ? C.serve : v.state === 'leave' ? C.muted : C.wait;
-    ctx.globalAlpha = Math.max(0, Math.min(1, v.a));
-    ctx.beginPath(); ctx.arc(v.x, v.y, G.r, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
-    ctx.fillStyle = C.on; ctx.fillText(String(v.id % 1000), v.x, v.y + 0.5);
+  function theory(){
+    var lam = P.lam, mu = P.mu, c = P.c, K = cap();
+    if(P.arr === "exp" && P.svc === "exp"){
+      if(K === Infinity){ var m = mmc(lam, mu, c); if(!m.stable) return {name:"M/M/" + c, unstable:true}; return {name:"M/M/" + c, L:m.L, lamE:lam, W:m.W, Wq:m.Wq, rho:m.rho, Pb:0}; }
+      var k = mmck(lam, mu, c, K); return {name:"M/M/" + c + "/" + K, L:k.L, lamE:k.lamE, W:k.W, Wq:k.Wq, rho:k.rho, Pb:k.Pb};
+    }
+    if(P.arr === "exp" && P.svc === "det" && c === 1 && K === Infinity){
+      var rho = lam/mu; if(rho >= 1) return {name:"M/D/1", unstable:true};
+      var Wq = rho/(2*mu*(1-rho)); return {name:"M/D/1 (P-K 공식)", L:lam*(Wq + 1/mu), lamE:lam, W:Wq + 1/mu, Wq:Wq, rho:rho, Pb:0};
+    }
+    if(P.arr === "det" && P.svc === "det" && K === Infinity){
+      var r2 = lam/(c*mu); if(r2 >= 1) return {name:"D/D/" + c, unstable:true};
+      return {name:"D/D/" + c, L:lam/mu, lamE:lam, W:1/mu, Wq:0, rho:r2, Pb:0};
+    }
+    return {name:(P.arr === "exp" ? "M" : "D") + "/" + (P.svc === "exp" ? "M" : "D") + "/" + c + (K === Infinity ? "" : "/" + K), none:true};
   }
-  ctx.globalAlpha = 1; ctx.textBaseline = 'alphabetic';
-  if (overflow > 0) {
-    ctx.fillStyle = C.wait; ctx.font = `600 12px ${FONT}`; ctx.textAlign = 'left';
-    ctx.fillText(`+${overflow}`, G.boxL + 6, G.midY + 4);
-  }
-  ctx.textAlign = 'left';
-}
-
-/* ---------- area chart (section 2) ---------- */
-let hoverFrac = null;
-AC.cv.addEventListener('pointermove', (e) => {
-  const r = AC.cv.getBoundingClientRect(), padL = 40, padR = 12;
-  hoverFrac = Math.min(1, Math.max(0, (e.clientX - r.left - padL) / (r.width - padL - padR)));
-});
-AC.cv.addEventListener('pointerdown', (e) => {
-  const r = AC.cv.getBoundingClientRect(), padL = 40, padR = 12;
-  hoverFrac = Math.min(1, Math.max(0, (e.clientX - r.left - padL) / (r.width - padL - padR)));
-});
-AC.cv.addEventListener('pointerleave', () => { hoverFrac = null; });
-
-function niceStep(range, target) {
-  const raw = range / target, p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / p;
-  return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p;
-}
-function drawArea() {
-  const { ctx, w, h } = AC; ctx.clearRect(0, 0, w, h);
-  const t1 = S.t; if (t1 <= 0) return;
-  const t0 = Math.max(0, t1 - windowLen());
-  const padL = 40, padR = 12, plotW = w - padL - padR;
-  const topY = 6, topH = h * 0.52, botY = topY + topH + 22, botH = h - botY - 24;
-  const X = (t) => padL + (t - t0) / (t1 - t0) * plotW;
-  const custs = S.hist.filter(c => c.tArr < t1 && (c.tDep == null || c.tDep > t0));
-  const hoverT = hoverFrac == null ? null : t0 + hoverFrac * (t1 - t0);
-  const crosses = (c, t) => c.tArr <= t && (c.tDep == null || c.tDep > t);
-
-  // bars
-  const n = custs.length, rowH = Math.min(10, topH / Math.max(n, 1)), bh = Math.max(1.5, rowH * 0.72);
-  let barSum = 0, hitCount = 0;
-  custs.forEach((c, i) => {
-    const y = topY + i * rowH + (rowH - bh) / 2;
-    const a0 = Math.max(c.tArr, t0), dEnd = c.tDep == null ? t1 : Math.min(c.tDep, t1);
-    barSum += dEnd - a0;
-    const hit = hoverT != null && crosses(c, hoverT);
-    if (hit) hitCount++;
-    ctx.globalAlpha = hoverT == null || hit ? 1 : 0.22;
-    const sStart = c.tStart == null ? t1 : Math.max(c.tStart, t0);
-    if (sStart > a0) { ctx.fillStyle = C.wait; ctx.fillRect(X(a0), y, X(Math.min(sStart, t1)) - X(a0), bh); }
-    if (c.tStart != null && dEnd > sStart) { ctx.fillStyle = C.serve; ctx.fillRect(X(sStart), y, X(dEnd) - X(sStart), bh); }
+  var view = setup(root, function(c, W, H){
+    var y0 = 52, sx = 400, n = S.q.length;
+    txt(c, "도착", 14, 20, {size:11}); txt(c, "줄", sx - 30, 20, {size:11, align:"right"}); txt(c, "창구", sx + 30, 20, {size:11});
+    line(c, 40, y0, sx - 10, y0, COL.line, 1, [3,3]);
+    S.blocked.forEach(function(b){ var a = 1 - (S.t - b)/1.5; c.strokeStyle = rgba(COL.miss, a); c.lineWidth = 2; c.beginPath(); c.moveTo(18, y0-6); c.lineTo(30, y0+6); c.moveTo(30, y0-6); c.lineTo(18, y0+6); c.stroke(); c.lineWidth = 1; });
+    var shown = Math.min(n, 24);
+    for(var i=0;i<shown;i++) dot(c, sx - 22 - i*14, y0, 5, COL.c2);
+    if(n > 24) txt(c, "+" + (n - 24), sx - 22 - 24*14, y0 + 4, {size:11, color:COL.ink, align:"right"});
+    var cap0 = cap();
+    if(cap0 !== Infinity && P.cap < 24){ var bx = sx - 22 - P.cap*14 + 7; line(c, bx, y0 - 14, bx, y0 + 14, COL.miss, 1.5); txt(c, "정원", bx, y0 + 28, {size:10, color:COL.miss, align:"center"}); }
+    var sh = 26, gap = 8, top = y0 - (P.c*sh + (P.c-1)*gap)/2;
+    S.srv.forEach(function(s, k){
+      var yy = top + k*(sh + gap);
+      c.fillStyle = COL.soft; c.fillRect(sx + 20, yy, 60, sh); c.strokeStyle = COL.line; c.strokeRect(sx + 20.5, yy + .5, 59, sh - 1);
+      if(s){ dot(c, sx + 36, yy + sh/2, 5.5, COL.acc); var f = clamp((s.end - S.t)*P.mu, 0, 1); c.fillStyle = rgba(COL.acc, .35); c.fillRect(sx + 48, yy + sh/2 - 3, 26*f, 6); }
+    });
+    S.gone.forEach(function(g){ var u = (S.t - g)/1.2; dot(c, sx + 96 + u*120, y0, 4.5, rgba(COL.muted, 1 - u)); });
+    txt(c, "t = " + fmt(S.t, 1) + "분", W - 10, 20, {size:11, align:"right", color:COL.ink});
+    // 수렴 그래프
+    var box = [44, 118, 626, 206], hist = S.hist;
+    var ymax = 1; hist.forEach(function(h){ ymax = Math.max(ymax, h[1], h[2]); }); ymax = Math.min(ymax*1.15, 60);
+    var tmax = Math.max(10, S.t), s = scale(box, [0, tmax], [0, ymax]);
+    axes(c, s, {xt:ticks(0, tmax, 6), yt:ticks(0, ymax, 3), xl:"시각 (분)", yl:"누적 측정값"});
+    path(c, s, hist.map(function(h){ return [h[0], h[1]]; }), COL.ink, 1.8);
+    path(c, s, hist.map(function(h){ return [h[0], h[2]]; }), COL.acc, 1.8, [5,3]);
+    txt(c, "L", box[2] - 70, box[1] + 4, {color:COL.ink, size:11}); line(c, box[2] - 60, box[1], box[2] - 44, box[1], COL.ink, 1.8);
+    txt(c, "λ × W", box[2] - 34, box[1] + 4, {color:COL.acc, size:11, align:"left"});
   });
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = C.muted; ctx.font = `11px ${FONT}`; ctx.textAlign = 'right';
-  ctx.save(); ctx.translate(14, topY + topH / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center';
-  ctx.fillText('고객', 0, 0); ctx.restore();
+  function report(){
+    var T = S.t || 1e-9, th = theory(), L = S.area/T, lamE = S.acc/T, Wm = S.dep ? S.sumW/S.dep : NaN, Wq = S.nWq ? S.sumWq/S.nWq : NaN, rho = S.busyArea/T/P.c, pb = (S.acc + S.blk) ? S.blk/(S.acc + S.blk) : 0;
+    function td(v, d){ return "<td>" + (isFinite(v) ? fmt(v, d) : "–") + "</td>"; }
+    var rows = [["시스템 안 평균 인원 L", L, th.L, 2], ["실제로 들어온 비율 λ<sub>eff</sub>", lamE, th.lamE, 3], ["평균 체류시간 W (분)", Wm, th.W, 2], ["평균 줄 대기 W<sub>q</sub> (분)", Wq, th.Wq, 2], ["창구 가동률", rho, th.rho, 2], ["돌아간 비율", pb, th.Pb, 3]];
+    var thLabel = th.unstable ? "이론 (ρ ≥ 1, 정상 상태 없음)" : th.none ? "이론 (닫힌 식 없음, 2.6절 근사)" : "이론: " + th.name;
+    tbl.innerHTML = "<thead><tr><th></th><th>시뮬레이션</th><th>" + thLabel + "</th></tr></thead><tbody>" +
+      rows.map(function(r){ return "<tr><th scope='row' style='font-weight:400'>" + r[0] + "</th>" + td(r[1], r[3]) + td(th.unstable || th.none ? NaN : r[2], r[3]) + "</tr>"; }).join("") + "</tbody>";
+    out.innerHTML = S.dep > 5 ? "측정한 <b>L = " + fmt(L, 2) + "</b>, 측정한 <b>λ<sub>eff</sub> × W = " + fmt(lamE*Wm, 2) + "</b>. 두 값은 같은 넓이를 두 방식으로 잰 것이라 시간이 지나면 하나로 모입니다." : "손님이 몇 명 지나가면 측정이 시작됩니다.";
+  }
+  ["lam","mu","cap"].forEach(function(k){
+    bindRange(root, '[data-k="' + k + '"]', function(v){ P[k] = v; reset(); view.redraw(); report(); },
+      k === "cap" ? function(v){ return v >= 21 ? "무제한" : v + "명"; } : function(v){ return fmt(v, 2) + "/분"; });
+  });
+  seg(root, '[data-g="c"]', function(v){ P.c = +v; reset(); view.redraw(); report(); });
+  seg(root, '[data-g="arr"]', function(v){ P.arr = v; reset(); view.redraw(); report(); });
+  seg(root, '[data-g="svc"]', function(v){ P.svc = v; reset(); view.redraw(); report(); });
+  seg(root, '[data-g="spd"]', function(v){ P.spd = +v; });
+  var pb = root.querySelector('[data-act="play"]');
+  function syncPlay(){ pb.textContent = playing ? "일시정지" : "재생"; }
+  pb.onclick = function(){ playing = !playing; syncPlay(); };
+  root.querySelector('[data-act="reset"]').onclick = function(){ reset(); view.redraw(); report(); };
+  inView(root, function(v){ visible = v; });
+  reset(); syncPlay(); report();
+  var last = performance.now(), acc = 0;
+  (function frame(now){
+    var dt = Math.min(.1, (now - last)/1000); last = now;
+    if(playing && visible){ advance(S.t + dt*P.spd); view.redraw(); acc += dt; if(acc > .25){ acc = 0; report(); } }
+    requestAnimationFrame(frame);
+  })(last);
+})();
 
-  // N(t) step
-  const evs = [];
-  let n0 = 0;
-  for (const c of custs) {
-    if (c.tArr <= t0) n0++; else evs.push([c.tArr, 1]);
-    if (c.tDep != null && c.tDep < t1) evs.push([c.tDep, -1]);
+/* ---------- 2.1 같은 넓이를 두 번 세기 ---------- */
+(function(){
+  var root = document.getElementById("w-area"); if(!root) return;
+  var seed = 3, C = [];
+  function gen(){
+    var r = mulberry(seed), t = 0, free = 0; C = [];
+    for(var i=0;i<10;i++){ t += expo(1.25, r); var st = Math.max(t, free), d = st + expo(1, r); free = d; C.push({a:t, s:st, d:d}); }
   }
-  evs.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-  let cur = n0, maxN = n0;
-  for (const e of evs) { cur += e[1]; maxN = Math.max(maxN, cur); }
-  maxN = Math.max(3, maxN);
-  const Y = (v) => botY + botH - v / maxN * botH;
-  // grid
-  ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.fillStyle = C.muted; ctx.textAlign = 'right';
-  const ns = Math.max(1, Math.ceil(maxN / 4));
-  for (let v = 0; v <= maxN; v += ns) {
-    ctx.beginPath(); ctx.moveTo(padL, Y(v)); ctx.lineTo(w - padR, Y(v)); ctx.stroke();
-    ctx.fillText(String(v), padL - 6, Y(v) + 4);
+  var view = setup(root, function(c, W, H){
+    var T0 = 0, T1 = C[C.length-1].d + .3, rowsBox = [70, 12, 626, 150], s = scale(rowsBox, [T0, T1], [0, 10]);
+    txt(c, "손님별", 8, 24, {size:11, color:COL.ink}); txt(c, "체류", 8, 38, {size:11, color:COL.ink});
+    C.forEach(function(cu, i){
+      var y = 16 + i*13.2;
+      c.fillStyle = rgba(COL.muted, .35); c.fillRect(s.X(cu.a), y, s.X(cu.s) - s.X(cu.a), 9);
+      c.fillStyle = rgba(COL.acc, .75); c.fillRect(s.X(cu.s), y, s.X(cu.d) - s.X(cu.s), 9);
+      txt(c, String(i+1), 64, y + 8, {size:9, align:"right"});
+    });
+    var b2 = [70, 170, 626, 252], maxN = 0, ev = [];
+    C.forEach(function(cu){ ev.push([cu.a, 1]); ev.push([cu.d, -1]); });
+    ev.sort(function(a, b){ return a[0] - b[0] || a[1] - b[1]; });
+    var n = 0; ev.forEach(function(e){ n += e[1]; maxN = Math.max(maxN, n); });
+    var s2 = scale(b2, [T0, T1], [0, Math.max(3, maxN)]);
+    axes(c, s2, {xt:ticks(T0, T1, 8), yt:ticks(0, Math.max(3, maxN), 3), xl:"시각 (분)"});
+    txt(c, "N(t)", 8, 200, {size:11, color:COL.ink});
+    c.fillStyle = rgba(COL.acc, .3); c.beginPath(); c.moveTo(s2.X(0), s2.Y(0)); n = 0; var tp = 0;
+    ev.forEach(function(e){ c.lineTo(s2.X(e[0]), s2.Y(n)); n += e[1]; c.lineTo(s2.X(e[0]), s2.Y(n)); tp = e[0]; });
+    c.lineTo(s2.X(T1), s2.Y(0)); c.closePath(); c.fill();
+    var pts = [[0, 0]]; n = 0; ev.forEach(function(e){ pts.push([e[0], n]); n += e[1]; pts.push([e[0], n]); }); pts.push([T1, 0]);
+    path(c, s2, pts, COL.acc, 1.6);
+  });
+  function report(){
+    var T = C[C.length-1].d, A = 0; C.forEach(function(cu){ A += cu.d - cu.a; });
+    var n = C.length, L = A/T, lam = n/T, Wm = A/n;
+    root.querySelector("[data-out]").innerHTML = "칠한 넓이 <b>A = " + fmt(A, 2) + "</b>명·분, 관측 구간 T = " + fmt(T, 2) + "분, 손님 n = " + n + "명. " +
+      "L = A/T = <b>" + fmt(L, 3) + "</b>, λ = n/T = " + fmt(lam, 3) + ", W = A/n = " + fmt(Wm, 3) + ", λ × W = <b>" + fmt(lam*Wm, 3) + "</b>.";
   }
-  ctx.save(); ctx.translate(14, botY + botH / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center';
-  ctx.font = `italic 13px ${MATH}`; ctx.fillText('N(t)', 0, 0); ctx.restore();
+  root.querySelector('[data-act="new"]').onclick = function(){ seed++; gen(); view.redraw(); report(); };
+  gen(); report();
+})();
 
-  ctx.beginPath(); ctx.moveTo(X(t0), Y(0)); ctx.lineTo(X(t0), Y(n0));
-  cur = n0; let curveArea = 0, lastT = t0;
-  for (const e of evs) {
-    curveArea += cur * (e[0] - lastT); lastT = e[0];
-    ctx.lineTo(X(e[0]), Y(cur)); cur += e[1]; ctx.lineTo(X(e[0]), Y(cur));
-  }
-  curveArea += cur * (t1 - lastT);
-  ctx.lineTo(X(t1), Y(cur)); ctx.lineTo(X(t1), Y(0)); ctx.closePath();
-  ctx.globalAlpha = 0.16; ctx.fillStyle = C.ink; ctx.fill(); ctx.globalAlpha = 1;
-  ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.stroke(); ctx.lineWidth = 1;
-
-  // time axis
-  const step = niceStep(t1 - t0, narrow ? 4 : 7);
-  ctx.fillStyle = C.muted; ctx.textAlign = 'center'; ctx.font = `11px ${FONT}`;
-  for (let t = Math.ceil(t0 / step) * step; t <= t1 + 1e-9; t += step) {
-    ctx.fillText(`${+t.toFixed(1)}`, X(t), h - 6);
-  }
-  ctx.textAlign = 'right'; ctx.fillText('분', w - padR, h - 6);
-
-  // hover
-  if (hoverT != null) {
-    ctx.strokeStyle = C.arrive; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(X(hoverT), topY); ctx.lineTo(X(hoverT), botY + botH); ctx.stroke(); ctx.lineWidth = 1;
-    let Nh = 0; for (const c of custs) if (crosses(c, hoverT)) Nh++;
-    ctx.beginPath(); ctx.arc(X(hoverT), Y(Nh), 4, 0, Math.PI * 2); ctx.fillStyle = C.arrive; ctx.fill();
-    $('#hoverOut').innerHTML = `<span class="m">τ</span> = ${hoverT.toFixed(1)}분: 세로선을 지나는 막대 <b>${hitCount}개</b>, <span class="m">N</span>(<span class="m">τ</span>) = <b>${Nh}</b>`;
-  }
-  ctx.textAlign = 'left';
-  $('#aBars').textContent = barSum.toFixed(2) + ' 인·분';
-  $('#aCurve').textContent = curveArea.toFixed(2) + ' 인·분';
-  $('#aSpan').textContent = (t1 - t0).toFixed(1) + '분';
-}
-
-/* ---------- convergence chart ---------- */
-function drawConv() {
-  const { ctx, w, h } = CC; ctx.clearRect(0, 0, w, h);
-  const s = S.series; if (s.length < 2) return;
-  const padL = 34, padR = 8, padT = 8, padB = 22;
-  const tMax = s[s.length - 1].t;
-  let yMax = 1;
-  for (const p of s) { if (isFinite(p.L)) yMax = Math.max(yMax, p.L); if (isFinite(p.LW)) yMax = Math.max(yMax, p.LW); }
-  if (TH && isFinite(TH.L)) yMax = Math.max(yMax, TH.L);
-  yMax *= 1.12;
-  const X = (t) => padL + t / tMax * (w - padL - padR), Y = (v) => padT + (1 - v / yMax) * (h - padT - padB);
-  ctx.strokeStyle = C.line; ctx.fillStyle = C.muted; ctx.font = `11px ${FONT}`; ctx.textAlign = 'right';
-  const ys = niceStep(yMax, 3);
-  for (let v = 0; v <= yMax; v += ys) { ctx.beginPath(); ctx.moveTo(padL, Y(v)); ctx.lineTo(w - padR, Y(v)); ctx.stroke(); ctx.fillText(+v.toFixed(2) + '', padL - 5, Y(v) + 4); }
-  ctx.textAlign = 'center';
-  const xs = niceStep(tMax, 4);
-  for (let t = 0; t <= tMax; t += xs) ctx.fillText(+t.toFixed(0) + '', X(t), h - 6);
-  ctx.textAlign = 'right'; ctx.fillText('분', w - padR, h - 6);
-  if (TH && isFinite(TH.L)) {
-    ctx.setLineDash([4, 4]); ctx.strokeStyle = C.serve; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(padL, Y(TH.L)); ctx.lineTo(w - padR, Y(TH.L)); ctx.stroke(); ctx.setLineDash([]);
-  }
-  const line = (key, col) => {
-    ctx.strokeStyle = col; ctx.lineWidth = 1.8; ctx.beginPath(); let started = false;
-    for (const p of s) { const v = p[key]; if (!isFinite(v)) continue; if (!started) { ctx.moveTo(X(p.t), Y(v)); started = true; } else ctx.lineTo(X(p.t), Y(v)); }
-    ctx.stroke(); ctx.lineWidth = 1;
+/* ---------- 2.3 켄달 표기 ---------- */
+(function(){
+  var root = document.getElementById("w-kendall"); if(!root) return;
+  var KD = {
+    A:{lab:"도착", opts:[["M","M"],["D","D"],["G","G"],["Mt","M<sub>t</sub>"]],
+       txt:{M:"손님이 포아송 과정으로 도착합니다 (간격이 지수분포).", D:"정확히 일정한 간격으로 도착합니다.", G:"도착 간격이 서로 독립인 일반 분포입니다.", Mt:"도착률이 시간에 따라 바뀌는 포아송 도착입니다."}},
+    S:{lab:"서비스", opts:[["M","M"],["D","D"],["E","E<sub>k</sub>"],["G","G"]],
+       txt:{M:"서비스 시간이 지수분포입니다 (C<sub>s</sub>² = 1).", D:"서비스 시간이 늘 같습니다 (C<sub>s</sub>² = 0).", E:"얼랑 분포, 지수 단계 k개를 이은 것입니다 (C<sub>s</sub>² = 1/k).", G:"서비스 시간이 일반 분포입니다. 평균과 분산만 있으면 됩니다."}},
+    c:{lab:"서버", opts:[["1","1"],["c","c"]], txt:{"1":"서버 1대.", c:"같은 서버 c대, 줄은 하나."}},
+    K:{lab:"정원", opts:[["inf","∞"],["K","K"]], txt:{inf:"줄 길이 제한이 없습니다 (표기에서 생략).", K:"시스템 안에 최대 K명(줄 + 서비스 중). 꽉 차면 돌아갑니다."}}
   };
-  line('LW', C.arrive); line('L', C.ink);
-  ctx.textAlign = 'left';
-}
+  var SEL = {A:"M", S:"G", c:"1", K:"inf"}, pick = root.querySelector("[data-pick]"), out = root.querySelector("[data-out]");
+  pick.innerHTML = ["A","S","c","K"].map(function(k){
+    return '<div class="ctrl" style="margin-top:6px"><span style="min-width:4em">' + KD[k].lab + '</span><div class="seg" data-k="' + k + '">' +
+      KD[k].opts.map(function(o){ return '<button type="button" data-v="' + o[0] + '" aria-pressed="' + (SEL[k] === o[0]) + '">' + o[1] + '</button>'; }).join("") + '</div></div>';
+  }).join("");
+  pick.querySelectorAll(".seg").forEach(function(g){ seg(pick, g, function(v){ SEL[g.dataset.k] = v; render(); }); });
+  function status(){
+    var A = SEL.A, Sv = SEL.S, one = SEL.c === "1", fin = SEL.K === "K";
+    if(A === "Mt") return ["sim", "정상 상태가 없음", "도착률이 계속 바뀌어 평균 공식이 성립하지 않습니다. 시간대별로 나누어 근사하거나 시뮬레이션으로 풉니다(2편 7단계, 4편 2.7절)."];
+    if(A === "M" && Sv === "M") return fin ? ["ok", "정확한 식 있음", "출생-사망 과정으로 상태 확률을 구합니다(2.7절)."] : one ? ["ok", "정확한 식 있음", "<i>W</i><sub>q</sub> = ρ/(μ − λ) (2.4절)."] : ["ok", "정확한 식 있음", "얼랑 C 공식으로 기다릴 확률을 구하고 <i>W</i><sub>q</sub> = P<sub>대기</sub>/(cμ − λ) (2.5절)."];
+    if(A === "M" && one && !fin) return ["ok", "정확한 식 있음", "폴라체크-힌친 공식 <i>W</i><sub>q</sub> = λE[S²] / 2(1 − ρ) (2.6절)."];
+    if(A === "D" && Sv === "D" && !fin) return ["ok", "정확한 식 있음", "ρ < 1이면 아무도 기다리지 않습니다. 변동이 없으면 줄도 없습니다."];
+    if(fin) return ["sim", "닫힌 식 없음", "수치 해법이 있지만 복잡합니다. 시뮬레이션이 가장 간단합니다."];
+    if(one) return ["ap", "근사식만 있음", "킹맨 근사 <i>W</i><sub>q</sub> ≈ ρ/(1 − ρ) × (C<sub>a</sub>² + C<sub>s</sub>²)/2 × E[S] (2.6절)."];
+    return ["ap", "근사식만 있음", "M/M/c 값에 변동 항을 곱하는 근사 <i>W</i><sub>q</sub> ≈ (C<sub>a</sub>² + C<sub>s</sub>²)/2 × <i>W</i><sub>q</sub>(M/M/c) (2.6절)."];
+  }
+  function render(){
+    var nm = {M:"M", D:"D", G:"G", Mt:"M<sub>t</sub>", E:"E<sub>k</sub>"}, name = nm[SEL.A] + "/" + nm[SEL.S] + "/" + SEL.c + (SEL.K === "K" ? "/K" : "");
+    var st = status(), col = st[0] === "ok" ? "var(--c3)" : st[0] === "ap" ? "var(--c2)" : "var(--miss)";
+    out.innerHTML = '<p style="font:500 30px/1.2 var(--math); margin:14px 0 6px">' + name + '</p>' +
+      '<ul style="margin:0 0 10px; padding-left:1.2em; font-size:15px">' + ["A","S","c","K"].map(function(k){ return "<li>" + KD[k].txt[SEL[k]] + "</li>"; }).join("") + "</ul>" +
+      '<p style="margin:0; font-size:15px"><b style="color:' + col + '">' + st[1] + '.</b> ' + st[2] + '</p>';
+  }
+  render();
+})();
 
-/* ---------- M/M/1 section ---------- */
-const M2 = { l: 0.8, m: 1 };
-function drawMM1() {
-  if (!MC.ctx) return;
-  const { ctx, w, h } = MC; ctx.clearRect(0, 0, w, h);
-  const padL = 36, padR = 14, padT = 12, padB = 28, yMax = 20;
-  const X = (r) => padL + r * (w - padL - padR), Y = (v) => padT + (1 - v / yMax) * (h - padT - padB);
-  ctx.strokeStyle = C.line; ctx.fillStyle = C.muted; ctx.font = `11px ${FONT}`; ctx.lineWidth = 1;
-  ctx.textAlign = 'right';
-  for (let v = 0; v <= yMax; v += 5) { ctx.beginPath(); ctx.moveTo(padL, Y(v)); ctx.lineTo(w - padR, Y(v)); ctx.stroke(); ctx.fillText(v + '', padL - 6, Y(v) + 4); }
-  ctx.textAlign = 'center';
-  for (let r = 0; r <= 1.0001; r += 0.2) ctx.fillText(r.toFixed(1), X(r), h - 9);
-  ctx.font = `italic 13px ${MATH}`; ctx.textAlign = 'right'; ctx.fillText('ρ', w - padR, h - 9);
-  ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(X(1), padT); ctx.lineTo(X(1), Y(0)); ctx.stroke(); ctx.setLineDash([]);
-  ctx.save(); ctx.beginPath(); ctx.rect(padL, padT, w - padL - padR, h - padT - padB); ctx.clip();
-  const curve = (f, col, dash) => {
-    ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash(dash); ctx.beginPath();
-    for (let r = 0; r < 0.999; r += 0.002) { const v = Math.min(f(r), yMax + 5); r === 0 ? ctx.moveTo(X(r), Y(v)) : ctx.lineTo(X(r), Y(v)); }
-    ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 1;
+/* ---------- 2.4 M/M/1 곡선 ---------- */
+(function(){
+  var root = document.getElementById("w-mm1"); if(!root) return;
+  var rho = .8;
+  var view = setup(root, function(c, W, H){
+    var s = scale([52, 16, 620, 196], [0, 1], [0, 30]);
+    axes(c, s, {xt:[0,.2,.4,.6,.8,1], yt:[0,10,20,30], xl:"이용률 ρ", yl:"W / E[S]", fy:function(v){ return v + "배"; }});
+    var pts = []; for(var r=0;r<=.97;r+=.005) pts.push([r, 1/(1-r)]); path(c, s, pts, COL.acc, 2.2);
+    var y = 1/(1-rho); line(c, s.X(rho), s.Y(0), s.X(rho), s.Y(Math.min(y, 30)), COL.muted, 1, [3,3]);
+    dot(c, s.X(rho), s.Y(Math.min(y, 30)), 5, COL.acc);
+    txt(c, fmt(y, 1) + "배", s.X(rho) + 8, s.Y(Math.min(y, 30)) - 6, {color:COL.ink, size:12, weight:500});
+  });
+  function report(){
+    var L = rho/(1-rho), W = 1/(1-rho), r2 = Math.min(.99, rho + .05), W2 = 1/(1-r2);
+    root.querySelector("[data-out]").innerHTML = "ρ = " + fmt(rho, 2) + ": 시스템 안 평균 <b>" + fmt(L, 1) + "명</b>, 체류시간은 서비스 시간의 <b>" + fmt(W, 1) + "배</b>. 이용률을 " + fmt(r2, 2) + "로 0.05만 올리면 체류시간이 " + fmt(W2/W, 2) + "배가 됩니다.";
+  }
+  bindRange(root, "[data-rho]", function(v){ rho = v; view.redraw(); report(); }, function(v){ return fmt(v, 2); });
+  report();
+})();
+
+/* ---------- 2.5 풀링 ---------- */
+(function(){
+  var root = document.getElementById("w-pool"); if(!root) return;
+  var c = 2, rho = .8;
+  function calc(){
+    var lam = rho*c, P = mmc(lam, 1, c), Sp = mmc(lam/c, 1, 1), F = mmc(lam, c, 1);
+    return [{nm:"줄 하나, 서버 " + c + "대", m:P}, {nm:"서버마다 따로 줄", m:Sp}, {nm:c + "배 빠른 서버 한 대", m:F}];
+  }
+  var view = setup(root, function(cx, W, H){
+    var R = calc(), top = 0; R.forEach(function(r){ top = Math.max(top, r.m.W); }); top = Math.max(1, top*1.4);
+    var s = scale([180, 26, 620, 196], [0, top], [0, 3]);
+    axes(cx, {box:s.box, X:s.X, Y:s.Y}, {xt:ticks(0, top, 5), xl:"서비스 시간 단위"});
+    R.forEach(function(r, i){
+      var y = 36 + i*54;
+      txt(cx, r.nm, 172, y + 14, {align:"right", color:COL.ink, size:12});
+      cx.fillStyle = rgba(COL.acc, .3); cx.fillRect(s.X(0), y, s.X(r.m.W) - s.X(0), 26);
+      cx.fillStyle = COL.acc; cx.fillRect(s.X(0), y, s.X(r.m.Wq) - s.X(0), 26);
+      txt(cx, "줄 " + fmt(r.m.Wq, 2) + ", 체류 " + fmt(r.m.W, 2), s.X(r.m.W) + 6, y + 17, {size:11, color:COL.ink});
+    });
+    txt(cx, "진한 막대 = 줄 대기, 연한 막대까지 = 체류시간", 620, 14, {align:"right", size:10});
+  });
+  function report(){
+    var R = calc();
+    root.querySelector("[data-out]").innerHTML = "줄 하나일 때 도착한 손님이 기다려야 할 확률(얼랑 C) <b>" + fmt(R[0].m.P, 3) + "</b>. 줄을 따로 세우면 줄 대기가 <b>" + fmt(R[1].m.Wq/R[0].m.Wq, 1) + "배</b>로 늘어납니다. 빠른 서버 한 대는 줄 대기는 " + fmt(R[2].m.Wq/R[0].m.Wq, 2) + "배지만 체류시간은 " + fmt(R[2].m.W/R[0].m.W, 2) + "배입니다.";
+  }
+  bindRange(root, "[data-c]", function(v){ c = v; view.redraw(); report(); });
+  bindRange(root, "[data-rho]", function(v){ rho = v; view.redraw(); report(); }, function(v){ return fmt(v, 2); });
+  report();
+})();
+
+/* ---------- 2.6 세 손잡이 ---------- */
+EQ["eq-vut"] = function(v){
+  var u = v.rho/(1 - v.rho), k = (v.ca + v.cs)/2, w = u*k*1.4;
+  var hint = v.ca === 1 ? "도착이 포아송이므로 M/G/1의 정확한 값(P-K 공식)입니다." + (v.cs === 1 ? " C<sub>s</sub>² = 1이면 M/M/1입니다." : v.cs === 0 ? " C<sub>s</sub>² = 0이면 M/D/1, M/M/1의 절반입니다." : "")
+    : (v.ca === 0 && v.cs === 0 ? "변동이 전혀 없으면 줄도 없습니다(D/D/1)." : "도착이 포아송이 아니므로 G/G/1의 근사(킹맨)입니다.");
+  return {w:fmt(w, 2) + "분", u:fmt(u, 2), v:fmt(k, 2), hint:hint};
+};
+
+/* ---------- 2.7 M/M/1/K ---------- */
+(function(){
+  var root = document.getElementById("w-mm1k"); if(!root) return;
+  var rho = .9, K = 5;
+  var view = setup(root, function(c, W, H){
+    var m = mmck(rho, 1, 1, K), top = 0; m.p.forEach(function(p){ top = Math.max(top, p); }); top = Math.max(.1, top*1.15);
+    var s = scale([52, 14, 620, 186], [-.5, K + .5], [0, top]);
+    axes(c, s, {yt:ticks(0, top, 3), fy:function(v){ return fmt(v, 2); }});
+    var bw = Math.min(40, (s.X(1) - s.X(0))*.7);
+    m.p.forEach(function(p, n){
+      c.fillStyle = n === K ? COL.miss : rgba(COL.acc, .75); c.fillRect(s.X(n) - bw/2, s.Y(p), bw, s.Y(0) - s.Y(p));
+      txt(c, String(n), s.X(n), 204, {align:"center", size:10});
+    });
+    txt(c, "시스템 안 인원 n", 620, 216, {align:"right", size:10});
+  });
+  function report(){
+    var m = mmck(rho, 1, 1, K);
+    root.querySelector("[data-out]").innerHTML = "돌아가는 비율 <b>" + fmt(m.Pb*100, 1) + "%</b>, 실제로 들어오는 비율 λ<sub>eff</sub> = " + fmt(1 - m.Pb, 3) + "λ. 평균 인원 L = " + fmt(m.L, 2) + "명, 들어온 손님의 체류시간 W = L/λ<sub>eff</sub> = 서비스 시간의 " + fmt(m.W, 2) + "배" + (rho > 1 ? ". ρ > 1이어도 줄이 끝없이 늘지 않습니다." : ".");
+  }
+  bindRange(root, "[data-rho]", function(v){ rho = v; view.redraw(); report(); }, function(v){ return fmt(v, 2); });
+  bindRange(root, "[data-k]", function(v){ K = v; view.redraw(); report(); });
+  report();
+})();
+
+/* ---------- 2.8 잭슨 네트워크 ---------- */
+(function(){
+  var root = document.getElementById("w-jk"); if(!root) return;
+  var lam = .8, q = .2, r = .1, c2 = 2, simOut = "", seed = 1;
+  var view = setup(root, function(c, W, H){
+    var th = jacksonTheory(lam, q, r, c2), X = [30, 250, 470], y = 60, w = 140, h = 74;
+    function arrow(x0, y0, x1, y1){ line(c, x0, y0, x1, y1, COL.muted, 1.4); var a = Math.atan2(y1-y0, x1-x0); c.fillStyle = COL.muted; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x1 - 8*Math.cos(a-.4), y1 - 8*Math.sin(a-.4)); c.lineTo(x1 - 8*Math.cos(a+.4), y1 - 8*Math.sin(a+.4)); c.fill(); }
+    arrow(4, y + h/2, X[0] - 2, y + h/2); txt(c, "λ", 8, y + h/2 - 8, {size:12, color:COL.ink, font:'italic 13px "STIX Two Text",serif'});
+    arrow(X[0] + w, y + h/2, X[1] - 2, y + h/2); txt(c, fmt(1-q, 2), (X[0] + w + X[1])/2, y + h/2 - 7, {align:"center", size:11});
+    arrow(X[1] + w, y + h/2, X[2] - 2, y + h/2); txt(c, fmt(1-r, 2), (X[1] + w + X[2])/2, y + h/2 - 7, {align:"center", size:11});
+    arrow(X[2] + w, y + h/2, 636, y + h/2);
+    // 건너뜀: 주문 → 픽업 (아래로 돌아감)
+    var yb = y + h + 34; line(c, X[0] + w/2, y + h, X[0] + w/2, yb, COL.muted, 1.4); line(c, X[0] + w/2, yb, X[2] + w/2, yb, COL.muted, 1.4); arrow(X[2] + w/2, yb, X[2] + w/2, y + h + 2);
+    txt(c, "제조 건너뜀 q = " + fmt(q, 2), (X[0] + X[2] + w)/2, yb + 15, {align:"center", size:11});
+    // 다시 만듦: 제조 → 제조 (위로 고리)
+    var yt = y - 24; line(c, X[1] + w - 24, y, X[1] + w - 24, yt, COL.muted, 1.4); line(c, X[1] + w - 24, yt, X[1] + 24, yt, COL.muted, 1.4); arrow(X[1] + 24, yt, X[1] + 24, y - 2);
+    txt(c, "다시 만듦 r = " + fmt(r, 2), X[1] + w/2, yt - 6, {align:"center", size:11});
+    th.nodes.forEach(function(n, i){
+      var x = X[i], bad = !n.stable, a = clamp(n.rho, 0, 1);
+      c.fillStyle = bad ? rgba(COL.miss, .25) : rgba(COL.acc, .08 + .5*a*a); c.fillRect(x, y, w, h);
+      c.strokeStyle = bad ? COL.miss : COL.line; c.lineWidth = bad ? 2 : 1; c.strokeRect(x + .5, y + .5, w - 1, h - 1); c.lineWidth = 1;
+      txt(c, JK_NODES[i].name, x + 10, y + 18, {size:12, weight:500, color:COL.ink});
+      txt(c, "서버 " + n.c + ", 평균 " + JK_NODES[i].es + "분", x + 10, y + 34, {size:10.5});
+      txt(c, "ρ = " + fmt(n.rho, 2), x + 10, y + 58, {size:15, weight:500, color:bad ? COL.miss : COL.ink});
+      txt(c, "λ = " + fmt(n.lam, 2), x + w - 10, y + 58, {size:11, align:"right"});
+    });
+  });
+  function report(){
+    var th = jacksonTheory(lam, q, r, c2), worst = 0;
+    th.nodes.forEach(function(n, i){ if(n.rho > th.nodes[worst].rho) worst = i; });
+    var msg = th.stable
+      ? "트래픽 방정식: λ<sub>1</sub> = " + fmt(th.nodes[0].lam, 2) + ", λ<sub>2</sub> = " + fmt(th.nodes[1].lam, 2) + ", λ<sub>3</sub> = " + fmt(th.nodes[2].lam, 2) + ". 노드별 평균 인원의 합 " + fmt(th.L, 2) + "명, 이론 체류시간 <b>W = " + fmt(th.W, 2) + "분</b>. 병목은 <b>" + JK_NODES[worst].name + "</b>입니다."
+      : "<b style='color:var(--miss)'>" + JK_NODES[worst].name + "</b> 노드의 이용률이 1 이상입니다. 줄이 끝없이 길어지므로 체류시간이 정의되지 않습니다.";
+    root.querySelector("[data-out]").innerHTML = msg + (simOut ? "<br>" + simOut : "");
+  }
+  function upd(){ simOut = ""; view.redraw(); report(); }
+  bindRange(root, "[data-lam]", function(v){ lam = v; upd(); }, function(v){ return fmt(v, 2); });
+  bindRange(root, "[data-q]", function(v){ q = v; upd(); }, function(v){ return fmt(v, 2); });
+  bindRange(root, "[data-r]", function(v){ r = v; upd(); }, function(v){ return fmt(v, 2); });
+  seg(root, '[data-g="c2"]', function(v){ c2 = +v; upd(); });
+  root.querySelector('[data-act="sim"]').onclick = function(){
+    var th = jacksonTheory(lam, q, r, c2);
+    if(!th.stable){ simOut = "불안정한 설정이라 시뮬레이션을 돌리지 않았습니다."; report(); return; }
+    var res = jacksonSim(lam, q, r, c2, 20000, mulberry(100 + seed++));
+    simOut = "사건 기반 시뮬레이션 (손님 2만 명, 앞 10%는 워밍업으로 버림): 평균 체류시간 <b>" + fmt(res.W, 2) + "분</b>, 이론 " + fmt(th.W, 2) + "분. 누를 때마다 시드가 바뀝니다.";
+    report();
   };
-  curve(r => r * r / (1 - r), C.wait, [5, 4]);
-  curve(r => r / (1 - r), C.ink, []);
-  const rho = M2.l / M2.m;
-  if (rho < 1) {
-    const L = rho / (1 - rho);
-    ctx.setLineDash([2, 3]); ctx.strokeStyle = C.arrive;
-    ctx.beginPath(); ctx.moveTo(X(rho), Y(0)); ctx.lineTo(X(rho), Y(Math.min(L, yMax))); ctx.stroke(); ctx.setLineDash([]);
-    ctx.beginPath(); ctx.arc(X(rho), Y(Math.min(L, yMax)), 6, 0, Math.PI * 2); ctx.fillStyle = C.arrive; ctx.fill();
-    ctx.strokeStyle = C.panel; ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1;
-  }
-  ctx.restore(); ctx.textAlign = 'left';
-}
-function updateMM1() {
-  const l = M2.l, m = M2.m, rho = l / m;
-  $('#oL2').textContent = l.toFixed(2) + ' 명/분';
-  $('#oM2').textContent = m.toFixed(2) + ' 명/분';
-  let html;
-  if (rho >= 1) {
-    html = `<div><span class="m">ρ</span><strong>${rho.toFixed(3)}</strong></div><div>상태<strong>불안정: 줄이 끝없이 길어진다</strong></div>`;
-  } else {
-    const L = rho / (1 - rho), Lq = rho * rho / (1 - rho), W = 1 / (m - l), Wq = W - 1 / m;
-    html = [
-      ['<span class="m">ρ</span>', rho.toFixed(3)], ['<span class="m">L</span>', L.toFixed(2) + '명'], ['<span class="m">L</span><sub>q</sub>', Lq.toFixed(2) + '명'],
-      ['<span class="m">W</span>', W.toFixed(2) + '분'], ['<span class="m">W</span><sub>q</sub>', Wq.toFixed(2) + '분'],
-      ['<span class="m">λ</span> × <span class="m">W</span>', (l * W).toFixed(2) + '명']
-    ].map(([k, v]) => `<div>${k}<strong>${v}</strong></div>`).join('');
-  }
-  $('#mm1Out').innerHTML = html;
-  drawMM1();
-}
-$('#iL2').addEventListener('input', e => { M2.l = +e.target.value; updateMM1(); });
-$('#iM2').addEventListener('input', e => { M2.m = +e.target.value; updateMM1(); });
-$('#btnApply').addEventListener('click', () => {
-  P.lambda = Math.min(3, Math.max(0.1, M2.l)); P.mu = Math.min(3, Math.max(0.2, M2.m)); P.c = 1; P.qcap = Infinity; P.arr = 'exp'; P.svc = 'exp';
-  syncControls(); resetSim(); setRunning(true);
-  $('#sim').scrollIntoView({ block: 'start' });
-});
+  report();
+})();
 
-/* ---------- controls ---------- */
-const capText = (v) => v === Infinity ? '무제한' : v + '명';
-function syncControls() {
-  $('#iLam').value = P.lambda; $('#iMu').value = P.mu; $('#iCap').value = P.qcap === Infinity ? 21 : P.qcap; $('#iSpd').value = P.speed;
-  $('#oLam').textContent = P.lambda.toFixed(2) + ' 명/분';
-  $('#oMu').textContent = P.mu.toFixed(2) + ' 명/분';
-  $('#oCap').textContent = capText(P.qcap);
-  $('#oSpd').textContent = '1초에 ' + P.speed + '분';
-  $$('input[name=c]').forEach(r => r.checked = +r.value === P.c);
-  $$('input[name=arr]').forEach(r => r.checked = r.value === P.arr);
-  $$('input[name=svc]').forEach(r => r.checked = r.value === P.svc);
-}
-$('#iLam').addEventListener('input', e => { P.lambda = +e.target.value; syncControls(); resetSim(); });
-$('#iMu').addEventListener('input', e => { P.mu = +e.target.value; syncControls(); resetSim(); });
-$('#iCap').addEventListener('input', e => { const v = +e.target.value; P.qcap = v >= 21 ? Infinity : v; syncControls(); resetSim(); });
-$('#iSpd').addEventListener('input', e => { P.speed = +e.target.value; syncControls(); });
-$$('input[name=c]').forEach(r => r.addEventListener('change', () => { P.c = +r.value; resetSim(); }));
-$$('input[name=arr]').forEach(r => r.addEventListener('change', () => { P.arr = r.value; resetSim(); }));
-$$('input[name=svc]').forEach(r => r.addEventListener('change', () => { P.svc = r.value; resetSim(); }));
-$('#btnReset').addEventListener('click', () => resetSim());
-
-let running = !reduceMotion;
-function setRunning(v) {
-  running = v;
-  $$('.runToggle').forEach(b => { b.textContent = running ? '일시정지' : '계속'; b.setAttribute('aria-pressed', String(!running)); });
-}
-$$('.runToggle').forEach(b => b.addEventListener('click', () => setRunning(!running)));
-
-/* ---------- DOM readouts ---------- */
-let shownLogVer = -1;
-function updateUI() {
-  const e = estimates();
-  $('#eqL').textContent = fmt(e.L);
-  $('#eqLam').textContent = fmt(e.lam, 3);
-  $('#eqW').textContent = fmt(e.W);
-  const lw = e.lam * e.W;
-  if (isFinite(lw) && isFinite(e.L) && e.L > 0) {
-    const d = Math.abs(lw - e.L) / e.L;
-    $('#eqCheck').innerHTML = `<span class="m">λ</span> × <span class="m">W</span> = <b>${lw.toFixed(2)}</b>, <span class="m">L</span>과의 차이 <b>${(d * 100).toFixed(1)}%</b> (${S.t.toFixed(0)}분 동안 ${S.accepted}명 관측)`;
-  } else {
-    $('#eqCheck').textContent = '첫 손님들이 지나가는 중';
-  }
-
-  // stats table
-  const th = TH;
-  $('#thName').textContent = th.unstable ? '(ρ ≥ 1이라 정상상태가 없다)' : th.none ? '(이 조합은 간단한 닫힌 식이 없어 시뮬레이션으로만 본다)' : `(${th.name})`;
-  const tv = (k) => (th.unstable || th.none) ? '–' : th[k];
-  const rows = [
-    ['이용률 <span class="m">ρ</span>', fmt(e.rho, 3), fmt(tv('rho'), 3)],
-    ['평균 인원 <span class="m">L</span>', fmt(e.L), fmt(tv('L'))],
-    ['평균 대기 인원 <span class="m">L</span><sub>q</sub>', fmt(e.Lq), fmt(tv('Lq'))],
-    ['평균 체류 <span class="m">W</span> (분)', fmt(e.W), fmt(tv('W'))],
-    ['평균 대기 <span class="m">W</span><sub>q</sub> (분)', fmt(e.Wq), fmt(tv('Wq'))],
-    ['실효 도착률 <span class="m">λ</span><sub>eff</sub>', fmt(e.lam, 3), fmt(tv('lamEff'), 3)],
-    ['돌아간 비율', pct(e.pB), (th.unstable || th.none) ? '–' : pct(th.pBlock)]
+/* ---------- 3.1 여섯 모델 ---------- */
+(function(){
+  var root = document.getElementById("w-six"); if(!root) return;
+  var V = {rho:.8, ca:1, cs:.5, c:2};
+  var M = [
+    {nm:"M/M/1", col:"ink", f:function(r){ return r/(1-r); }},
+    {nm:"M/D/1", col:"t1", f:function(r){ return r/(2*(1-r)); }},
+    {nm:"M/G/1", col:"t2", f:function(r){ return (1+V.cs)/2*r/(1-r); }},
+    {nm:"G/G/1", col:"t3", f:function(r){ return (V.ca+V.cs)/2*r/(1-r); }},
+    {nm:"M/M/c", col:"t4", f:function(r){ return mmc(r*V.c, 1, V.c).Wq; }},
+    {nm:"G/G/c", col:"t5", f:function(r){ return (V.ca+V.cs)/2*mmc(r*V.c, 1, V.c).Wq; }}
   ];
-  $('#statBody').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
-
-  // boundaries
-  const b = [
-    ['시스템 전체 (대기 + 창구)', e.L, e.lam, e.W],
-    ['대기열만', e.Lq, e.lam, e.Wq],
-    ['창구만', e.Ls, e.lam, e.Ws]
-  ];
-  $('#boundBody').innerHTML = b.map(r => `<tr><td>${r[0]}</td><td>${fmt(r[1], 3)}</td><td>${fmt(r[2], 3)}</td><td>${fmt(r[3], 3)}</td><td>${fmt(r[2] * r[3], 3)}</td></tr>`).join('');
-
-  // log
-  if (S.logVer !== shownLogVer) {
-    shownLogVer = S.logVer;
-    $('#log').innerHTML = S.log.slice(-12).reverse().map(l => `<li><span>${l.t.toFixed(2)}분</span><span>${l.text}</span></li>`).join('') || '<li><span></span><span>아직 사건이 없다</span></li>';
+  var view = setup(root, function(c, W, H){
+    var RM = .92, top = 0; M.forEach(function(m){ top = Math.max(top, m.f(RM)); }); top = Math.max(1, top*1.05);
+    var s = scale([52, 16, 560, 226], [.3, RM], [0, top]);
+    axes(c, s, {xt:[.3,.4,.5,.6,.7,.8,.9], yt:ticks(0, top, 4), xl:"이용률 ρ (서버 한 대 기준)", yl:"W_q / E[S]"});
+    var labs = [];
+    M.forEach(function(m){
+      var pts = []; for(var r=.3;r<=RM+1e-9;r+=.004) pts.push([r, m.f(r)]);
+      path(c, s, pts, COL[m.col], m.nm === "M/M/1" ? 2.4 : 1.8, m.nm === "M/D/1" ? [5,3] : null);
+      labs.push({y:s.Y(m.f(RM)), m:m});
+    });
+    labs.sort(function(a, b){ return a.y - b.y; });
+    for(var i=1;i<labs.length;i++) if(labs[i].y - labs[i-1].y < 13) labs[i].y = labs[i-1].y + 13;
+    labs.forEach(function(l){ txt(c, l.m.nm.replace("/c", "/" + V.c), 566, l.y + 4, {size:11, color:COL[l.m.col], weight:500}); });
+    line(c, s.X(V.rho), s.box[1], s.X(V.rho), s.box[3], COL.muted, 1, [3,3]);
+  });
+  function table(){
+    var vals = M.map(function(m){ return m.f(V.rho); });
+    root.querySelector("[data-tbl]").innerHTML = "<thead><tr><th>ρ = " + fmt(V.rho, 2) + "</th>" + M.map(function(m){ return "<th>" + m.nm.replace("/c", "/" + V.c) + "</th>"; }).join("") + "</tr></thead>" +
+      "<tbody><tr><th scope='row' style='font-weight:400'>W<sub>q</sub> / E[S]</th>" + vals.map(function(v){ return "<td>" + fmt(v, 2) + "</td>"; }).join("") + "</tr>" +
+      "<tr><th scope='row' style='font-weight:400'>정확도</th><td>정확</td><td>정확</td><td>정확 (P-K)</td><td>" + (V.ca === 1 ? "정확" : "근사") + "</td><td>정확</td><td>" + (V.ca === 1 && V.cs === 1 ? "정확" : "근사") + "</td></tr></tbody>";
   }
-}
+  ["rho","ca","cs","c"].forEach(function(k){ bindRange(root, "[data-" + k + "]", function(v){ V[k] = v; view.redraw(); table(); }, k === "c" ? null : function(v){ return fmt(v, 2); }); });
+  table();
+})();
 
-/* ---------- calculator ---------- */
-const cIn = [$('#cL'), $('#cLam'), $('#cW')];
-const g = (x) => +x.toPrecision(4);
-function calc() {
-  const v = cIn.map(el => { const s = el.value.trim().replace(',', '.'); return s === '' ? null : parseFloat(s); });
-  const ok = v.map(x => x != null && isFinite(x));
-  const filled = ok.filter(Boolean).length;
-  let msg = '두 칸을 채우면 나머지 하나를 계산한다.';
-  if (filled === 2) {
-    if (!ok[0]) msg = `L = λ × W = ${g(v[1] * v[2])}`;
-    else if (!ok[1]) msg = v[2] > 0 ? `λ = L ÷ W = ${g(v[0] / v[2])}` : 'W가 0이면 λ를 정할 수 없다.';
-    else msg = v[1] > 0 ? `W = L ÷ λ = ${g(v[0] / v[1])}` : 'λ가 0이면 W를 정할 수 없다.';
-  } else if (filled === 3) {
-    const p = v[1] * v[2], d = v[0] ? Math.abs(p - v[0]) / Math.abs(v[0]) : Math.abs(p);
-    msg = d < 1e-6 ? `λ × W = ${g(p)}, L과 일치한다.` : `λ × W = ${g(p)}, L = ${g(v[0])}과 ${(d * 100).toFixed(1)}% 차이 난다. 단위를 확인해 보자.`;
+/* ---------- 3.2 리틀의 법칙 계산기 ---------- */
+(function(){
+  var root = document.getElementById("w-calc"); if(!root) return;
+  var f = {}, out = root.querySelector("[data-out]"), last = [];
+  root.querySelectorAll("[data-f]").forEach(function(i){ f[i.dataset.f] = i; });
+  function val(k){ var v = f[k].value; return v === "" || f[k].dataset.auto ? null : +v; }
+  function run(e){
+    if(e && e.target.dataset.f){ e.target.dataset.auto = ""; delete e.target.dataset.auto; last = last.filter(function(k){ return k !== e.target.dataset.f; }); last.push(e.target.dataset.f); }
+    var L = val("L"), lam = val("lam"), W = val("W"), filled = ["L","lam","W"].filter(function(k){ return val(k) !== null; });
+    if(filled.length < 2){ out.innerHTML = "두 칸을 채우면 나머지 한 칸이 계산됩니다."; return; }
+    var keep = last.slice(-2).filter(function(k){ return val(k) !== null; });
+    if(keep.length < 2) keep = filled.slice(0, 2);
+    var target = ["L","lam","W"].filter(function(k){ return keep.indexOf(k) < 0; })[0], res;
+    if(target === "L") res = val("lam")*val("W");
+    if(target === "lam") res = val("W") ? val("L")/val("W") : NaN;
+    if(target === "W") res = val("lam") ? val("L")/val("lam") : NaN;
+    f[target].value = isFinite(res) ? +res.toPrecision(4) : ""; f[target].dataset.auto = "1";
+    var nm = {L:"L", lam:"λ", W:"W"};
+    out.innerHTML = isFinite(res) ? "<b>" + nm[target] + " = " + (+res.toPrecision(4)) + "</b> (" + (target === "L" ? "λ × W" : target === "lam" ? "L / W" : "L / λ") + ")" : "0으로 나눌 수 없습니다.";
   }
-  $('#cOut').textContent = msg;
-}
-cIn.forEach(el => el.addEventListener('input', calc));
+  root.querySelectorAll("[data-f]").forEach(function(i){ i.addEventListener("input", run); });
+  root.querySelector('[data-act="clear"]').onclick = function(){ Object.keys(f).forEach(function(k){ f[k].value = ""; delete f[k].dataset.auto; }); last = []; out.innerHTML = "두 칸을 채우면 나머지 한 칸이 계산됩니다."; };
+})();
 
-/* ---------- loop ---------- */
-resetSim(); syncControls(); setRunning(running); layout(); updateMM1();
-let last = performance.now(), uiAcc = 1;
-function frame(now) {
-  const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  if (running) advance(S.t + dt * P.speed);
-  drawSim(dt);
-  uiAcc += dt;
-  if (uiAcc > 0.12) { uiAcc = 0; updateUI(); drawArea(); drawConv(); }
-  requestAnimationFrame(frame);
-}
-requestAnimationFrame(frame);
+initEqx();
 })();
 </script>
 </body>

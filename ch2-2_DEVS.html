@@ -1,0 +1,2053 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DEVS: 모델을 부품처럼 조립하기</title>
+<!--
+  모델링과 시뮬레이션 학습 자료 — 2-2편 (2편 DES의 심화편): DEVS
+  파일명: ch2-2_DEVS.html
+  이 페이지가 연결하는 사이트 안 파일
+    메인 페이지        : index.html
+    2편 DES           : ch2_DES.html
+    3편 ABM           : ch3_ABM.html
+    5편 출력 분석       : ch5_output-analysis.html
+  이 편의 강조색 --acc는 메인 페이지의 --c2b와 같습니다.
+  데모는 모두 외부 라이브러리 없이 맨 아래 <script> 안에서 동작합니다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F8; --panel:#FFFFFF; --ink:#17202E; --muted:#5A6577; --line:#D5DBE3; --soft:#E8ECF1;
+  --acc:#8C5A2E; --acc-soft:#F1E6DA; --on-acc:#FFFFFF;
+  --mi:#6A44B0; --ms:#8C5A2E; --mx:#3557C9; --my:#0E7C6B; --md:#6B7587; --miss:#C8372D;
+  --code-bg:#F7F8FA; --road:#C9D0DA; --house:#2B3340; --zebra:#FFFFFF;
+  --k-kw:#7A3E9D; --k-fn:#1F5FAD; --k-str:#2E7D32; --k-num:#B4531F; --k-com:#7A8494; --k-bi:#0E7C6B;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --math:"STIX Two Text","Times New Roman",Times,serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+    --acc:#DDA56F; --acc-soft:#3A2C20; --on-acc:#1A120B;
+    --mi:#B394F0; --ms:#DDA56F; --mx:#7690F2; --my:#2DB59D; --md:#8D97A8; --miss:#EE5D52;
+    --code-bg:#141B24; --road:#2A3442; --house:#0B0F14; --zebra:#9AA5B4;
+    --k-kw:#C79BF0; --k-fn:#7EB2F5; --k-str:#8FD18F; --k-num:#F49A6A; --k-com:#7D8899; --k-bi:#4FD1B5;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+  --acc:#DDA56F; --acc-soft:#3A2C20; --on-acc:#1A120B;
+  --mi:#B394F0; --ms:#DDA56F; --mx:#7690F2; --my:#2DB59D; --md:#8D97A8; --miss:#EE5D52;
+  --code-bg:#141B24; --road:#2A3442; --house:#0B0F14; --zebra:#9AA5B4;
+  --k-kw:#C79BF0; --k-fn:#7EB2F5; --k-str:#8FD18F; --k-num:#F49A6A; --k-com:#7D8899; --k-bi:#4FD1B5;
+  color-scheme:dark;
+}
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px); scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:400 17px/1.75 var(--sans); -webkit-font-smoothing:antialiased;
+  word-break:keep-all; overflow-wrap:break-word;
+}
+a{color:var(--acc); text-underline-offset:3px}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:2px solid var(--acc); outline-offset:2px; border-radius:4px}
+
+/* ---------- 레이아웃: 본문은 좁게, 데모는 넓게 ---------- */
+.page{
+  display:grid;
+  grid-template-columns:1fr min(720px, calc(100% - 40px)) 1fr;
+  padding:28px 0 80px;
+}
+.page > *{grid-column:2}
+.page > .wide{grid-column:1 / -1; width:min(1060px, calc(100% - 24px)); margin-left:auto; margin-right:auto}
+
+.crumb{font-size:14.5px; color:var(--muted); margin:0 0 30px}
+.crumb a{color:var(--muted)}
+
+h1{
+  font-size:clamp(34px, 5.4vw, 52px); line-height:1.18; font-weight:700; letter-spacing:-.02em;
+  margin:0 0 16px;
+}
+h1 .tuple{
+  display:block; font-family:var(--math); font-weight:400; letter-spacing:0;
+  font-size:.56em; color:var(--acc); margin-top:12px;
+}
+.lede{font-size:19px; line-height:1.7; color:var(--ink); margin:0 0 26px; max-width:40em}
+
+h2{
+  font-size:28px; line-height:1.3; font-weight:700; letter-spacing:-.01em;
+  margin:72px 0 14px; display:flex; gap:14px; align-items:baseline;
+}
+h2 .n{font-family:var(--math); font-weight:500; color:var(--acc); font-size:30px; min-width:1ch}
+h3{font-size:20px; line-height:1.4; margin:38px 0 8px}
+p{margin:0 0 16px}
+.muted{color:var(--muted)}
+.small{font-size:14.5px}
+
+/* 수식 */
+.m{font-family:var(--math); font-size:1.08em; white-space:nowrap}
+.m i, .eq i{font-style:italic}
+.eq{
+  font-family:var(--math); font-size:20px; line-height:1.6; text-align:left;
+  background:var(--panel); border:1px solid var(--line); border-radius:10px;
+  padding:14px 18px; margin:6px 0 20px; overflow-x:auto;
+}
+sub,sup{line-height:0}
+
+/* 알림 상자: 왼쪽 굵은 선 */
+.note{
+  border-left:4px solid var(--acc); background:var(--acc-soft);
+  padding:12px 16px; margin:4px 0 22px; border-radius:0 8px 8px 0; font-size:16px;
+}
+.note b{color:var(--ink)}
+.note.plain{border-left-color:var(--line); background:var(--soft)}
+
+/* ---------- 데모 패널 ---------- */
+.panel{
+  background:var(--panel); border:1px solid var(--line); border-radius:14px;
+  padding:18px 20px 16px; margin:10px 0 26px;
+}
+.panel .cap{font-size:14.5px; color:var(--muted); margin:10px 2px 0}
+.scrollx{overflow-x:auto; -webkit-overflow-scrolling:touch}
+.ctrls{display:flex; flex-wrap:wrap; gap:10px 22px; align-items:center; margin:4px 0 12px}
+.ctrl{display:flex; align-items:center; gap:10px; font-size:15px}
+.ctrl label{color:var(--muted)}
+.ctrl output{font-variant-numeric:tabular-nums; min-width:4.5em; color:var(--ink); font-weight:500}
+input[type=range]{accent-color:var(--acc); width:150px}
+.btn{
+  font:500 15px/1 var(--sans); color:var(--ink); background:var(--soft);
+  border:1px solid var(--line); border-radius:8px; padding:9px 14px; cursor:pointer;
+}
+.btn:hover{border-color:var(--acc)}
+.btn.primary{background:var(--acc); border-color:var(--acc); color:var(--on-acc)}
+.btn:disabled{opacity:.45; cursor:default}
+.seg{display:inline-flex; flex-wrap:wrap; gap:4px}
+.seg button{
+  font:500 14.5px/1 var(--sans); color:var(--ink); background:transparent;
+  border:1px solid var(--line); border-radius:7px; padding:8px 11px; cursor:pointer;
+}
+.seg button[aria-pressed="true"]{background:var(--acc); border-color:var(--acc); color:var(--on-acc)}
+.readout{font-variant-numeric:tabular-nums}
+
+/* ---------- 카페 결합 모델 그림 ---------- */
+svg text{font-family:var(--sans)}
+.dg{display:block; width:100%; min-width:640px; height:auto}
+.dg .outer{fill:none; stroke:var(--line); stroke-width:1.5}
+.dg .cbox{fill:var(--soft); stroke:var(--muted); stroke-width:1.2; stroke-dasharray:5 4}
+.dg .abox{fill:var(--panel); stroke:var(--ink); stroke-width:1.3}
+.dg .abox.fire{stroke:var(--acc); stroke-width:3}
+.dg .ttl{font-size:14px; font-weight:700; fill:var(--ink)}
+.dg .cttl{font-size:13.5px; font-weight:700; fill:var(--muted)}
+.dg .st{font-size:12.5px; fill:var(--muted)}
+.dg .st.strong{fill:var(--ink); font-weight:500}
+.dg .pl{font-size:11px; fill:var(--muted)}
+.dg .pin{fill:var(--panel); stroke:var(--ink); stroke-width:1.2}
+.dg .pout{fill:var(--ink)}
+.dg .edge{fill:none; stroke:var(--muted); stroke-width:1.6; transition:stroke .2s, stroke-width .2s, opacity .2s}
+.dg .edge.idle{stroke-dasharray:4 4}
+.dg .edge.hl{stroke:var(--acc); stroke-width:3.2}
+.dg.dim .edge:not(.hl){opacity:.25}
+.dg .hit{fill:none; stroke:transparent; stroke-width:14; cursor:pointer}
+.dg .jn{fill:var(--muted)}
+.dg .bar-bg{fill:var(--soft)}
+.dg .bar{fill:var(--acc)}
+.dg .dot{fill:var(--acc)}
+.dg .pulse{fill:var(--acc); stroke:var(--panel); stroke-width:2}
+.dg .pulse.p-x{fill:var(--mx)} .dg .pulse.p-y{fill:var(--my)}
+.dg .fold{display:none}
+.dg.folded .inner{display:none}
+.dg.folded .fold{display:inline}
+.dg.folded .cbox{fill:var(--panel); stroke:var(--ink); stroke-dasharray:none; stroke-width:1.3}
+
+.statline{display:flex; flex-wrap:wrap; gap:6px 26px; font-size:15px; margin-top:6px}
+.statline b{font-variant-numeric:tabular-nums}
+
+/* ---------- 튜플 표 (원자 모델 정의) ---------- */
+.deftab{width:100%; border-collapse:collapse; font-size:15.5px; margin:4px 0 6px}
+.deftab td{padding:7px 10px; border-top:1px solid var(--line); vertical-align:top}
+.deftab tr:first-child td{border-top:none}
+.deftab td:first-child{font-family:var(--math); font-size:18px; white-space:nowrap; width:1%; color:var(--acc)}
+.deftab tr.on td{background:var(--acc-soft)}
+.deftab .f{font-family:var(--math); font-size:16.5px}
+
+/* 궤적 그림 */
+.traj{display:block; width:100%; min-width:620px; height:auto; touch-action:none; user-select:none}
+.traj .trk{fill:var(--bg)}
+.traj .trk-l{font-size:13px; fill:var(--ink); font-weight:500}
+.traj .trk-s{font-size:11.5px; fill:var(--muted)}
+.traj .ax{stroke:var(--line); stroke-width:1}
+.traj .tick{font-size:11px; fill:var(--muted)}
+.traj .spk-x{stroke:var(--mx); stroke-width:2.4}
+.traj .spk-y{stroke:var(--my); stroke-width:2.4}
+.traj .hx{fill:var(--mx)} .traj .hy{fill:var(--my)}
+.traj .busy{fill:var(--acc-soft)}
+.traj .ql{fill:none; stroke:var(--acc); stroke-width:2}
+.traj .sig{stroke:var(--acc); stroke-width:2}
+.traj .inf{stroke:var(--acc); stroke-width:1.5; stroke-dasharray:3 4}
+.traj .ee{stroke:var(--ink); stroke-width:1.6; opacity:.75}
+.traj .ph{stroke:var(--ink); stroke-width:1.4}
+.traj .phk{fill:var(--ink)}
+.traj .addzone{fill:transparent; cursor:copy}
+.traj .lbl{font-size:11px; fill:var(--muted)}
+.traj .inft{font-size:12px; fill:var(--acc); font-family:var(--math)}
+.trajgrid{display:grid; grid-template-columns:minmax(0,1fr) 270px; gap:18px; align-items:start}
+.readbox{font-size:15px; background:var(--soft); border-radius:10px; padding:12px 14px}
+.readbox .row{display:flex; justify-content:space-between; gap:10px; padding:2px 0}
+.readbox .row span:first-child{color:var(--muted)}
+.readbox .row b{font-variant-numeric:tabular-nums; font-weight:500}
+.readbox .fired{margin-top:8px; padding-top:8px; border-top:1px solid var(--line); font-size:14.5px}
+@media (max-width:860px){ .trajgrid{grid-template-columns:1fr} }
+
+/* ---------- 추상 시뮬레이터 추적 ---------- */
+.tracegrid{display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:18px; align-items:start}
+.tracegrid > *, .trajgrid > *{min-width:0}
+@media (max-width:860px){ .tracegrid{grid-template-columns:1fr} }
+.tree{display:block; width:100%; min-width:560px; height:auto}
+.tree .nd{fill:var(--panel); stroke:var(--line); stroke-width:1.3}
+.tree .nd.atom{stroke:var(--ink)}
+.tree .nd.act{stroke:var(--acc); stroke-width:2.6}
+.tree .nn{font-size:14.5px; font-weight:700; fill:var(--ink)}
+.tree .nk{font-size:11.5px; fill:var(--muted)}
+.tree .nt{font-size:13px; fill:var(--ink); font-variant-numeric:tabular-nums}
+.tree .ns{font-size:12.5px; fill:var(--muted)}
+.tree .tl{stroke:var(--line); stroke-width:2}
+.tree .msg{stroke-width:3.4; fill:none}
+.tree .mlab{font-size:13.5px; font-weight:700}
+.legend{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:14px; color:var(--muted); margin:8px 0 0}
+.legend span::before{content:""; display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--c); margin-right:6px; vertical-align:-1px}
+.explain{background:var(--soft); border-radius:10px; padding:12px 14px; font-size:15.5px; min-height:5.2em; margin:0 0 10px}
+.explain .hd{font-weight:700; margin-bottom:2px}
+.mlog{
+  list-style:none; margin:0; padding:0; max-height:340px; overflow:auto;
+  border:1px solid var(--line); border-radius:10px; font-size:13.5px; font-variant-numeric:tabular-nums;
+}
+.mlog li{display:grid; grid-template-columns:3.4em 2.9em 1fr; gap:6px; padding:5px 10px; border-top:1px solid var(--soft); cursor:pointer}
+.mlog li:first-child{border-top:none}
+.mlog li.cur{background:var(--acc-soft)}
+.mlog li.fut{opacity:.38}
+.mlog .ty{font-weight:700; color:var(--c)}
+.mlog .tt{color:var(--muted)}
+
+/* ---------- 동시 사건 실험 ---------- */
+.gantt{display:block; width:100%; min-width:560px; height:auto}
+.gantt .row-l{font-size:12px; fill:var(--muted)}
+.gantt .gx{stroke:var(--line); stroke-width:1}
+.gantt .wait{fill:var(--line)}
+.gantt .svc{fill:var(--acc)}
+.gantt .arr{fill:var(--mx)}
+.gantt .lost{stroke:var(--miss); stroke-width:2.4}
+.gantt .lostt{font-size:12px; fill:var(--miss); font-weight:500}
+.gantt .vline{stroke:var(--ink); stroke-width:1; stroke-dasharray:3 3; opacity:.5}
+.verdict{font-size:17px; margin:4px 0 8px}
+.verdict b{font-variant-numeric:tabular-nums}
+.verdict .bad{color:var(--miss)}
+.story{margin:6px 0 0; padding-left:1.4em; font-size:15px}
+.story li{margin:3px 0}
+
+/* ---------- 신호등 실험 ---------- */
+.siggrid{display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:18px; align-items:start; margin-bottom:10px}
+.siggrid > *{min-width:0}
+@media (max-width:860px){ .siggrid{grid-template-columns:1fr} }
+.scene{display:block; width:100%; min-width:420px; height:auto; border-radius:10px}
+.scene .walkway{fill:var(--soft)}
+.scene .road{fill:var(--road)}
+.scene .lane{stroke:var(--zebra); stroke-width:2; stroke-dasharray:14 12; opacity:.7}
+.scene .zebra{fill:var(--zebra); opacity:.85}
+.scene .stopl{stroke:var(--zebra); stroke-width:3}
+.scene .house{fill:var(--house)}
+.scene .lamp{fill:#555E6B; opacity:.45}
+.scene .lamp.on.r{fill:#E0473D; opacity:1} .scene .lamp.on.y{fill:#E8A317; opacity:1} .scene .lamp.on.g{fill:#2FA864; opacity:1}
+.scene .lab{font-size:12px; fill:var(--muted)}
+.scene .ped{fill:var(--mx)}
+.scene .car{fill:var(--md)}
+.sgchart{display:block; width:100%; min-width:560px; height:auto}
+.sgchart .bg{fill:var(--bg)}
+.sgchart .sl{stroke:var(--acc); stroke-width:2.2; fill:none}
+.sgchart .b-car{fill:#2FA864; opacity:.55} .sgchart .b-yellow{fill:#E8A317; opacity:.7} .sgchart .b-walk{fill:var(--mx); opacity:.55}
+.sgchart .mk-u{fill:var(--acc)} .sgchart .mk-p{fill:var(--md)}
+.sgchart .lbl{font-size:11px; fill:var(--muted)}
+.sgchart .gl{stroke:var(--line); stroke-width:1}
+.fastt{border-collapse:collapse; font-size:15px; margin:4px 0 14px}
+.fastt th,.fastt td{padding:6px 14px 6px 0; text-align:left; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums}
+.fastt th{color:var(--muted); font-weight:500}
+.tbl4{min-width:640px}
+.tbl4 td:first-child{width:14%}
+
+/* ---------- 표 ---------- */
+.tbl{width:100%; border-collapse:collapse; font-size:15.5px; margin:6px 0 22px}
+.tbl th,.tbl td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top}
+.tbl th{font-weight:700; font-size:14.5px; color:var(--muted); border-bottom:2px solid var(--line)}
+.tbl td:first-child{color:var(--muted); width:28%}
+
+/* ---------- 코드 ---------- */
+pre.code{
+  background:var(--code-bg); border:1px solid var(--line); border-radius:12px;
+  padding:16px 18px; overflow-x:auto; font:400 13.8px/1.62 var(--mono); margin:8px 0 14px; tab-size:4;
+}
+pre.code .kw{color:var(--k-kw); font-weight:500} pre.code .fn{color:var(--k-fn)}
+pre.code .str{color:var(--k-str)} pre.code .num{color:var(--k-num)}
+pre.code .com{color:var(--k-com); font-style:italic} pre.code .bi{color:var(--k-bi)}
+.out{font:400 14px/1.6 var(--mono); background:var(--soft); border-radius:8px; padding:10px 14px; margin:0 0 18px; white-space:pre-wrap}
+code{font-family:var(--mono); font-size:.88em; background:var(--soft); padding:1px 5px; border-radius:4px}
+pre.code code{background:none; padding:0; font-size:inherit; border-radius:0}
+
+ol.tasks{padding-left:1.3em} ol.tasks li{margin:0 0 12px}
+.foot{margin-top:70px; padding-top:20px; border-top:1px solid var(--line); font-size:15px; color:var(--muted); display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px}
+.foot a{color:var(--ink)}
+
+@media (max-width:600px){
+  body{font-size:16.5px}
+  .panel{padding:14px 12px 12px; border-radius:12px}
+  h2{font-size:24px; margin-top:58px}
+  .eq{font-size:18px; padding:12px 14px}
+  input[type=range]{width:120px}
+}
+/* ---- 4~9편과 같은 머리말, 목표, 이전/다음 (양식 통일) ---- */
+:root{--hz-acc:#8C5A2E}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--hz-acc:#DDA56F} }
+:root[data-theme="dark"]{--hz-acc:#DDA56F}
+.hz-series{margin:0 0 10px; color:var(--muted); font-size:15px}
+.hz-n{font-family:"STIX Two Text","Times New Roman",serif; font-weight:500; color:var(--hz-acc); margin-right:.45em}
+.hz-goals{display:grid; grid-template-columns:1.4fr 1fr; gap:24px; margin:28px 0 24px; max-width:980px}
+.hz-goals > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px}
+.hz-goals h2{font-size:15px; margin:0 0 6px}
+.hz-goals ul{margin:0; padding-left:1.1em; font-size:15px; line-height:1.65}
+.hz-goals .pre a{display:inline-block; margin:2px 6px 2px 0; font-size:14px; text-decoration:none; padding:2px 9px; border-radius:5px; background:var(--soft); color:var(--ink)}
+.hz-goals .pre a:hover{background:var(--hz-acc); color:var(--panel)}
+.hz-goals .pre p{font-size:14.5px; color:var(--muted); margin:6px 0 0}
+.hz-link{max-width:42em; margin:16px 0; padding:12px 18px 12px 16px; border-left:3px solid var(--hz-acc); background:var(--panel); border-radius:0 8px 8px 0; font-size:15.5px}
+.hz-link p{margin:0}
+.hz-link b{color:var(--hz-acc); margin-right:8px}
+.hz-pager-wrap{margin-top:64px}
+.hz-subs{margin:0 0 12px; font-size:15px; color:var(--muted)}
+.hz-subs a{color:var(--ink)}
+.hz-pager{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+.hz-pager a{display:block; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; text-decoration:none; color:var(--ink)}
+.hz-pager a:hover{border-color:var(--hz-acc)}
+.hz-pager span{display:block; font-size:13.5px; color:var(--muted)}
+.hz-pager b{font-size:17px}
+.hz-pager .next{text-align:right}
+footer a{color:inherit}
+@media (max-width:760px){ .hz-goals, .hz-pager{grid-template-columns:1fr} }
+.hz-goals{grid-column:2}
+</style>
+</head>
+<body>
+<main class="page">
+
+<p class="crumb"><a href="index.html">모델링과 시뮬레이션 목차</a></p>
+<p class="hz-series">모델링과 시뮬레이션, 2-2편 (2편 심화)</p>
+
+<h1>DEVS: 모델을 부품처럼 조립하기<span class="tuple">M = ⟨X, Y, S, δ<sub>ext</sub>, δ<sub>int</sub>, λ, ta⟩</span></h1>
+
+<p class="lede"><a href="ch2_DES.html">2편</a>에서는 프롬프트 커피점을 사건 목록 하나로 돌렸습니다. 이번에는 같은 카페를 상자 네 개로 쪼갭니다. 상자마다 자기 상태만 알고, 다른 상자와는 정해진 포트로만 메시지를 주고받습니다. 이산사건 모델을 이렇게 적는 규칙이 DEVS(Discrete Event System Specification)입니다.</p>
+
+<div class="hz-goals">
+  <div>
+    <h2>이 편을 마치면</h2>
+    <ul>
+      <li>원자 모델의 일곱 원소로 부품 하나를 적고, 입력과 상태와 출력의 시간 궤적을 읽을 수 있습니다.</li>
+      <li>EIC, EOC, IC로 부품을 이어 결합 모델을 만들고, 결합에 대해 닫혀 있다는 성질을 설명할 수 있습니다.</li>
+      <li>추상 시뮬레이터의 다섯 가지 메시지로 모델이 실행되는 순서를 따라갈 수 있습니다.</li>
+      <li>동시 사건을 Select와 병렬 DEVS가 어떻게 다루는지, 사건 스케줄링과 무엇이 근본적으로 다른지 설명할 수 있습니다.</li>
+    </ul>
+  </div>
+  <div class="pre">
+    <h2>먼저 보면 좋은 것</h2>
+    <a href="ch2_DES.html">2편 DES</a><a href="ch1_littles_law.html#s2-4">1편 2.4 M/M/1</a>
+    <p>2편 커피점의 사건 목록과 1편의 M/M/1 공식을 알면 충분합니다.</p>
+  </div>
+</div>
+
+<section class="wide panel" id="hero" aria-label="DEVS로 조립한 카페 실시간 데모">
+  <div class="ctrls">
+    <button class="btn primary" id="h-play">일시정지</button>
+    <button class="btn" id="h-reset">처음부터</button>
+    <div class="ctrl"><label for="h-lam">손님 (시간당)</label><input type="range" id="h-lam" min="6" max="24" step="1" value="18"><output id="h-lam-o">18명</output></div>
+    <div class="ctrl"><label for="h-svc">평균 제조 시간</label><input type="range" id="h-svc" min="1.5" max="4" step="0.1" value="2.4"><output id="h-svc-o">2.4분</output></div>
+    <div class="ctrl"><label>속도</label><div class="seg" id="h-speed"><button aria-pressed="false" data-v="1">1배</button><button aria-pressed="true" data-v="3">3배</button><button aria-pressed="false" data-v="12">12배</button></div></div>
+  </div>
+  <div class="scrollx"><svg class="dg" id="hero-dg" viewBox="0 0 800 330" role="img" aria-label="생성기 G, 카운터(대기열 Q와 바리스타 B), 통계 T로 조립한 카페 결합 모델"></svg></div>
+  <div class="statline">
+    <span>시계 <b id="h-clock">0.0</b>분</span>
+    <span>M/M/1 공식의 평균 체류시간 <b id="h-theory">8.6분</b></span>
+    <span><button class="btn" id="h-fast">2만 명 빨리 돌리기</button> <span id="h-fast-o" class="muted"></span></span>
+  </div>
+  <p class="cap">선 위를 지나는 점이 메시지입니다. 파란 점은 결합 모델이 부품에게 내려 주는 입력, 초록 점은 결합 모델 밖으로 나가는 출력입니다. 굵게 테두리가 켜지는 상자가 방금 상태를 바꾼 부품입니다. 손님 간격과 제조 시간은 지수분포라서 1편의 M/M/1과 같은 시스템이고, 통계 T가 잰 평균 체류시간을 공식과 비교할 수 있습니다.</p>
+</section>
+
+<h2><span class="n">1</span>왜 다시 카페인가</h2>
+<p>2편의 코드를 떠올려 봅시다. 도착 사건 루틴은 바리스타가 비었는지 직접 들여다보고, 제조 완료 루틴은 대기열에서 다음 손님을 직접 꺼냅니다. 미래 사건 목록 하나가 카페의 모든 미래를 쥐고 있습니다. 카페가 작을 때는 이 방식이 가장 빠르고 단순합니다.</p>
+<p>그런데 에스프레소 머신을 두 대로 늘리고, 키오스크를 붙이고, 옆 매장과 재료를 나눠 쓰기 시작하면 사정이 달라집니다. 루틴 하나를 고치면 같은 상태 변수를 건드리던 다른 루틴들을 모두 다시 확인해야 합니다. 바리스타 부분만 떼어 다른 매장 모델에 다시 쓰기도 어렵습니다.</p>
+<p>DEVS는 Bernard Zeigler가 1976년에 제안한 이산사건 모델의 형식 명세입니다. 지키는 약속은 세 가지입니다.</p>
+<p><b>자기 상태만 안다.</b> 부품은 자기 상태 변수만 바꿀 수 있습니다. 위 그림의 바리스타 B는 줄이 몇 명인지 모릅니다.<br>
+<b>포트로만 말한다.</b> 바깥과 주고받는 것은 입력 포트와 출력 포트를 오가는 메시지가 전부입니다.<br>
+<b>조립한 것도 모델이다.</b> 부품을 이어 붙인 결합 모델도 바깥에서 보면 포트를 가진 상자 하나입니다. 그래서 계층으로 쌓을 수 있습니다.</p>
+<p>그리고 모델과 그 모델을 돌리는 시뮬레이터가 분리됩니다. 모델은 "무슨 일이 일어나는가"만 적고, 시뮬레이터는 "언제, 누구 차례인가"만 맡습니다. 위 데모의 카페도 4절에서 볼 범용 엔진이 돌리고 있습니다. 엔진은 카페에 대해 아무것도 모릅니다.</p>
+
+<h2><span class="n">2</span>원자 모델: 일곱 개짜리 묶음</h2>
+<p>더 쪼개지 않는 부품을 원자 모델이라 부릅니다. 원자 모델은 일곱 가지로 정의됩니다. 예로 대기열을 품은 바리스타 P 하나를 적어 보겠습니다. 주문을 받으면 만들고, 만드는 중에 온 주문은 쌓아 두며, 한 잔에 정확히 <span class="m"><i>d</i></span>분이 걸립니다.</p>
+
+<div class="panel" id="defs">
+<table class="deftab">
+  <tr data-k="X"><td>X</td><td>입력 사건의 집합.<br><span class="f">X = {주문}</span></td></tr>
+  <tr data-k="Y"><td>Y</td><td>출력 사건의 집합.<br><span class="f">Y = {음료}</span></td></tr>
+  <tr data-k="S"><td>S</td><td>상태의 집합. 여기서는 단계, 쌓인 주문 수 <i class="f">q</i>, 남은 시간 σ의 묶음입니다.<br><span class="f">S = {쉼, 제조} × ℕ × [0, ∞]</span></td></tr>
+  <tr data-k="ext"><td>δ<sub>ext</sub></td><td>외부 전이. 입력이 들어오면 지금 상태와 마지막 전이 뒤 흐른 시간 <i class="f">e</i>를 보고 새 상태를 정합니다.<br><span class="f">δ<sub>ext</sub>((쉼, 0, ∞), <i>e</i>, 주문) = (제조, 0, <i>d</i>)<br>δ<sub>ext</sub>((제조, <i>q</i>, σ), <i>e</i>, 주문) = (제조, <i>q</i>+1, σ − <i>e</i>)</span></td></tr>
+  <tr data-k="int"><td>δ<sub>int</sub></td><td>내부 전이. 입력 없이 <span class="m">ta(<i>s</i>)</span>만큼 시간이 흐르면 일어납니다.<br><span class="f">δ<sub>int</sub>((제조, <i>q</i>, σ)) = (제조, <i>q</i>−1, <i>d</i>) &nbsp;(<i>q</i> &gt; 0일 때), &nbsp;(쉼, 0, ∞) &nbsp;(<i>q</i> = 0일 때)</span></td></tr>
+  <tr data-k="lam"><td>λ</td><td>출력 함수. 내부 전이 바로 직전의 상태를 보고 무엇을 내보낼지 정합니다.<br><span class="f">λ((제조, <i>q</i>, σ)) = 음료</span></td></tr>
+  <tr data-k="ta"><td>ta</td><td>시간 전진 함수. 입력이 없다면 이 상태에 얼마나 머무는지.<br><span class="f">ta((단계, <i>q</i>, σ)) = σ</span></td></tr>
+</table>
+</div>
+
+<p>이 정의가 시간 위에서 어떻게 움직이는지 봅시다. 아래 그림의 다섯 줄은 입력, 상태, 남은 시간 σ, 경과 시간 <i class="m">e</i>, 출력의 시간 궤적입니다.</p>
+
+<section class="wide panel" id="traj" aria-label="원자 모델 궤적 실험">
+  <div class="ctrls">
+    <button class="btn primary" id="tj-play">재생</button>
+    <div class="ctrl"><label for="tj-d">제조 시간 <i class="m">d</i></label><input type="range" id="tj-d" min="1" max="8" step="0.5" value="4"><output id="tj-d-o">4분</output></div>
+    <div class="seg" id="tj-preset"><button aria-pressed="true" data-p="a">기본</button><button aria-pressed="false" data-p="b">한꺼번에 몰림</button><button aria-pressed="false" data-p="c">비우기</button></div>
+  </div>
+  <div class="trajgrid">
+    <div class="scrollx"><svg class="traj" id="tj-svg" viewBox="0 0 760 420" aria-label="입력, 상태, 남은 시간, 경과 시간, 출력의 궤적"></svg></div>
+    <div class="readbox" aria-live="polite">
+      <div class="row"><span>시각 <i>t</i></span><b id="tj-t">0.0분</b></div>
+      <div class="row"><span>상태 <i>s</i></span><b id="tj-s">(쉼, 0, ∞)</b></div>
+      <div class="row"><span>경과 시간 <i>e</i></span><b id="tj-e">0.0분</b></div>
+      <div class="row"><span>남은 시간 ta(<i>s</i>) − <i>e</i></span><b id="tj-ta">∞</b></div>
+      <div class="fired" id="tj-fired">아직 아무 전이도 없었습니다.</div>
+    </div>
+  </div>
+  <p class="cap">맨 위 입력 줄을 누르면 그 시각에 주문이 하나 들어가고, 이미 있는 주문을 누르면 지워집니다. 그림 위를 끌면 세로 시각 선이 움직이고, 오른쪽 상자와 위의 정의 표가 그 시각에 맞춰 바뀝니다.</p>
+</section>
+
+<div class="note"><b>총 상태 (s, e).</b> 경과 시간 <i>e</i>는 언제나 0 ≤ <i>e</i> ≤ ta(<i>s</i>)입니다. <i>e</i>가 ta(<i>s</i>)에 닿는 순간 내부 전이가 일어나기 때문입니다. 그래서 어느 순간의 모델을 완전히 알려면 <i>s</i>와 <i>e</i>를 함께 알아야 하고, 이 쌍을 총 상태라고 부릅니다. 궤적 그림에서 남은 시간과 <i>e</i>를 더하면 각 구간마다 ta(<i>s</i>)로 일정한 것을 확인해 보세요.</div>
+<div class="note"><b>출력은 내부 전이에서만 나옵니다.</b> λ는 δ<sub>int</sub> 직전에만 불립니다. 입력을 받자마자 대답해야 한다면 ta = 0인 상태에 잠깐 들렀다가 나갑니다. 3절의 대기열 Q가 바로 이렇게 손님을 바리스타에게 넘깁니다. 반대로 ta = ∞인 상태는 수동 상태라고 합니다. 바리스타의 '쉼'처럼 입력이 오기 전에는 영원히 그대로입니다.</div>
+<p class="muted small">이 데모는 주문 도착과 제조 완료가 같은 시각이면 완료를 먼저 처리합니다. 이 선택이 왜 문제가 되는지는 5절에서 다룹니다.</p>
+
+<h2><span class="n">3</span>결합 모델: 상자를 선으로 잇기</h2>
+<p>바리스타 P 하나로도 카페를 돌릴 수는 있습니다. 하지만 줄 서는 규칙만 바꾸거나 바리스타만 늘리고 싶어지는 순간이 옵니다. 그래서 맨 위 데모는 대기열 Q와 바리스타 B를 따로 만들고 선으로 이었습니다. 선을 잇는 방법도 튜플로 적습니다.</p>
+<div class="eq">N = ⟨X, Y, D, {M<sub><i>d</i></sub>}, EIC, EOC, IC, Select⟩</div>
+<p><span class="m">D</span>는 부품 이름들이고 <span class="m">M<sub><i>d</i></sub></span>는 각 부품의 모델입니다. 선은 세 종류입니다. EIC(외부 입력 결합)는 결합 모델의 입력 포트에서 부품의 입력 포트로, EOC(외부 출력 결합)는 부품의 출력 포트에서 결합 모델의 출력 포트로, IC(내부 결합)는 한 부품의 출력 포트에서 다른 부품의 입력 포트로 갑니다. Select는 같은 시각에 차례가 겹친 부품 중 누구를 먼저 실행할지 정하는 규칙입니다.</p>
+
+<section class="wide panel" id="explore" aria-label="결합 모델 구조 탐색">
+  <div class="ctrls">
+    <div class="seg" id="ex-kind"><button aria-pressed="true" data-k="all">전부</button><button aria-pressed="false" data-k="eic">EIC</button><button aria-pressed="false" data-k="eoc">EOC</button><button aria-pressed="false" data-k="ic">IC</button></div>
+    <button class="btn" id="ex-fold" aria-pressed="false">카운터 안 숨기기</button>
+  </div>
+  <div class="scrollx"><svg class="dg" id="ex-dg" viewBox="0 0 800 330" role="img" aria-label="카페 결합 모델의 결합 구조"></svg></div>
+  <div class="eq" id="ex-tuple" style="font-size:17px; margin-top:12px"></div>
+  <p class="cap" id="ex-pick">선을 누르면 그 선이 어느 튜플의 어떤 원소인지 여기에 나옵니다.</p>
+</section>
+
+<div class="note"><b>결합에 대해 닫혀 있다.</b> '카운터 안 숨기기'를 눌러 보세요. 카페 입장에서 카운터는 in 하나, out 하나짜리 상자일 뿐입니다. 어떤 결합 모델이든 그와 똑같이 동작하는 원자 모델이 존재한다는 것이 증명되어 있습니다(closure under coupling). 그래서 카운터를 '바리스타 두 명짜리 카운터'로 갈아 끼워도 카페 쪽 선은 하나도 바뀌지 않고, 카운터를 품은 카페를 다시 더 큰 상가 모델의 부품으로 쓸 수도 있습니다.</div>
+<p>선에 관한 규칙도 두 가지 기억해 둡시다. 출력 포트 하나에서 선이 여러 개 나갈 수 있습니다. G의 손님은 카운터와 T에 동시에 가고, B의 음료는 Q의 ready 포트와 카운터의 출력으로 동시에 갑니다. 반면 부품의 출력이 자기 자신의 입력으로 곧바로 돌아오는 선은 허용하지 않습니다.</p>
+<p>G, Q·B, T 구성은 DEVS 교과서에 늘 나오는 GPT 예제(생성기 Generator, 처리기 Processor, 트랜스듀서 Transducer)를 카페로 옮긴 것입니다. 트랜스듀서는 시스템에 손대지 않고 재기만 하는 관측용 부품입니다. T는 자기 시계를 상태로 들고 다니며 손님마다 들어온 시각과 나간 시각을 비교합니다. 부품은 전역 시계를 볼 수 없기 때문입니다.</p>
+
+<h2><span class="n">4</span>추상 시뮬레이터: 시계는 누가 쥐는가</h2>
+<p>모델은 함수 묶음일 뿐 스스로 돌지 않습니다. DEVS는 모델 구조를 그대로 본뜬 시뮬레이터 나무를 만듭니다. 원자 모델마다 시뮬레이터가, 결합 모델마다 코디네이터가 붙고, 꼭대기에 루트 코디네이터가 하나 있습니다. 각 노드는 두 시각을 기억합니다. <i class="m">t</i><sub>L</sub>은 마지막으로 전이한 시각, <i class="m">t</i><sub>N</sub>은 다음에 전이할 예정 시각입니다.</p>
+<p>노드끼리는 다섯 가지 메시지만 주고받습니다.</p>
+<table class="tbl">
+  <tr><th>메시지</th><th>방향</th><th>뜻</th></tr>
+  <tr><td>(i, <i>t</i>)</td><td>아래로</td><td>초기화하고 다음 시각을 알려 달라.</td></tr>
+  <tr><td>(*, <i>t</i>)</td><td>아래로</td><td>시각 <i>t</i>가 됐다. 지금 차례인 부품은 출력하고 내부 전이하라.</td></tr>
+  <tr><td>(x, <i>t</i>)</td><td>아래로</td><td>입력 x가 시각 <i>t</i>에 도착했다. 외부 전이하라.</td></tr>
+  <tr><td>(y, <i>t</i>)</td><td>위로</td><td>내가 시각 <i>t</i>에 y를 출력했다.</td></tr>
+  <tr><td>(done, <i>t</i><sub>N</sub>)</td><td>위로</td><td>처리를 마쳤고, 내 다음 예정 시각은 <i>t</i><sub>N</sub>이다.</td></tr>
+</table>
+<p>코디네이터의 <i class="m">t</i><sub>N</sub>은 자식들 <i class="m">t</i><sub>N</sub>의 최솟값입니다. 2편의 미래 사건 목록이 나무 모양으로 흩어져 있는 셈입니다. 루트는 맨 위 <i class="m">t</i><sub>N</sub>이 언제인지 보고 (*, <i class="m">t</i><sub>N</sub>)을 내려보내는 일만 되풀이합니다. 아래 실험은 손님이 1분부터 3분마다 오고, 제조는 정확히 4분 걸리며, T가 8분에 관측을 끝내는 짧은 시나리오입니다.</p>
+
+<section class="wide panel" id="trace" aria-label="추상 시뮬레이터 메시지 추적">
+  <div class="ctrls">
+    <button class="btn" id="tr-first">처음</button>
+    <button class="btn" id="tr-prev">이전 메시지</button>
+    <button class="btn primary" id="tr-next">다음 메시지</button>
+    <button class="btn" id="tr-cycle">다음 사이클까지</button>
+    <button class="btn" id="tr-auto">자동 재생</button>
+    <span class="muted small readout" id="tr-pos"></span>
+  </div>
+  <div class="tracegrid">
+    <div>
+      <div class="scrollx"><svg class="tree" id="tr-svg" viewBox="0 0 640 384" aria-label="시뮬레이터 나무"></svg></div>
+      <div class="legend">
+        <span style="--c:var(--mi)">i 초기화</span><span style="--c:var(--ms)">* 내부 전이 지시</span><span style="--c:var(--mx)">x 입력</span><span style="--c:var(--my)">y 출력</span><span style="--c:var(--md)">done 완료 보고</span>
+      </div>
+    </div>
+    <div>
+      <div class="explain" id="tr-explain" aria-live="polite"></div>
+      <ol class="mlog" id="tr-log"></ol>
+    </div>
+  </div>
+</section>
+
+<div class="note"><b>메시지는 나무의 위아래로만 움직입니다.</b> G의 손님이 T에 갈 때도 G → 카페 (y), 카페 → T (x)처럼 공통 부모를 거칩니다. 부품은 누가 자기 출력을 받는지 모르고, 그것을 아는 것은 결합 정보를 가진 코디네이터뿐입니다. 이것이 부품을 갈아 끼울 수 있는 이유입니다.</div>
+<p>1분에는 루트 사이클이 두 번 돕니다. 첫 사이클에서 G가 손님 1을 내보내고, 그 손님을 받은 Q가 ta = 0 상태가 되어 두 번째 사이클에서 바리스타에게 넘깁니다. 시계는 그대로인데 사건이 두 번 일어난 것입니다. 5분과 9분에도 같은 일이 벌어집니다. 로그에서 사이클마다 맨 앞의 루트 → 카페 (*) 메시지를 세어 보세요.</p>
+
+<h2><span class="n">5</span>같은 시각에 두 사건이 겹치면</h2>
+<p>정수 분 단위로 일정을 잡은 모델에서는 사건이 정확히 같은 시각에 겹치는 일이 흔합니다. 일부러 겹치게 만들어 봅시다. 손님은 2분부터 정확히 4분마다 오고, 제조도 정확히 4분이 걸리며, 줄 설 자리 <i class="m">K</i>는 0입니다. 그러면 바리스타가 음료를 내놓는 바로 그 순간에 다음 손님이 도착합니다.</p>
+<p>고전 DEVS에서 G와 B가 같은 시각에 차례가 되면 코디네이터는 Select 순서대로 한 명씩 실행합니다. G가 먼저라면 Q는 바리스타가 아직 바쁘다고 알고 있는 상태에서 손님을 받습니다.</p>
+
+<section class="wide panel" id="clash" aria-label="동시 사건 실험">
+  <div class="ctrls">
+    <div class="seg" id="cl-mode">
+      <button aria-pressed="true" data-m="c-g">고전: G 먼저</button>
+      <button aria-pressed="false" data-m="c-b">고전: B 먼저</button>
+      <button aria-pressed="false" data-m="p-ready">병렬: ready 먼저 처리</button>
+      <button aria-pressed="false" data-m="p-in">병렬: in 먼저 처리</button>
+    </div>
+  </div>
+  <div class="ctrls">
+    <div class="ctrl"><label for="cl-d">제조 시간</label><input type="range" id="cl-d" min="3.6" max="4.4" step="0.1" value="4"><output id="cl-d-o">4.0분</output></div>
+    <div class="ctrl"><label for="cl-k">줄 설 자리 <i class="m">K</i></label><input type="range" id="cl-k" min="0" max="2" step="1" value="0"><output id="cl-k-o">0자리</output></div>
+  </div>
+  <p class="verdict" id="cl-verdict"></p>
+  <div class="scrollx"><svg class="gantt" id="cl-svg" viewBox="0 0 760 330" aria-label="손님별 대기, 제조, 이탈"></svg></div>
+  <p class="cap" style="margin-top:6px">파란 점은 도착, 갈색 막대는 제조, 회색 막대는 기다린 시간, 빨간 ✕는 자리가 없어 돌아간 손님입니다.</p>
+  <h3 style="margin-top:16px; font-size:17px">6분에 일어난 일</h3>
+  <ol class="story" id="cl-story"></ol>
+</section>
+
+<p>병렬 DEVS(Chow와 Zeigler, 1994)는 두 가지를 바꿉니다. 같은 시각에 차례가 된 부품은 모두 한꺼번에 출력하고, 한 부품에 같은 순간 도착한 입력은 꾸러미(bag) 하나로 묶어 한 번에 전달합니다. 그리고 내부 전이와 외부 입력이 한 부품에서 겹칠 때를 위해 합류 전이 δ<sub>con</sub>을 따로 둡니다. Select는 필요 없어집니다.</p>
+<div class="eq">M = ⟨X<sup><i>b</i></sup>, Y<sup><i>b</i></sup>, S, δ<sub>ext</sub>, δ<sub>int</sub>, δ<sub>con</sub>, λ, ta⟩, &nbsp; δ<sub>con</sub> : S × X<sup><i>b</i></sup> → S</div>
+<p>Select가 사라진 대신 결정은 Q의 δ<sub>ext</sub> 안으로 들어갔습니다. "꾸러미 안에서 ready를 먼저 보고 in을 본다"는 규칙이 모델 명세에 한 줄로 남습니다. '병렬: in 먼저 처리'를 누르면 고전 DEVS에서 G를 먼저 실행했을 때와 같은 결과가 나옵니다. 병렬 DEVS가 정답을 알려 주는 것이 아니라, 그 결정을 누가 내리는지를 모델러 눈에 보이는 곳으로 옮겨 놓은 것입니다.</p>
+<div class="note"><b>제조 시간을 3.9분이나 4.1분으로 바꿔 보세요.</b> 겹침이 사라지면 네 방식이 모두 같은 결과를 냅니다. 3.9분이면 아무도 돌아가지 않고, 4.1분이면 Select와 상관없이 두 명 중 한 명이 돌아갑니다. 정확히 4.0분일 때만 결과가 실행 순서에 달려 있습니다. 동시 사건 문제는 입력 데이터를 분 단위로 반올림했을 때 특히 자주 숨어 들어옵니다.</div>
+
+<h2><span class="n">6</span>가장 큰 차이: 사건이 아니라 부품이 주인공</h2>
+<p>지금까지 본 것을 한 문장으로 줄이면 이렇습니다. 다른 방식에서는 사건이나 프로세스가 모델의 단위이고, DEVS에서는 포트를 가진 부품이 모델의 단위입니다. 사건은 부품 안에서 일어나는 상태 전이일 뿐이고, 부품 밖으로 나가는 것은 출력 메시지뿐입니다.</p>
+
+<h3>답하는 질문의 층위가 다르다</h3>
+<p>사건 스케줄링(2편), 활동 스캐닝, 프로세스 상호작용(SimPy)을 흔히 시뮬레이션의 세계관(world view)이라고 부릅니다. 셋 모두 "시뮬레이션 프로그램을 어떻게 짤 것인가"에 대한 답입니다. DEVS는 그보다 한 층 위에서 "모델이란 수학적으로 무엇인가"에 답합니다. 모델은 입력 궤적을 받아 출력 궤적을 내놓는 시스템이고, 그 안쪽을 일곱 개짜리 튜플로 적습니다.</p>
+<p>그래서 DEVS 시뮬레이터의 내부를 사건 스케줄링으로 짜는 것도 얼마든지 가능합니다. 4절의 코디네이터들이 들고 있는 <i class="m">t</i><sub>N</sub> 값을 한 줄로 모으면 2편의 사건 목록이 됩니다. 전자회로에 빗대면, 회로도는 부품과 핀과 배선만 적고 전류를 어떤 수치 방법으로 계산할지는 회로 시뮬레이터가 정합니다. 사건 스케줄링은 계산 방법 쪽에 가깝고, DEVS는 회로도 쪽에 가깝습니다. 프로그래밍에 빗대면, 전역 변수를 여러 함수가 함께 고치는 프로그램과 캡슐화된 객체들이 메시지를 주고받는 프로그램의 차이와 닮았습니다. DEVS는 여기에 시간을 정확히 다루는 규칙을 더한 것입니다.</p>
+
+<h3>같은 순간을 세 방식으로</h3>
+<p>바리스타가 음료를 다 만든 순간을 세 방식으로 적어 보면 무엇이 단위인지가 보입니다.</p>
+<pre class="code" aria-label="파이썬 코드"><code><span class="com"># 사건 스케줄링: 사건 루틴 하나가 카페의 여러 상태를 직접 만진다</span>
+<span class="kw">def</span> <span class="fn">finish_drink</span>(now):
+    <span class="kw">global</span> busy
+    <span class="kw">if</span> queue:                                   <span class="com"># 대기열을 직접 들여다보고</span>
+        queue.pop(<span class="num">0</span>)                            <span class="com"># 직접 꺼내고</span>
+        fel.schedule(now + make_time(), finish_drink)   <span class="com"># 다음 사건을 예약</span>
+    <span class="kw">else</span>:
+        busy = <span class="kw">False</span>                            <span class="com"># 바리스타 상태도 직접 바꾼다</span></code></pre>
+<pre class="code" aria-label="파이썬 코드"><code><span class="com"># 프로세스 상호작용(SimPy): 손님 한 명의 일생을 적고, 바리스타는 공유 자원</span>
+<span class="kw">def</span> <span class="fn">customer</span>(env, barista):
+    <span class="kw">with</span> barista.request() <span class="kw">as</span> req:              <span class="com"># 자원을 요청하고</span>
+        <span class="kw">yield</span> req                               <span class="com"># 차례가 올 때까지 멈춰 있다가</span>
+        <span class="kw">yield</span> env.timeout(make_time())          <span class="com"># 만드는 시간만큼 기다린다</span></code></pre>
+<pre class="code" aria-label="파이썬 코드"><code><span class="com"># DEVS: 바리스타는 자기 상태만 바꾸고, 출력을 누가 받는지 모른다</span>
+<span class="kw">class</span> <span class="fn">Barista</span>(Atomic):
+    <span class="kw">def</span> <span class="fn">output</span>(<span class="bi">self</span>):
+        <span class="kw">return</span> (<span class="str">&quot;out&quot;</span>, <span class="bi">self</span>.job)                <span class="com"># 받는 쪽은 결합 정보가 정한다</span>
+    <span class="kw">def</span> <span class="fn">delta_int</span>(<span class="bi">self</span>):
+        <span class="bi">self</span>.job, <span class="bi">self</span>.sigma = <span class="kw">None</span>, INF        <span class="com"># 다시 쉼. 다음 손님은 Q가 보낸다</span></code></pre>
+<p>사건 스케줄링에서 단위는 '제조 완료'라는 사건 종류이고, 그 루틴은 필요한 상태를 어디서든 읽고 씁니다. SimPy에서 단위는 손님이라는 개체의 일생이고, 바리스타는 여러 프로세스가 함께 쓰는 자원 객체입니다. DEVS에서 단위는 바리스타라는 부품이고, 이 부품의 코드에는 대기열도, 손님 생성기도, 시계도 나오지 않습니다.</p>
+
+<h3>미래를 정할 수 있는 건 자기 자신뿐</h3>
+<p>이 차이에서 가장 실질적인 결과가 나옵니다. 사건 스케줄링에서는 어느 루틴이든 사건 목록에 아무 사건이나 넣고 뺄 수 있습니다. 손님 도착 루틴이 "3분 뒤 바리스타 휴식 시작"을 예약해도 막을 방법이 없습니다. DEVS에서 부품이 정할 수 있는 미래는 자기 ta 하나뿐입니다. 남에게 무슨 일이 언제 일어나게 하려면 지금 메시지를 보내야 하고, 그 일이 언제 일어날지는 받는 쪽이 자기 δ<sub>ext</sub> 안에서 정합니다.</p>
+<p>그래서 DEVS에는 '예약 취소'라는 연산이 없습니다. 이미 정해 둔 일정이 바깥 사건 때문에 바뀌면, 그 부품이 δ<sub>ext</sub>에서 σ를 새로 계산하면 끝입니다. 사건 스케줄링이라면 예약해 둔 사건을 찾아 지우고 다시 넣어야 하고, SimPy라면 기다리던 프로세스를 <code>interrupt()</code>로 깨운 뒤 남은 시간을 직접 계산해야 합니다. 다음 절의 신호등이 바로 이 경우입니다.</p>
+
+<div class="scrollx">
+<table class="tbl tbl4">
+  <tr><th></th><th>사건 스케줄링 (2편)</th><th>프로세스 상호작용 (SimPy)</th><th>격자 ABM</th><th>DEVS</th></tr>
+  <tr><td>모델의 단위</td><td>사건 종류</td><td>개체 하나의 일생</td><td>에이전트와 행동 규칙</td><td>포트를 가진 부품</td></tr>
+  <tr><td>상태의 주인</td><td>전역 상태, 어느 루틴이든 고침</td><td>프로세스 지역 변수와 공유 자원</td><td>에이전트, 이웃 칸은 직접 읽음</td><td>부품, 바깥에서는 못 건드림</td></tr>
+  <tr><td>미래를 바꾸는 법</td><td>사건을 예약하고 취소</td><td>자기는 timeout으로 기다리고, 다른 프로세스는 interrupt()로 깨움</td><td>틱마다 다시 판단</td><td>자기 ta만, 남에게는 지금 메시지만</td></tr>
+  <tr><td>조립</td><td>한 프로그램 안에서</td><td>함수 호출과 공유 자원</td><td>같은 격자 위에서</td><td>결합 모델, 조립해도 다시 모델</td></tr>
+</table>
+</div>
+<p>DEVS와 ABM은 경쟁 관계가 아닙니다. 에이전트 하나를 원자 모델로 만들면 ABM을 DEVS 위에 올릴 수 있습니다. 국방 교전 시뮬레이션에서 함정이나 전차 하나하나를 DEVS 원자 모델로 만드는 것이 그런 예입니다. 이렇게 하면 에이전트끼리 이웃의 상태를 직접 읽는 대신 '보인다', '맞았다' 같은 메시지를 주고받게 되고, 같은 에이전트를 다른 시나리오에 그대로 옮겨 쓸 수 있습니다.</p>
+
+<h3>2편과 한 줄씩 대응시키기</h3>
+<table class="tbl">
+  <tr><th></th><th>2편 DES (사건 스케줄링)</th><th>DEVS</th></tr>
+  <tr><td>미래</td><td>사건 목록 하나 (우선순위 큐)</td><td>원자 모델마다 <i>t</i><sub>N</sub>, 코디네이터가 최솟값을 관리</td></tr>
+  <tr><td>상태</td><td>전역 변수 (줄 길이, 바리스타 상태)</td><td>부품마다 자기 상태 <i>s</i>, 남의 상태는 건드릴 수 없음</td></tr>
+  <tr><td>사건이 일어나면</td><td>사건 루틴이 상태를 바꾸고 새 사건을 예약</td><td>δ<sub>int</sub>, δ<sub>ext</sub>가 자기 상태만 바꾸고, λ 출력이 선을 따라 다른 부품의 δ<sub>ext</sub>가 됨</td></tr>
+  <tr><td>동시 사건</td><td>우선순위 큐의 동점 처리 (코드 속에 숨어 있음)</td><td>Select 또는 δ<sub>con</sub> (명세에 드러남)</td></tr>
+  <tr><td>시간 진행</td><td>모델과 한 덩어리인 엔진 루프</td><td>모델과 분리된 추상 시뮬레이터</td></tr>
+  <tr><td>재사용</td><td>복사해서 고쳐 쓰기</td><td>포트가 맞으면 갈아 끼우기, 계층으로 쌓기</td></tr>
+</table>
+<h3>언제 쓰고, 언제 과한가</h3>
+<p>DEVS가 제값을 하는 곳은 부품이 많고, 여러 사람이 부품을 나눠 만들고, 같은 부품을 여러 시나리오에서 다시 써야 하는 큰 모델입니다. 제조 라인, 교통, 통신망, 그리고 국방 M&amp;S가 대표적입니다. 국내에서도 국방과학연구소의 통합 교전 시뮬레이션 환경 AddSIM에 맞춰 무기체계 모델을 DEVS 형식론으로 설계하거나, DEVS를 분산 시뮬레이션 표준인 HLA와 엮어 교전급 시뮬레이션을 구성한 연구들이 있습니다.</p>
+<p>반대로 줄 하나짜리 큐잉 모델을 빨리 돌려 보고 싶을 때는 2편의 방식이나 SimPy가 낫습니다. 메시지를 나무 위아래로 전달하는 비용이 들고, 동시 사건을 어떻게 다룰지 미리 정해 두어야 하기 때문입니다.</p>
+<p>DEVS를 구현한 도구로는 PythonPDEVS, xDEVS(파이썬, 자바, C++), DEVS-Suite(자바), Cadmium과 adevs(C++), 그리고 KAIST에서 개발된 DEVSim++ 등이 있습니다. 이 페이지의 데모와 아래 코드는 원리를 보이려고 바닥부터 짰습니다.</p>
+
+
+<h2><span class="n">7</span>또 하나의 토이 예제: 보행자 버튼 신호등</h2>
+<p>횡단보도의 보행자 버튼 신호등을 떠올려 봅시다. 아무도 버튼을 누르지 않으면 차량 녹색이 60초 이어진 뒤 황색 3초, 보행 신호 15초가 옵니다. 차량 녹색 중에 누군가 버튼을 누르면 녹색은 최소 시간 <i class="m">G</i><sub>min</sub>만 채우고 끝납니다. 녹색이 이미 <i class="m">G</i><sub>min</sub>을 넘겼다면 곧바로 황색으로 넘어갑니다. 이미 예약해 둔 '녹색 끝' 시각이 바깥 사건 때문에 앞당겨지는, 앞 절에서 말한 바로 그 상황입니다.</p>
+<p>부품은 셋입니다. 보행자 생성기 P는 사람을 내보내고, 그 사람은 버튼을 누르며 보도에 섭니다. 신호 제어기 C는 신호를 바꿉니다. 보도 W는 보행 신호가 오면 기다리던 사람을 모두 건너보내고 자기 시계로 대기시간을 잽니다. 아래의 '버튼 누르기'는 여러분이 바깥에서 교차로의 입력 포트 button으로 넣는 사건이고, EIC를 따라 C에 전달됩니다.</p>
+
+<section class="wide panel" id="sig" aria-label="보행자 버튼 신호등 실험">
+  <div class="ctrls">
+    <button class="btn primary" id="sg-press">버튼 누르기</button>
+    <button class="btn" id="sg-play">일시정지</button>
+    <button class="btn" id="sg-reset">처음부터</button>
+    <div class="ctrl"><label>속도</label><div class="seg" id="sg-speed"><button aria-pressed="false" data-v="2">2배</button><button aria-pressed="true" data-v="5">5배</button><button aria-pressed="false" data-v="20">20배</button></div></div>
+  </div>
+  <div class="ctrls">
+    <div class="ctrl"><label for="sg-gmin">최소 녹색 <i class="m">G</i><sub>min</sub></label><input type="range" id="sg-gmin" min="5" max="45" step="5" value="20"><output id="sg-gmin-o">20초</output></div>
+    <div class="ctrl"><label for="sg-rate">보행자 (분당)</label><input type="range" id="sg-rate" min="0.5" max="6" step="0.5" value="2"><output id="sg-rate-o">2명</output></div>
+    <button class="btn" id="sg-auto" aria-pressed="true">보행자도 버튼을 누름: 켜짐</button>
+  </div>
+  <div class="siggrid">
+    <div class="scrollx"><svg class="scene" id="sg-scene" viewBox="0 0 520 300" role="img" aria-label="횡단보도와 신호등"></svg></div>
+    <div class="readbox" aria-live="polite">
+      <div class="row"><span>C의 단계</span><b id="sg-ph">차량 녹색</b></div>
+      <div class="row"><span>남은 시간 σ</span><b id="sg-sig">60.0초</b></div>
+      <div class="row"><span>이번 녹색 경과 g</span><b id="sg-g">0.0초</b></div>
+      <div class="row"><span>버튼 요청 req</span><b id="sg-req">없음</b></div>
+      <div class="fired" id="sg-msg">'버튼 누르기'를 눌러 보세요. 녹색이 얼마나 지났을 때 누르느냐에 따라 σ가 다르게 바뀝니다.</div>
+    </div>
+  </div>
+  <div class="scrollx"><svg class="sgchart" id="sg-chart" viewBox="0 0 760 150" aria-label="신호 제어기의 남은 시간 σ, 최근 150초"></svg></div>
+  <div class="statline">
+    <span>건넌 사람 <b id="sg-n">0</b>명</span>
+    <span>평균 대기 <b id="sg-w">–</b></span>
+    <span>차량 녹색 비율 <b id="sg-car">–</b></span>
+  </div>
+  <div class="eq" id="sg-tuple" style="font-size:16.5px; margin:12px 0 10px"></div>
+  <div class="ctrls" style="margin-bottom:4px">
+    <button class="btn" id="sg-fast">1시간씩 40번 돌려 비교</button>
+  </div>
+  <div id="sg-fast-o"></div>
+  <p class="cap">위 그래프는 C의 남은 시간 σ입니다. 버튼이 눌린 순간 선이 뚝 떨어지는 것이 '예약 취소' 없이 σ만 다시 정한 흔적입니다. 갈색 삼각형은 여러분이, 회색 삼각형은 보행자가 누른 버튼입니다. 도로 위 차는 신호를 보여 주려고 그린 장식이고 모델에는 들어 있지 않습니다.</p>
+</section>
+
+<p>사건 스케줄링이라면 녹색을 시작할 때 "60초 뒤 녹색 끝" 사건을 예약해 둡니다. 버튼이 눌리면 그 사건을 찾아 지우고 새로 넣어야 합니다.</p>
+<pre class="code" aria-label="파이썬 코드"><code><span class="kw">def</span> <span class="fn">start_green</span>(now):
+    <span class="kw">global</span> phase, green_start, end_ev, requested
+    phase, green_start, requested = <span class="str">&quot;car&quot;</span>, now, <span class="kw">False</span>
+    end_ev = fel.schedule(now + G_MAX, end_green)    <span class="com"># 60초 뒤 &#x27;녹색 끝&#x27;을 예약</span>
+
+<span class="kw">def</span> <span class="fn">button_pressed</span>(now):
+    <span class="kw">global</span> end_ev, requested
+    <span class="kw">if</span> phase == <span class="str">&quot;car&quot;</span> <span class="kw">and</span> <span class="kw">not</span> requested:
+        requested = <span class="kw">True</span>
+        fel.cancel(end_ev)                           <span class="com"># 예약해 둔 사건을 찾아 지우고</span>
+        end_ev = fel.schedule(<span class="bi">max</span>(now, green_start + G_MIN), end_green)  <span class="com"># 다시 넣는다</span></code></pre>
+<p>DEVS의 신호 제어기는 자기 σ만 다시 계산합니다. 예약해 둔 것을 찾을 필요도, 지울 필요도 없습니다. 여기서 δ<sub>ext</sub>가 왜 경과 시간 <i class="m">e</i>를 인자로 받는지도 분명해집니다. 녹색이 얼마나 이어졌는지(<i class="m">g</i>)를 알아야 최소 녹색을 채웠는지 판단할 수 있고, <i class="m">g</i>는 마지막 전이 뒤 흐른 <i class="m">e</i>를 더해 가며 얻습니다. 아래 클래스는 8절의 <code>Atomic</code>을 그대로 상속합니다.</p>
+<pre class="code" aria-label="파이썬 코드"><code><span class="kw">class</span> <span class="fn">SignalController</span>(Atomic):
+    NEXT = {<span class="str">&quot;car&quot;</span>: <span class="str">&quot;yellow&quot;</span>, <span class="str">&quot;yellow&quot;</span>: <span class="str">&quot;walk&quot;</span>, <span class="str">&quot;walk&quot;</span>: <span class="str">&quot;car&quot;</span>}
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="bi">self</span>, g_min=<span class="num">20</span>, g_max=<span class="num">60</span>):
+        <span class="bi">super</span>().__init__(<span class="str">&quot;C&quot;</span>)
+        <span class="bi">self</span>.g_min, <span class="bi">self</span>.g_max = g_min, g_max
+        <span class="bi">self</span>.dur = {<span class="str">&quot;car&quot;</span>: g_max, <span class="str">&quot;yellow&quot;</span>: <span class="num">3</span>, <span class="str">&quot;walk&quot;</span>: <span class="num">15</span>}
+        <span class="bi">self</span>.phase, <span class="bi">self</span>.sigma, <span class="bi">self</span>.g, <span class="bi">self</span>.req = <span class="str">&quot;car&quot;</span>, g_max, <span class="num">0.0</span>, <span class="kw">False</span>
+    <span class="kw">def</span> <span class="fn">ta</span>(<span class="bi">self</span>):     <span class="kw">return</span> <span class="bi">self</span>.sigma
+    <span class="kw">def</span> <span class="fn">output</span>(<span class="bi">self</span>): <span class="kw">return</span> (<span class="str">&quot;signal&quot;</span>, <span class="bi">self</span>.NEXT[<span class="bi">self</span>.phase])
+    <span class="kw">def</span> <span class="fn">delta_int</span>(<span class="bi">self</span>):
+        <span class="bi">self</span>.phase = <span class="bi">self</span>.NEXT[<span class="bi">self</span>.phase]
+        <span class="bi">self</span>.sigma, <span class="bi">self</span>.g, <span class="bi">self</span>.req = <span class="bi">self</span>.dur[<span class="bi">self</span>.phase], <span class="num">0.0</span>, <span class="kw">False</span>
+    <span class="kw">def</span> <span class="fn">delta_ext</span>(<span class="bi">self</span>, e, port, value):
+        <span class="bi">self</span>.sigma -= e                                  <span class="com"># 기본: 하던 일 계속</span>
+        <span class="kw">if</span> <span class="bi">self</span>.phase == <span class="str">&quot;car&quot;</span>:
+            <span class="bi">self</span>.g += e                                  <span class="com"># 이번 녹색에서 지난 시간</span>
+            <span class="kw">if</span> port == <span class="str">&quot;button&quot;</span> <span class="kw">and</span> <span class="kw">not</span> <span class="bi">self</span>.req:
+                <span class="bi">self</span>.req = <span class="kw">True</span>
+                <span class="bi">self</span>.sigma = <span class="bi">max</span>(<span class="num">0.0</span>, <span class="bi">self</span>.g_min - <span class="bi">self</span>.g)   <span class="com"># 자기 σ만 다시 정한다</span></code></pre>
+<div class="note"><b>버튼을 연달아 눌러 보세요.</b> 두 번째부터는 신호가 더 빨리 바뀌지 않습니다. req가 이미 참이어서 σ − <i>e</i>로 하던 일을 계속하기 때문입니다. '보행자도 버튼을 누름'을 끄면 결합 (P.out, C.button) 하나가 빠질 뿐, 세 부품의 코드는 한 줄도 바뀌지 않습니다. 고정 주기 신호와 버튼 신호의 차이가 결합 정보 한 줄의 차이입니다.</div>
+<p>보행자 분당 2명, <i class="m">G</i><sub>min</sub> 20초에서 1시간씩 40번 돌려 보면, 버튼이 있을 때 평균 대기는 약 6초이고 차량 녹색 비율은 약 64%입니다. 버튼이 없으면 평균 대기는 약 25초, 차량 녹색 비율은 약 77%입니다. 버튼이 없을 때의 값은 계산으로도 확인됩니다. 한 주기 78초 중 63초 동안은 보행 신호가 아니고, 그때 도착한 사람은 평균 31.5초를 기다리므로 평균 대기는 63/78 × 31.5 ≈ 25.4초, 차량 녹색 비율은 60/78 ≈ 76.9%입니다. 보행자 한 사람당 20초 가까이 줄어든 대기는 차량 녹색 비율을 13%포인트쯤 덜어 내고 얻은 것이고, <i class="m">G</i><sub>min</sub>이 그 사이의 손잡이입니다.</p>
+
+<h2><span class="n">8</span>파이썬: 100줄 남짓한 DEVS 커널</h2>
+<p>4절의 나무를 결합 모델 한 층으로 줄인 코디네이터와 부품 G, Q, B, T입니다. 표준 라이브러리만 씁니다. 손님 간격과 제조 시간을 지수분포로 두었으니 1편의 M/M/1과 같은 시스템이고, 공식과 비교할 수 있습니다. 카운터라는 중간 층은 없애고 Q와 B를 카페에 바로 이었습니다. 계층으로 되돌리는 것은 과제 2입니다.</p>
+<pre class="code" aria-label="파이썬 코드"><code><span class="com"># devs_cafe.py : 고전 DEVS를 바닥부터 (결합 모델 한 층짜리 코디네이터)</span>
+<span class="kw">import</span> math, random
+INF = math.inf
+
+<span class="kw">class</span> <span class="fn">Atomic</span>:
+    <span class="str">&quot;&quot;&quot;원자 모델 = 상태 + 네 함수. 상태는 self 안에 들고 있다.&quot;&quot;&quot;</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="bi">self</span>, name):
+        <span class="bi">self</span>.name = name
+    <span class="kw">def</span> <span class="fn">ta</span>(<span class="bi">self</span>):                 <span class="kw">return</span> INF    <span class="com"># 시간 전진 함수</span>
+    <span class="kw">def</span> <span class="fn">output</span>(<span class="bi">self</span>):             <span class="kw">return</span> <span class="kw">None</span>   <span class="com"># λ: (포트, 값) 또는 None</span>
+    <span class="kw">def</span> <span class="fn">delta_int</span>(<span class="bi">self</span>):          <span class="kw">pass</span>          <span class="com"># 내부 전이</span>
+    <span class="kw">def</span> <span class="fn">delta_ext</span>(<span class="bi">self</span>, e, port, value): <span class="kw">pass</span>   <span class="com"># 외부 전이 (e = 경과 시간)</span>
+
+<span class="kw">class</span> <span class="fn">Generator</span>(Atomic):          <span class="com"># G: 손님을 내보낸다</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="bi">self</span>, mean_gap, rng):
+        <span class="bi">super</span>().__init__(<span class="str">&quot;G&quot;</span>)
+        <span class="bi">self</span>.mean_gap, <span class="bi">self</span>.rng = mean_gap, rng
+        <span class="bi">self</span>.sigma, <span class="bi">self</span>.n = rng.expovariate(<span class="num">1</span> / mean_gap), <span class="num">0</span>
+    <span class="kw">def</span> <span class="fn">ta</span>(<span class="bi">self</span>):        <span class="kw">return</span> <span class="bi">self</span>.sigma
+    <span class="kw">def</span> <span class="fn">output</span>(<span class="bi">self</span>):    <span class="kw">return</span> (<span class="str">&quot;out&quot;</span>, <span class="bi">self</span>.n + <span class="num">1</span>)
+    <span class="kw">def</span> <span class="fn">delta_int</span>(<span class="bi">self</span>):
+        <span class="bi">self</span>.n += <span class="num">1</span>
+        <span class="bi">self</span>.sigma = <span class="bi">self</span>.rng.expovariate(<span class="num">1</span> / <span class="bi">self</span>.mean_gap)
+    <span class="kw">def</span> <span class="fn">delta_ext</span>(<span class="bi">self</span>, e, port, value):
+        <span class="bi">self</span>.sigma = INF <span class="kw">if</span> port == <span class="str">&quot;stop&quot;</span> <span class="kw">else</span> <span class="bi">self</span>.sigma - e
+
+<span class="kw">class</span> <span class="fn">Queue</span>(Atomic):              <span class="com"># Q: 줄 세우고, 바리스타가 비면 즉시(ta=0) 넘긴다</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="bi">self</span>):
+        <span class="bi">super</span>().__init__(<span class="str">&quot;Q&quot;</span>)
+        <span class="bi">self</span>.q, <span class="bi">self</span>.busy, <span class="bi">self</span>.sigma = [], <span class="kw">False</span>, INF
+    <span class="kw">def</span> <span class="fn">ta</span>(<span class="bi">self</span>):        <span class="kw">return</span> <span class="bi">self</span>.sigma
+    <span class="kw">def</span> <span class="fn">output</span>(<span class="bi">self</span>):    <span class="kw">return</span> (<span class="str">&quot;out&quot;</span>, <span class="bi">self</span>.q[<span class="num">0</span>])
+    <span class="kw">def</span> <span class="fn">delta_int</span>(<span class="bi">self</span>):
+        <span class="bi">self</span>.q.pop(<span class="num">0</span>)
+        <span class="bi">self</span>.busy, <span class="bi">self</span>.sigma = <span class="kw">True</span>, INF
+    <span class="kw">def</span> <span class="fn">delta_ext</span>(<span class="bi">self</span>, e, port, value):
+        <span class="kw">if</span> port == <span class="str">&quot;in&quot;</span>:    <span class="bi">self</span>.q.append(value)
+        <span class="kw">if</span> port == <span class="str">&quot;ready&quot;</span>: <span class="bi">self</span>.busy = <span class="kw">False</span>
+        <span class="bi">self</span>.sigma = <span class="num">0</span> <span class="kw">if</span> (<span class="kw">not</span> <span class="bi">self</span>.busy <span class="kw">and</span> <span class="bi">self</span>.q) <span class="kw">else</span> INF
+
+<span class="kw">class</span> <span class="fn">Barista</span>(Atomic):            <span class="com"># B: 한 명씩 만든다</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="bi">self</span>, mean_svc, rng):
+        <span class="bi">super</span>().__init__(<span class="str">&quot;B&quot;</span>)
+        <span class="bi">self</span>.mean_svc, <span class="bi">self</span>.rng = mean_svc, rng
+        <span class="bi">self</span>.job, <span class="bi">self</span>.sigma = <span class="kw">None</span>, INF
+    <span class="kw">def</span> <span class="fn">ta</span>(<span class="bi">self</span>):        <span class="kw">return</span> <span class="bi">self</span>.sigma
+    <span class="kw">def</span> <span class="fn">output</span>(<span class="bi">self</span>):    <span class="kw">return</span> (<span class="str">&quot;out&quot;</span>, <span class="bi">self</span>.job)
+    <span class="kw">def</span> <span class="fn">delta_int</span>(<span class="bi">self</span>): <span class="bi">self</span>.job, <span class="bi">self</span>.sigma = <span class="kw">None</span>, INF
+    <span class="kw">def</span> <span class="fn">delta_ext</span>(<span class="bi">self</span>, e, port, value):
+        <span class="bi">self</span>.job, <span class="bi">self</span>.sigma = value, <span class="bi">self</span>.rng.expovariate(<span class="num">1</span> / <span class="bi">self</span>.mean_svc)
+
+<span class="kw">class</span> <span class="fn">Transducer</span>(Atomic):         <span class="com"># T: 자기 시계를 들고 다니며 체류시간을 잰다</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="bi">self</span>, obs_time):
+        <span class="bi">super</span>().__init__(<span class="str">&quot;T&quot;</span>)
+        <span class="bi">self</span>.sigma, <span class="bi">self</span>.clock = obs_time, <span class="num">0.0</span>
+        <span class="bi">self</span>.arrived, <span class="bi">self</span>.waits = {}, []
+    <span class="kw">def</span> <span class="fn">ta</span>(<span class="bi">self</span>):        <span class="kw">return</span> <span class="bi">self</span>.sigma
+    <span class="kw">def</span> <span class="fn">output</span>(<span class="bi">self</span>):    <span class="kw">return</span> (<span class="str">&quot;out&quot;</span>, <span class="str">&quot;stop&quot;</span>)
+    <span class="kw">def</span> <span class="fn">delta_int</span>(<span class="bi">self</span>): <span class="bi">self</span>.clock, <span class="bi">self</span>.sigma = <span class="bi">self</span>.clock + <span class="bi">self</span>.sigma, INF
+    <span class="kw">def</span> <span class="fn">delta_ext</span>(<span class="bi">self</span>, e, port, value):
+        <span class="bi">self</span>.clock += e
+        <span class="kw">if</span> <span class="bi">self</span>.sigma &lt; INF: <span class="bi">self</span>.sigma -= e
+        <span class="kw">if</span> port == <span class="str">&quot;arrived&quot;</span>: <span class="bi">self</span>.arrived[value] = <span class="bi">self</span>.clock
+        <span class="kw">if</span> port == <span class="str">&quot;solved&quot;</span>:  <span class="bi">self</span>.waits.append(<span class="bi">self</span>.clock - <span class="bi">self</span>.arrived.pop(value))
+
+<span class="kw">class</span> <span class="fn">Coordinator</span>:
+    <span class="str">&quot;&quot;&quot;결합 모델 한 층을 돌리는 코디네이터. tN의 최솟값이 곧 &#x27;다음 사건&#x27;.&quot;&quot;&quot;</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="bi">self</span>, models, couplings, select):
+        <span class="bi">self</span>.m = {m.name: m <span class="kw">for</span> m <span class="kw">in</span> models}
+        <span class="bi">self</span>.ic, <span class="bi">self</span>.select = couplings, select
+        <span class="bi">self</span>.tL = {n: <span class="num">0.0</span> <span class="kw">for</span> n <span class="kw">in</span> <span class="bi">self</span>.m}
+        <span class="bi">self</span>.tN = {n: m.ta() <span class="kw">for</span> n, m <span class="kw">in</span> <span class="bi">self</span>.m.items()}
+    <span class="kw">def</span> <span class="fn">step</span>(<span class="bi">self</span>):
+        t = <span class="bi">min</span>(<span class="bi">self</span>.tN.values())
+        <span class="kw">if</span> t == INF:
+            <span class="kw">return</span> <span class="kw">False</span>
+        d = <span class="bi">next</span>(n <span class="kw">for</span> n <span class="kw">in</span> <span class="bi">self</span>.select <span class="kw">if</span> <span class="bi">self</span>.tN[n] == t)   <span class="com"># Select: 동시면 우선순위</span>
+        y = <span class="bi">self</span>.m[d].output()                                <span class="com"># λ는 δint 바로 앞에서</span>
+        <span class="bi">self</span>.m[d].delta_int()
+        <span class="bi">self</span>.tL[d], <span class="bi">self</span>.tN[d] = t, t + <span class="bi">self</span>.m[d].ta()
+        <span class="kw">if</span> y <span class="kw">is</span> <span class="kw">not</span> <span class="kw">None</span>:
+            port, value = y
+            <span class="kw">for</span> src, sp, dst, dp <span class="kw">in</span> <span class="bi">self</span>.ic:                  <span class="com"># 결합을 따라 배달</span>
+                <span class="kw">if</span> (src, sp) == (d, port):
+                    <span class="bi">self</span>.m[dst].delta_ext(t - <span class="bi">self</span>.tL[dst], dp, value)
+                    <span class="bi">self</span>.tL[dst], <span class="bi">self</span>.tN[dst] = t, t + <span class="bi">self</span>.m[dst].ta()
+        <span class="kw">return</span> <span class="kw">True</span>
+
+rng = random.Random(<span class="num">7</span>)
+mean_gap, mean_svc = <span class="num">60</span> / <span class="num">18</span>, <span class="num">2.4</span>          <span class="com"># 시간당 18명, 평균 2.4분</span>
+G, Q, B = Generator(mean_gap, rng), Queue(), Barista(mean_svc, rng)
+T = Transducer(obs_time=<span class="num">60</span> * <span class="num">2000</span>)         <span class="com"># 2000시간 관측</span>
+couplings = [(<span class="str">&quot;G&quot;</span>, <span class="str">&quot;out&quot;</span>, <span class="str">&quot;Q&quot;</span>, <span class="str">&quot;in&quot;</span>),    (<span class="str">&quot;G&quot;</span>, <span class="str">&quot;out&quot;</span>, <span class="str">&quot;T&quot;</span>, <span class="str">&quot;arrived&quot;</span>),
+             (<span class="str">&quot;Q&quot;</span>, <span class="str">&quot;out&quot;</span>, <span class="str">&quot;B&quot;</span>, <span class="str">&quot;in&quot;</span>),    (<span class="str">&quot;B&quot;</span>, <span class="str">&quot;out&quot;</span>, <span class="str">&quot;Q&quot;</span>, <span class="str">&quot;ready&quot;</span>),
+             (<span class="str">&quot;B&quot;</span>, <span class="str">&quot;out&quot;</span>, <span class="str">&quot;T&quot;</span>, <span class="str">&quot;solved&quot;</span>), (<span class="str">&quot;T&quot;</span>, <span class="str">&quot;out&quot;</span>, <span class="str">&quot;G&quot;</span>, <span class="str">&quot;stop&quot;</span>)]
+sim = Coordinator([G, Q, B, T], couplings, select=[<span class="str">&quot;B&quot;</span>, <span class="str">&quot;Q&quot;</span>, <span class="str">&quot;G&quot;</span>, <span class="str">&quot;T&quot;</span>])
+<span class="kw">while</span> sim.step():
+    <span class="kw">pass</span>
+
+lam, mu = <span class="num">1</span> / mean_gap, <span class="num">1</span> / mean_svc
+<span class="bi">print</span>(<span class="str">f&quot;</span><span class="str">손님 </span>{<span class="bi">len</span>(T.waits)}<span class="str">명, 평균 체류시간 W = </span>{<span class="bi">sum</span>(T.waits) / <span class="bi">len</span>(T.waits):<span class="str">.2f</span>}<span class="str">분</span><span class="str">&quot;</span>)
+<span class="bi">print</span>(<span class="str">f&quot;</span><span class="str">M/M/1 공식 W = 1/(μ-λ) = </span>{<span class="num">1</span> / (mu - lam):<span class="str">.2f</span>}<span class="str">분</span><span class="str">&quot;</span>)</code></pre>
+<p>실행 결과 (시드 7):</p>
+<div class="out">손님 36232명, 평균 체류시간 W = 8.26분
+M/M/1 공식 W = 1/(μ-λ) = 8.57분</div>
+<p>공식보다 0.3분 짧게 나왔습니다. 시드를 바꿔 몇 번 돌려 보면 8.2분에서 9.0분 사이를 오갑니다. 한 번의 실행을 얼마나 믿을 수 있는지는 <a href="ch5_output-analysis.html">5편 출력 분석</a>에서 다룹니다.</p>
+<div class="note plain">고전 DEVS 코디네이터가 하는 일은 <code>step()</code> 안에 다 들어 있습니다. 가장 이른 <i>t</i><sub>N</sub>을 찾고, 동점이면 Select로 하나를 고르고, 그 부품의 λ를 받은 뒤 δ<sub>int</sub>를 부르고, 출력을 결합 정보대로 배달해 받는 쪽의 δ<sub>ext</sub>를 부르고, 바뀐 부품들의 <i>t</i><sub>N</sub>을 다시 계산합니다. 부품 클래스 쪽에는 시계도, 다른 부품의 이름도 나오지 않습니다.</div>
+
+<h2><span class="n">9</span>과제</h2>
+<ol class="tasks">
+  <li><b>바리스타 두 명.</b> 카운터 안에 B를 하나 더 넣으세요. Q는 누구에게 손님을 보낼지 어떻게 알까요? 포트를 몇 개 두고 선을 어떻게 이을지 먼저 그림으로 그린 뒤 구현하세요. 카페 쪽 선은 하나도 바뀌지 않아야 합니다.</li>
+  <li><b>계층 코디네이터.</b> 위 코드는 결합 모델 한 층만 돌립니다. 4절의 메시지 다섯 가지를 그대로 써서 카운터를 결합 모델로 품는 계층 버전을 만들고, 같은 시드에서 평평한 버전과 결과가 같은지 확인하세요. 결과를 같게 하려면 두 버전의 Select 순서를 어떻게 맞춰야 할까요?</li>
+  <li><b>돌아가는 손님.</b> Q에 줄 설 자리 <i>K</i>를 두고, 넘치는 손님은 새 출력 포트로 내보내 T가 이탈률을 재게 하세요. 1편의 M/M/1/K 공식과 비교해 보세요.</li>
+  <li><b>SimPy로 짠 신호등.</b> 7절의 신호등을 SimPy 프로세스로 짜 보세요. 버튼을 누르는 프로세스가 신호 프로세스를 <code>interrupt()</code>로 깨워야 할 텐데, 남은 시간 계산과 '이미 요청됨' 처리가 어디에 들어가는지, 버튼이 두 번 눌릴 때 버그가 나기 쉬운 곳은 어디인지 DEVS 버전과 비교하세요.</li>
+  <li><b>차량 검지기.</b> 신호등에 차량 검지기 부품 V를 더해, 대기 차량이 한 대도 없으면 최소 녹색을 기다리지 않고 바로 황색으로 넘어가게 하세요. C에 어떤 입력 포트가 하나 늘고, 결합은 몇 개 늘어납니까?</li>
+  <li><b>병렬 DEVS로.</b> 꾸러미와 δ<sub>con</sub>을 지원하도록 <code>Coordinator</code>를 고치고, 5절의 실험을 파이썬으로 재현하세요.</li>
+</ol>
+
+<nav class="hz-pager-wrap" style="grid-column:2" aria-label="이전 다음 편">
+  <div class="hz-pager">
+    <a href="ch2_DES.html"><span>이전 편</span><b>2. 이산사건 시뮬레이션</b></a>
+    <a class="next" href="ch2-3_PDES.html"><span>다음 편</span><b>2-3. 병렬·분산 시뮬레이션</b></a>
+  </div>
+</nav>
+<footer class="foot" style="grid-column:2"><a href="https://sites.google.com/view/knunextcom">Next-generation Computing Systems Lab</a>, 경북대학교 컴퓨터학부</footer>
+
+</main>
+<script>
+/* ================================================================
+   DEVS 엔진 (이 페이지의 모든 데모가 공유)
+   - ClassicSim : 고전 DEVS 추상 시뮬레이터 (계층 코디네이터, Select)
+   - ParallelSim: 병렬 DEVS (평평한 결합 모델 한 층, 꾸러미와 δcon)
+   모델 함수는 상태를 바꾸지 않고 새 상태를 돌려줍니다.
+   ================================================================ */
+const INF = Infinity;
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function expo(rng, mean){ return -mean*Math.log(1-rng()); }
+
+class ClassicSim{
+  constructor(top, opt={}){
+    this.logOn = !!opt.log; this.snap = !!opt.snap; this.log = [];
+    this.hooks = opt.hooks || {}; this.selectOverride = opt.select || {};
+    this.root = this._build(top, null); this.t = 0; this.nodes = [];
+    this._collect(this.root);
+  }
+  _build(m, parent){
+    const n = {m, parent, name:m.name, tL:0, tN:INF, s:null};
+    if(m.kind === 'coupled'){
+      n.children = m.children.map(c => this._build(c, n));
+      n.byName = {}; n.children.forEach(c => n.byName[c.name] = c);
+    }
+    return n;
+  }
+  _collect(n){ this.nodes.push(n); if(n.children) n.children.forEach(c=>this._collect(c)); }
+  L(type, from, to, t, extra){
+    if(!this.logOn) return;
+    const rec = Object.assign({type, from: from ? from.name : 'ROOT', to: to ? to.name : 'ROOT', t}, extra||{});
+    if(this.snap){
+      rec.snap = {};
+      for(const n of this.nodes) rec.snap[n.name] = {tL:n.tL, tN:n.tN, s:n.s};
+    }
+    this.log.push(rec);
+  }
+  _minTN(n){ let v = INF; for(const c of n.children) if(c.tN < v) v = c.tN; return v; }
+  _maxTL(n){ let v = -INF; for(const c of n.children) if(c.tL > v) v = c.tL; return v; }
+  init(t=0){
+    this.L('i', null, this.root, t);
+    this._init(this.root, t); this.t = t;
+  }
+  _init(n, t){
+    if(n.m.kind === 'atomic'){
+      n.s = n.m.init(); n.tL = t; n.tN = t + n.m.ta(n.s);
+    }else{
+      for(const c of n.children){ this.L('i', n, c, t); this._init(c, t); }
+      n.tL = this._maxTL(n); n.tN = this._minTN(n);
+    }
+    this.L('done', n, n.parent, n.tN, {fn:'init'});
+  }
+  pick(n, imm){
+    const ord = this.selectOverride[n.name] || n.m.select || n.children.map(c=>c.name);
+    let best = null, bi = 1e9;
+    for(const c of imm){ const i = ord.indexOf(c.name); const k = i < 0 ? 1e8 : i; if(k < bi){ bi = k; best = c; } }
+    return best;
+  }
+  step(){
+    const t = this.root.tN;
+    if(t === INF) return false;
+    this.L('*', null, this.root, t);
+    this._star(this.root, t, y => { if(this.hooks.out) this.hooks.out(y, t); });
+    this.t = t;
+    return true;
+  }
+  _star(n, t, emit){
+    if(n.m.kind === 'atomic'){
+      if(t !== n.tN) throw new Error('bad synchronization at ' + n.name);
+      const ys = n.m.lambda(n.s) || [];
+      if(ys.length > 1) throw new Error('classic DEVS: one output per λ');
+      for(const y of ys){ this.L('y', n, n.parent, t, {port:y.port, value:y.value}); emit(y); }
+      const before = n.s;
+      n.s = n.m.dint(n.s); n.tL = t; n.tN = t + n.m.ta(n.s);
+      if(this.hooks.trans) this.hooks.trans(n, 'int', t, before, n.s, null);
+      this.L('done', n, n.parent, n.tN, {fn:'int'});
+    }else{
+      const imm = n.children.filter(c => c.tN === t);
+      const d = this.pick(n, imm);
+      this.L('*', n, d, t, {imm: imm.map(c=>c.name)});
+      this._star(d, t, y => this._route(n, d, y, t, emit));
+      n.tL = t; n.tN = this._minTN(n);
+      this.L('done', n, n.parent, n.tN, {fn:'coord'});
+    }
+  }
+  _route(n, src, y, t, emit){
+    for(const [s, sp, dst, dp] of n.m.ic){
+      if(s === src.name && sp === y.port){
+        const c = n.byName[dst], x = {port:dp, value:y.value};
+        this.L('x', n, c, t, {port:dp, value:y.value, cpl:'ic:'+s+'.'+sp+'>'+dst+'.'+dp});
+        this._ext(c, t, x);
+      }
+    }
+    for(const [s, sp, p] of (n.m.eoc||[])){
+      if(s === src.name && sp === y.port){
+        const y2 = {port:p, value:y.value};
+        this.L('y', n, n.parent, t, {port:p, value:y.value, cpl:'eoc:'+s+'.'+sp+'>'+n.name+'.'+p});
+        emit(y2);
+      }
+    }
+  }
+  _ext(n, t, x){
+    if(n.m.kind === 'atomic'){
+      if(!(n.tL <= t && t <= n.tN)) throw new Error('bad synchronization (ext) at ' + n.name);
+      const e = t - n.tL, before = n.s;
+      n.s = n.m.dext(n.s, e, [x]); n.tL = t; n.tN = t + n.m.ta(n.s);
+      if(this.hooks.trans) this.hooks.trans(n, 'ext', t, before, n.s, [x]);
+      this.L('done', n, n.parent, n.tN, {fn:'ext', e});
+    }else{
+      for(const [p, c, cp] of (n.m.eic||[])){
+        if(p === x.port){
+          const ch = n.byName[c];
+          this.L('x', n, ch, t, {port:cp, value:x.value, cpl:'eic:'+n.name+'.'+p+'>'+c+'.'+cp});
+          this._ext(ch, t, {port:cp, value:x.value});
+        }
+      }
+      n.tL = t; n.tN = this._minTN(n);
+      this.L('done', n, n.parent, n.tN, {fn:'coord'});
+    }
+  }
+  /* 바깥(사용자)에서 맨 위 결합 모델의 입력 포트로 사건을 넣는다: tL ≤ t ≤ tN 이어야 한다 */
+  inject(t, x){
+    if(!(this.root.tL <= t && t <= this.root.tN)) throw new Error('inject outside [tL, tN]');
+    this.L('x', null, this.root, t, {port:x.port, value:x.value});
+    this._ext(this.root, t, x); this.t = t;
+  }
+  node(name){ return this.nodes.find(n => n.name === name); }
+}
+
+/* 병렬 DEVS: 결합 모델 한 층 (자식은 모두 원자 모델) */
+class ParallelSim{
+  constructor(top, opt={}){
+    this.m = top; this.hooks = opt.hooks || {}; this.t = 0; this.trace = [];
+    this.kids = top.children.map(c => ({m:c, name:c.name, s:null, tL:0, tN:INF}));
+    this.by = {}; this.kids.forEach(k => this.by[k.name] = k);
+  }
+  init(t=0){ for(const k of this.kids){ k.s = k.m.init(); k.tL = t; k.tN = t + k.m.ta(k.s); } this.t = t; }
+  get tN(){ let v = INF; for(const k of this.kids) if(k.tN < v) v = k.tN; return v; }
+  step(){
+    const t = this.tN; if(t === INF) return false;
+    const imm = this.kids.filter(k => k.tN === t);
+    const bags = new Map();
+    for(const k of imm){
+      for(const y of (k.m.lambda(k.s) || [])){
+        this.trace.push({t, kind:'y', from:k.name, port:y.port, value:y.value});
+        for(const [s, sp, dst, dp] of this.m.ic){
+          if(s === k.name && sp === y.port){
+            if(!bags.has(dst)) bags.set(dst, []);
+            bags.get(dst).push({port:dp, value:y.value});
+          }
+        }
+        if(this.hooks.out) for(const [s, sp, p] of (this.m.eoc||[])) if(s === k.name && sp === y.port) this.hooks.out({port:p, value:y.value}, t);
+      }
+    }
+    for(const k of this.kids){
+      const isImm = imm.includes(k), bag = bags.get(k.name), before = k.s;
+      let kind;
+      if(isImm && !bag){ k.s = k.m.dint(k.s); kind = 'int'; }
+      else if(isImm && bag){ k.s = k.m.dcon ? k.m.dcon(k.s, bag) : k.m.dext(k.m.dint(k.s), 0, bag); kind = 'con'; }
+      else if(bag){ k.s = k.m.dext(k.s, t - k.tL, bag); kind = 'ext'; }
+      else continue;
+      if(bag) this.trace.push({t, kind:'bag', to:k.name, bag:bag.map(b=>b.port), fn:kind});
+      k.tL = t; k.tN = t + k.m.ta(k.s);
+      if(this.hooks.trans) this.hooks.trans(k, kind, t, before, k.s, bag || null);
+    }
+    this.t = t; return true;
+  }
+  node(name){ return this.by[name]; }
+}
+
+/* ---------------- 카페 모델 ---------------- */
+function atomic(name, def){ return Object.assign({kind:'atomic', name}, def); }
+function coupled(name, def){ return Object.assign({kind:'coupled', eic:[], eoc:[], ic:[]}, {name}, def); }
+
+/* 손님 생성기 G: 일정 간격마다 손님을 내보낸다. stop을 받으면 멈춘다. */
+function makeG(o){
+  return atomic('G', {
+    inPorts:['stop'], outPorts:['out'],
+    init: () => ({phase:'active', sigma:o.first, n:0}),
+    ta: s => s.sigma,
+    lambda: s => [{port:'out', value:{id:s.n+1}}],
+    dint: s => ({phase:'active', sigma:o.gap(), n:s.n+1}),
+    dext: (s, e, bag) => bag.some(x => x.port === 'stop')
+      ? {phase:'passive', sigma:INF, n:s.n}
+      : {phase:s.phase, sigma:s.sigma - e, n:s.n}
+  });
+}
+
+/* 대기열 Q: 손님을 줄 세우고, 바리스타가 비면(ready) 맨 앞 손님을 즉시(ta=0) 넘긴다.
+   K = 바리스타 앞에서 기다릴 수 있는 자리 수. order = 같은 꾸러미 안에서 처리 순서(병렬 DEVS용). */
+function makeQ(o={}){
+  const K = o.K === undefined ? INF : o.K, order = o.order || ['ready','in'];
+  return atomic('Q', {
+    inPorts:['in','ready'], outPorts:['out'],
+    init: () => ({phase:'passive', sigma:INF, q:[], busy:false, lost:0, lostIds:[]}),
+    ta: s => s.sigma,
+    lambda: s => s.phase === 'send' ? [{port:'out', value:s.q[0]}] : [],
+    dint: s => ({...s, phase:'passive', sigma:INF, q:s.q.slice(1), busy:true}),
+    dext: (s, e, bag) => {
+      const n = {...s, q:s.q.slice(), lostIds:s.lostIds};
+      const items = bag.slice().sort((a,b) => order.indexOf(a.port) - order.indexOf(b.port));
+      for(const x of items){
+        if(x.port === 'ready') n.busy = false;
+        else if(x.port === 'in'){
+          const waiting = n.q.length - (n.busy ? 0 : 1);
+          if(waiting < K) n.q.push(x.value);
+          else { n.lost++; n.lostIds = n.lostIds.concat([x.value.id]); }
+        }
+      }
+      if(!n.busy && n.q.length > 0){ n.phase = 'send'; n.sigma = 0; }
+      else { n.phase = 'passive'; n.sigma = INF; }
+      return n;
+    }
+  });
+}
+
+/* 바리스타 B: 손님 한 명을 받아 svc() 분 동안 만들고, 끝나면 그 손님을 내보낸다. */
+function makeB(o){
+  return atomic('B', {
+    inPorts:['in'], outPorts:['out'],
+    init: () => ({phase:'idle', sigma:INF, job:null, dur:0, err:0}),
+    ta: s => s.sigma,
+    lambda: s => [{port:'out', value:s.job}],
+    dint: s => ({phase:'idle', sigma:INF, job:null, dur:0, err:s.err}),
+    dext: (s, e, bag) => {
+      const x = bag.find(b => b.port === 'in');
+      if(s.phase === 'idle' && x){ const d = o.svc(); return {phase:'busy', sigma:d, job:x.value, dur:d, err:s.err}; }
+      return {...s, sigma:s.sigma - e, err:s.err + (x ? 1 : 0)};
+    }
+  });
+}
+
+/* 통계 T(트랜스듀서): 자기 시계(clock)를 상태로 들고 다니며 체류시간을 잰다.
+   관측 시간 obs가 끝나면 stop을 내보낸다. */
+function makeT(o={}){
+  const obs = o.obs === undefined ? INF : o.obs;
+  return atomic('T', {
+    inPorts:['arrived','solved'], outPorts:['out'],
+    init: () => ({phase: obs < INF ? 'active' : 'passive', sigma:obs, clock:0, arr:{}, nA:0, nD:0, sumW:0, sumW2:0}),
+    ta: s => s.sigma,
+    lambda: s => [{port:'out', value:'stop'}],
+    dint: s => ({...s, phase:'passive', clock:s.clock + s.sigma, sigma:INF}),
+    dext: (s, e, bag) => {
+      const n = {...s, arr:{...s.arr}, clock:s.clock + e, sigma:s.sigma - e};
+      for(const x of bag){
+        if(x.port === 'arrived'){ n.arr[x.value.id] = n.clock; n.nA++; }
+        else if(x.port === 'solved'){
+          const w = n.clock - n.arr[x.value.id]; delete n.arr[x.value.id];
+          n.nD++; n.sumW += w; n.sumW2 += w*w;
+        }
+      }
+      return n;
+    }
+  });
+}
+
+function makeCafe(o){
+  const counter = coupled('카운터', {
+    inPorts:['in'], outPorts:['out'],
+    children:[makeQ(o.q||{}), makeB(o.b)],
+    eic:[['in','Q','in']],
+    eoc:[['B','out','out']],
+    ic:[['Q','out','B','in'], ['B','out','Q','ready']],
+    select:['B','Q']
+  });
+  return coupled('카페', {
+    inPorts:[], outPorts:['out'],
+    children:[makeG(o.g), counter, makeT(o.t||{})],
+    eic:[],
+    eoc:[['카운터','out','out']],
+    ic:[['G','out','카운터','in'], ['G','out','T','arrived'], ['카운터','out','T','solved'], ['T','out','G','stop']],
+    select: o.select || ['카운터','G','T']
+  });
+}
+
+/* 동시 사건 실험용: 평평한 결합 모델 {G, Q, B} */
+function makeFlatCafe(o){
+  return coupled('카페', {
+    inPorts:[], outPorts:['out'],
+    children:[makeG(o.g), makeQ(o.q||{}), makeB(o.b)],
+    eic:[], eoc:[['B','out','out']],
+    ic:[['G','out','Q','in'], ['Q','out','B','in'], ['B','out','Q','ready']],
+    select: o.select || ['G','B','Q']
+  });
+}
+
+/* ---------------- 보행자 버튼 신호등 (단위: 초) ---------------- */
+/* 신호 제어기 C: 차량 녹색(car) → 황색(yellow) → 보행(walk) → 차량 녹색 ...
+   버튼이 없으면 차량 녹색은 gmax초 뒤에 끝난다. 차량 녹색 중 처음 눌린 버튼은
+   '최소 녹색 gmin초만 채우고 끝내기'로 자기 σ를 다시 정한다. g = 이번 녹색에서 지난 시간. */
+function makeSignal(o){
+  const Y = o.yellow || 3, W = o.walk || 15;
+  return atomic('C', {
+    inPorts:['button'], outPorts:['signal'],
+    init: () => ({phase:'car', sigma:o.gmax, g:0, req:false}),
+    ta: s => s.sigma,
+    lambda: s => [{port:'signal', value: s.phase === 'car' ? 'yellow' : s.phase === 'yellow' ? 'walk' : 'car'}],
+    dint: s => s.phase === 'car' ? {phase:'yellow', sigma:Y, g:0, req:false}
+             : s.phase === 'yellow' ? {phase:'walk', sigma:W, g:0, req:false}
+             : {phase:'car', sigma:o.gmax, g:0, req:false},
+    dext: (s, e, bag) => {
+      const n = {...s, sigma:s.sigma - e};
+      if(s.phase === 'car') n.g = s.g + e;
+      if(bag.some(x => x.port === 'button') && s.phase === 'car' && !s.req){
+        n.req = true; n.sigma = Math.max(0, o.gmin - n.g);
+      }
+      return n;
+    }
+  });
+}
+/* 보행자 생성기 P: 지수분포 간격으로 보행자를 내보낸다 */
+function makePeds(o){
+  return atomic('P', {
+    inPorts:[], outPorts:['out'],
+    init: () => ({sigma:o.gap(), n:0}),
+    ta: s => s.sigma,
+    lambda: s => [{port:'out', value:{id:s.n + 1}}],
+    dint: s => ({sigma:o.gap(), n:s.n + 1}),
+    dext: (s, e) => ({...s, sigma:s.sigma - e})
+  });
+}
+/* 보도 W: 기다리는 보행자를 세고, 보행 신호(walk)가 오면 모두 건너보낸다. 자기 시계로 대기시간을 잰다. */
+function makeCurb(){
+  return atomic('W', {
+    inPorts:['arrive','signal'], outPorts:[],
+    init: () => ({sigma:INF, clock:0, walk:false, waiting:[], n:0, sumW:0, lastCross:0}),
+    ta: s => s.sigma,
+    lambda: s => [],
+    dint: s => s,
+    dext: (s, e, bag) => {
+      const n = {...s, waiting:s.waiting.slice(), clock:s.clock + e, lastCross:0};
+      for(const x of bag){
+        if(x.port === 'signal'){
+          if(x.value === 'walk'){
+            n.walk = true;
+            for(const w of n.waiting){ n.n++; n.sumW += n.clock - w.t; }
+            n.lastCross = n.waiting.length; n.waiting = [];
+          }else if(x.value === 'car') n.walk = false;
+        }else if(x.port === 'arrive'){
+          if(n.walk){ n.n++; n.lastCross = 1; }
+          else n.waiting.push({id:x.value.id, t:n.clock});
+        }
+      }
+      return n;
+    }
+  });
+}
+function makeCrossing(o){
+  const ic = [['C','signal','W','signal'], ['P','out','W','arrive']];
+  if(o.press) ic.unshift(['P','out','C','button']);
+  return coupled('교차로', {
+    inPorts:['button'], outPorts:['signal'],
+    children:[makePeds(o.p), makeSignal(o.c), makeCurb()],
+    eic:[['button','C','button']],
+    eoc:[['C','signal','signal']],
+    ic, select:['C','P','W']
+  });
+}
+
+if(typeof module !== 'undefined') module.exports = {INF, mulberry32, expo, ClassicSim, ParallelSim, makeCafe, makeFlatCafe, makeG, makeQ, makeB, makeT, atomic, coupled, makeSignal, makePeds, makeCurb, makeCrossing};
+
+/* ================================================================
+   페이지 데모 (engine.js 다음에 실행)
+   ================================================================ */
+(function(){
+const $ = id => document.getElementById(id);
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+function tx(parent, x, y, s, cls, anchor){
+  const t = el('text', {x, y}, parent);
+  if(cls) t.setAttribute('class', cls);
+  if(anchor) t.setAttribute('text-anchor', anchor);
+  t.textContent = s; return t;
+}
+const f1 = v => v === INF ? '∞' : (Math.abs(v - Math.round(v)) < 1e-9 ? String(Math.round(v)) : v.toFixed(1));
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function seg(id, cb){
+  const g = $(id);
+  g.addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    cb(b.dataset);
+  });
+}
+const who = v => (v && typeof v === 'object' && 'id' in v) ? '손님 ' + v.id : String(v);
+const josa = (w, a, b) => { const c = w.charCodeAt(w.length - 1); if(c >= 0xAC00 && c <= 0xD7A3) return w + ((c - 0xAC00) % 28 ? a : b); return w + (/[0-9]$/.test(w) ? ({'0':a,'1':a,'3':a,'6':a,'7':a,'8':a}[w.slice(-1)] || b) : b); };
+
+/* ================= 카페 결합 모델 그림 (맨 위 데모와 3절이 공유) ================= */
+const CPL = {
+  'ic:G.out>카운터.in':   'M170 120 H250',
+  'ic:G.out>T.arrived':  'M170 120 H210 V255 H330',
+  'eic:카운터.in>Q.in':   'M250 120 H290',
+  'ic:Q.out>B.in':       'M420 120 H490',
+  'ic:B.out>Q.ready':    'M610 120 H630 V184 H355 V160',
+  'eoc:B.out>카운터.out': 'M610 120 H650',
+  'eoc:카운터.out>카페.out':'M650 120 H790',
+  'ic:카운터.out>T.solved':'M650 120 H700 V255 H530',
+  'ic:T.out>G.stop':     'M330 285 H105 V160'
+};
+const INNER = new Set(['eic:카운터.in>Q.in', 'ic:Q.out>B.in', 'ic:B.out>Q.ready', 'eoc:B.out>카운터.out']);
+const PORTS = [
+  ['G.out',170,120,'out','out',174,113,'start'], ['G.stop',105,160,'in','stop',111,177,'start'],
+  ['카운터.in',250,120,'in','in',256,138,'start'], ['카운터.out',650,120,'out','out',644,138,'end'],
+  ['Q.in',290,120,'in','in',286,113,'end'], ['Q.ready',355,160,'in','ready',361,177,'start'], ['Q.out',420,120,'out','out',424,113,'start'],
+  ['B.in',490,120,'in','in',486,113,'end'], ['B.out',610,120,'out','out',614,113,'start'],
+  ['T.arrived',330,255,'in','arrived',324,249,'end'], ['T.solved',530,255,'in','solved',536,249,'start'], ['T.out',330,285,'out','out',324,279,'end'],
+  ['카페.out',790,120,'out','out',784,113,'end']
+];
+function cafeDiagram(svg, live){
+  svg.innerHTML = '';
+  const R = {edges:{}, boxes:{}, st:{}};
+  el('rect', {x:10, y:10, width:780, height:310, rx:14, class:'outer'}, svg);
+  tx(svg, 26, 34, '카페 (결합 모델)', 'cttl');
+  R.boxes['카운터'] = el('rect', {x:250, y:40, width:400, height:160, rx:12, class:'cbox'}, svg);
+  tx(svg, 264, 61, '카운터 (결합 모델)', 'cttl');
+  const fold = el('g', {class:'fold'}, svg);
+  tx(fold, 450, 112, 'in 하나, out 하나.', 'st strong', 'middle');
+  tx(fold, 450, 134, '안에 무엇이 있는지 카페는 모릅니다.', 'st', 'middle');
+  const eg = el('g', {}, svg);
+  for(const k in CPL){
+    const p = el('path', {d:CPL[k], class:'edge' + (INNER.has(k) ? ' inner' : '')}, eg);
+    p.dataset.cpl = k; R.edges[k] = p;
+  }
+  for(const [x,y,inner] of [[210,120,false],[630,120,true],[700,120,false]]) el('circle', {cx:x, cy:y, r:3.2, class:'jn' + (inner ? ' inner' : '')}, eg);
+  const box = (k, x, y, w, h, title, inner) => {
+    const g = el('g', {class: inner ? 'inner' : ''}, svg);
+    R.boxes[k] = el('rect', {x, y, width:w, height:h, rx:8, class:'abox'}, g);
+    tx(g, x + 12, y + 21, title, 'ttl');
+    return g;
+  };
+  const gG = box('G', 40, 80, 130, 80, '생성기 G'), gQ = box('Q', 290, 80, 130, 80, '대기열 Q', true),
+        gB = box('B', 490, 80, 120, 80, '바리스타 B', true), gT = box('T', 330, 232, 200, 72, '통계 T');
+  if(live){
+    R.st.G = tx(gG, 52, 124, '', 'st strong');
+    el('rect', {x:52, y:136, width:106, height:6, rx:3, class:'bar-bg'}, gG);
+    R.st.Gbar = el('rect', {x:52, y:136, width:0, height:6, rx:3, class:'bar'}, gG);
+    R.st.Qdots = el('g', {}, gQ);
+    R.st.Q = tx(gQ, 302, 148, '', 'st');
+    R.st.B = tx(gB, 502, 124, '', 'st strong');
+    el('rect', {x:502, y:136, width:96, height:6, rx:3, class:'bar-bg'}, gB);
+    R.st.Bbar = el('rect', {x:502, y:136, width:0, height:6, rx:3, class:'bar'}, gB);
+    R.st.T1 = tx(gT, 342, 274, '', 'st strong');
+    R.st.T2 = tx(gT, 342, 293, '', 'st');
+  }else{
+    tx(gG, 52, 124, '손님을 내보낸다', 'st'); tx(gG, 52, 143, '원자 모델', 'st');
+    tx(gQ, 302, 124, '줄 세우고 넘긴다', 'st'); tx(gQ, 302, 143, '원자 모델', 'st');
+    tx(gB, 502, 124, '한 잔씩 만든다', 'st'); tx(gB, 502, 143, '원자 모델', 'st');
+    tx(gT, 342, 274, '재기만 한다', 'st'); tx(gT, 342, 293, '원자 모델', 'st');
+  }
+  for(const [name, x, y, kind, lab, lx, ly, an] of PORTS){
+    const inner = name.startsWith('Q.') || name.startsWith('B.');
+    const g = el('g', {class: inner ? 'inner' : ''}, svg);
+    el('rect', {x:x-4, y:y-4, width:8, height:8, rx:1.5, class: kind === 'in' ? 'pin' : 'pout'}, g);
+    tx(g, lx, ly, lab, 'pl', an);
+  }
+  R.pulseLayer = el('g', {}, svg);
+  R.hitLayer = el('g', {}, svg);
+  return R;
+}
+
+/* ================= 맨 위: 살아 있는 카페 ================= */
+(function hero(){
+  const svg = $('hero-dg'); if(!svg) return;
+  const D = cafeDiagram(svg, true);
+  D.edges['ic:T.out>G.stop'].classList.add('idle');
+  const H = {sim:null, clock:0, playing:!reduceMotion, speed:3, pulses:[], fire:{}, visible:true, seed:2026, fastSeed:1};
+  const lamO = $('h-lam-o'), svcO = $('h-svc-o');
+  function params(){ return {lam: +$('h-lam').value / 60, svc: +$('h-svc').value}; }
+  function build(){
+    const {lam, svc} = params(), rng = mulberry32(H.seed);
+    H.sim = new ClassicSim(makeCafe({g:{first:expo(rng, 1/lam), gap:() => expo(rng, 1/lam)}, b:{svc:() => expo(rng, svc)}}), {log:true});
+    H.sim.init(0); H.sim.log.length = 0; H.clock = 0; H.pulses = []; H.fire = {};
+    D.pulseLayer.innerHTML = '';
+    lamO.textContent = $('h-lam').value + '명'; svcO.textContent = (+$('h-svc').value).toFixed(1) + '분';
+    const rho = lam * svc;
+    $('h-theory').textContent = rho < 1 ? (svc / (1 - rho)).toFixed(1) + '분' : '없음 (ρ ≥ 1이라 줄이 끝없이 길어짐)';
+    $('h-fast-o').textContent = '';
+    render(performance.now());
+  }
+  function doStep(now){
+    H.sim.log.length = 0;
+    H.sim.step();
+    const dur = 420 / Math.sqrt(H.speed), hop = dur * 0.55;
+    let i = 0;
+    for(const m of H.sim.log){
+      if((m.type === 'x' || m.type === 'y') && m.cpl && D.edges[m.cpl] && !reduceMotion){
+        const path = D.edges[m.cpl];
+        const c = el('circle', {r:5.5, class:'pulse ' + (m.type === 'x' ? 'p-x' : 'p-y'), cx:-20, cy:-20}, D.pulseLayer);
+        H.pulses.push({c, path, len:path.getTotalLength(), start:now + i * hop, dur});
+        i++;
+      }
+      if(m.type === 'done' && (m.fn === 'int' || m.fn === 'ext')) H.fire[m.from] = now;
+    }
+    H.sim.log.length = 0;
+  }
+  function render(now){
+    const s = n => H.sim.node(n), c = H.clock;
+    const G = s('G'), Q = s('Q'), B = s('B'), T = s('T');
+    if(G.s.phase === 'active'){
+      D.st.G.textContent = '손님 ' + (G.s.n + 1) + '까지 ' + Math.max(0, G.tN - c).toFixed(1) + '분';
+      D.st.Gbar.setAttribute('width', 106 * Math.max(0, Math.min(1, (G.tN - c) / Math.max(1e-9, G.tN - G.tL))));
+    }else{ D.st.G.textContent = '멈춤'; D.st.Gbar.setAttribute('width', 0); }
+    D.st.Qdots.innerHTML = '';
+    const nq = Q.s.q.length, show = Math.min(nq, 7);
+    for(let i = 0; i < show; i++) el('circle', {cx:306 + i * 14, cy:121, r:5, class:'dot'}, D.st.Qdots);
+    if(nq > 7) tx(D.st.Qdots, 306 + 7 * 14, 125, '+' + (nq - 7), 'st strong');
+    D.st.Q.textContent = Q.s.phase === 'send' ? '넘기는 중 (ta = 0)' : (nq ? nq + '명 대기' : '빈 줄') + ', B ' + (Q.s.busy ? '바쁨' : '빔');
+    if(B.s.phase === 'busy'){
+      D.st.B.textContent = '손님 ' + B.s.job.id + ', ' + Math.max(0, B.tN - c).toFixed(1) + '분 남음';
+      D.st.Bbar.setAttribute('width', 96 * Math.max(0, Math.min(1, (B.tN - c) / Math.max(1e-9, B.s.dur))));
+    }else{ D.st.B.textContent = '쉬는 중 (ta = ∞)'; D.st.Bbar.setAttribute('width', 0); }
+    D.st.T1.textContent = '도착 ' + T.s.nA + '명, 완료 ' + T.s.nD + '명';
+    D.st.T2.textContent = T.s.nD ? '잰 평균 체류시간 ' + (T.s.sumW / T.s.nD).toFixed(1) + '분' : '잰 평균 체류시간 –';
+    for(const k of ['G','Q','B','T']) D.boxes[k].classList.toggle('fire', now - (H.fire[k] || -1e9) < 260);
+    $('h-clock').textContent = c.toFixed(1);
+  }
+  let last = performance.now();
+  function frame(now){
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if(H.playing && H.visible){
+      const blocking = H.speed < 12 && H.pulses.some(p => now < p.start + p.dur);
+      if(!blocking){
+        const nextT = H.sim.root.tN, adv = dt * H.speed / 0.6;
+        if(H.clock + adv >= nextT){ H.clock = nextT; doStep(now); }
+        else H.clock += adv;
+      }
+    }
+    for(const p of H.pulses){
+      const u = (now - p.start) / p.dur;
+      if(u < 0) continue;
+      const pt = p.path.getPointAtLength(p.len * Math.min(1, u));
+      p.c.setAttribute('cx', pt.x); p.c.setAttribute('cy', pt.y);
+    }
+    H.pulses = H.pulses.filter(p => { if(now > p.start + p.dur + 40){ p.c.remove(); return false; } return true; });
+    render(now);
+    requestAnimationFrame(frame);
+  }
+  const playBtn = $('h-play');
+  function syncPlay(){ playBtn.textContent = H.playing ? '일시정지' : '재생'; }
+  playBtn.addEventListener('click', () => { H.playing = !H.playing; syncPlay(); });
+  $('h-reset').addEventListener('click', build);
+  $('h-lam').addEventListener('input', build);
+  $('h-svc').addEventListener('input', build);
+  seg('h-speed', d => { H.speed = +d.v; });
+  $('h-fast').addEventListener('click', () => {
+    const {lam, svc} = params();
+    if(lam * svc >= 1){ $('h-fast-o').textContent = 'ρ ≥ 1이면 평균이 수렴하지 않습니다. 손님 수를 줄이거나 제조 시간을 줄여 보세요.'; return; }
+    const rng = mulberry32(H.fastSeed++);
+    const sim = new ClassicSim(makeCafe({g:{first:expo(rng, 1/lam), gap:() => expo(rng, 1/lam)}, b:{svc:() => expo(rng, svc)}}));
+    sim.init(0); const T = sim.node('T');
+    while(T.s.nD < 20000) sim.step();
+    $('h-fast-o').textContent = '측정 ' + (T.s.sumW / T.s.nD).toFixed(2) + '분, 공식 ' + (svc / (1 - lam * svc)).toFixed(2) + '분. 누를 때마다 시드가 바뀝니다.';
+  });
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(es => { H.visible = es[0].isIntersecting; }).observe(svg);
+  }
+  document.addEventListener('visibilitychange', () => { last = performance.now(); });
+  build(); syncPlay();
+  requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
+})();
+
+/* ================= 2절: 원자 모델 궤적 ================= */
+(function traj(){
+  const svg = $('tj-svg'); if(!svg) return;
+  const PRE = {a:[2, 3.5, 9, 10.5, 11, 21], b:[4, 4.5, 5, 5.5, 6], c:[]};
+  const S = {inp:PRE.a.slice(), d:4, ph:0, playing:false};
+  const X0 = 124, X1 = 744, T1 = 30;
+  const xt = t => X0 + (X1 - X0) * t / T1;
+  const tx_ = x => (x - X0) / (X1 - X0) * T1;
+  const TR = {X:[12, 50], S:[74, 84], sig:[172, 70], e:[256, 70], Y:[340, 44]};
+  const AXY = 404;
+  const rows = {};
+  document.querySelectorAll('#defs tr').forEach(r => rows[r.dataset.k] = r);
+  const showS = s => '(' + s.ph + ', ' + s.q + ', ' + f1(s.sig) + ')';
+
+  function run(){
+    const d = S.d, inp = S.inp.slice().sort((a,b) => a - b);
+    let s = {ph:'쉼', q:0, sig:INF}, tL = 0, i = 0;
+    const ev = [{t:0, kind:'init', s, tL:0}];
+    for(;;){
+      const tI = tL + s.sig, tE = i < inp.length ? inp[i] : INF, t = Math.min(tI, tE);
+      if(t === INF || t > T1) break;
+      const before = s;
+      if(tI <= tE){
+        s = s.q > 0 ? {ph:'제조', q:s.q - 1, sig:d} : {ph:'쉼', q:0, sig:INF};
+        ev.push({t, kind:'int', before, s, e:t - tL});
+      }else{
+        const e = t - tL;
+        s = s.ph === '쉼' ? {ph:'제조', q:0, sig:d} : {ph:'제조', q:s.q + 1, sig:s.sig - e};
+        ev.push({t, kind:'ext', before, s, e}); i++;
+      }
+      tL = t;
+    }
+    return ev;
+  }
+  let EV = run();
+
+  function draw(){
+    EV = run();
+    svg.innerHTML = '';
+    const d = S.d;
+    // 트랙 배경과 이름
+    const lab = [['X', '입력 X', '눌러서 주문 추가'], ['S', '상태 S', '칠한 곳 = 제조 중'], ['sig', '남은 시간', 'ta(s) − e'], ['e', '경과 시간 e', ''], ['Y', '출력 Y', '']];
+    for(const [k, a, b] of lab){
+      const [y, h] = TR[k];
+      el('rect', {x:X0, y, width:X1 - X0, height:h, rx:4, class:'trk'}, svg);
+      tx(svg, 6, y + h / 2 + (b ? -2 : 4), a, 'trk-l');
+      if(b) tx(svg, 6, y + h / 2 + 14, b, 'trk-s');
+    }
+    for(let t = 0; t <= T1; t += 5){
+      el('line', {x1:xt(t), x2:xt(t), y1:10, y2:AXY - 14, class:'ax'}, svg);
+      tx(svg, xt(t), AXY, t + '분', 'tick', 'middle');
+    }
+    const segs = [];
+    for(let k = 0; k < EV.length; k++){
+      const a = EV[k], tEnd = k + 1 < EV.length ? EV[k + 1].t : T1;
+      segs.push({t0:a.t, t1:tEnd, s:a.s});
+    }
+    // 상태: 제조 구간 칠하기 + q 계단
+    const [sy, sh] = TR.S, qmax = Math.max(3, ...segs.map(g => g.s.q));
+    const qy = q => sy + sh - 8 - q / qmax * (sh - 22);
+    const bands = [];
+    for(const g of segs) if(g.s.ph === '제조'){ const L = bands[bands.length - 1]; if(L && Math.abs(L[1] - g.t0) < 1e-9) L[1] = g.t1; else bands.push([g.t0, g.t1]); }
+    for(const [a, b] of bands) el('rect', {x:xt(a), y:sy, width:Math.max(0, xt(b) - xt(a)), height:sh, class:'busy'}, svg);
+    let pts = '';
+    for(const g of segs) pts += xt(g.t0) + ',' + qy(g.s.q) + ' ' + xt(g.t1) + ',' + qy(g.s.q) + ' ';
+    el('polyline', {points:pts.trim(), class:'ql'}, svg);
+    for(let q = 0; q <= qmax; q++) tx(svg, X0 - 6, qy(q) + 4, String(q), 'lbl', 'end');
+    tx(svg, X0 + 6, sy + 13, 'q = 쌓인 주문 수', 'lbl');
+    // σ
+    const [gy, gh] = TR.sig, gyv = v => gy + gh - 6 - v / d * (gh - 16);
+    for(const g of segs){
+      if(g.s.sig === INF){
+        el('line', {x1:xt(g.t0), x2:xt(g.t1), y1:gy + 10, y2:gy + 10, class:'inf'}, svg);
+        if(xt(g.t1) - xt(g.t0) > 18) tx(svg, xt(g.t0) + 4, gy + 25, '∞', 'inft');
+      }else{
+        el('line', {x1:xt(g.t0), y1:gyv(g.s.sig), x2:xt(g.t1), y2:gyv(g.s.sig - (g.t1 - g.t0)), class:'sig'}, svg);
+      }
+    }
+    // e
+    const [ey, eh] = TR.e, emax = Math.max(d * 1.5, 8), eyv = v => ey + eh - 6 - Math.min(v, emax) / emax * (eh - 14);
+    const cp = el('clipPath', {id:'tj-clip'}, el('defs', {}, svg));
+    el('rect', {x:X0, y:ey, width:X1 - X0, height:eh}, cp);
+    const eg = el('g', {'clip-path':'url(#tj-clip)'}, svg);
+    for(const g of segs){
+      const span = g.t1 - g.t0;
+      if(span <= emax) el('line', {x1:xt(g.t0), y1:eyv(0), x2:xt(g.t1), y2:eyv(span), class:'ee'}, eg);
+      else{
+        const tc = g.t0 + emax;
+        el('line', {x1:xt(g.t0), y1:eyv(0), x2:xt(tc), y2:eyv(emax), class:'ee'}, eg);
+        el('line', {x1:xt(tc), y1:eyv(emax), x2:xt(g.t1), y2:eyv(emax), class:'ee', 'stroke-dasharray':'2 4'}, eg);
+      }
+    }
+    // 입력과 출력 스파이크
+    const [xy, xh] = TR.X, xb = xy + xh - 4;
+    S.inp.slice().sort((a,b) => a - b).forEach((t, i) => {
+      el('line', {x1:xt(t), x2:xt(t), y1:xb, y2:xb - 26, class:'spk-x'}, svg);
+      el('circle', {cx:xt(t), cy:xb - 28, r:4, class:'hx'}, svg);
+    });
+    const [yy, yh] = TR.Y, yb = yy + yh - 4;
+    for(const v of EV) if(v.kind === 'int'){
+      el('line', {x1:xt(v.t), x2:xt(v.t), y1:yb, y2:yb - 24, class:'spk-y'}, svg);
+      el('circle', {cx:xt(v.t), cy:yb - 26, r:4, class:'hy'}, svg);
+    }
+    if(!S.inp.length) tx(svg, (X0 + X1) / 2, xy + xh / 2 + 4, '여기를 눌러 주문을 넣어 보세요', 'lbl', 'middle');
+    // 시각 선
+    S.phLine = el('line', {x1:0, x2:0, y1:8, y2:AXY - 12, class:'ph'}, svg);
+    S.phKnob = el('path', {d:'', class:'phk'}, svg);
+    setPh(S.ph);
+  }
+  function stateAt(t){
+    let k = 0;
+    for(let i = 0; i < EV.length; i++) if(EV[i].t <= t + 1e-9) k = i;
+    return {ev:EV[k], k};
+  }
+  function setPh(t){
+    S.ph = Math.max(0, Math.min(T1, t));
+    const x = xt(S.ph);
+    S.phLine.setAttribute('x1', x); S.phLine.setAttribute('x2', x);
+    S.phKnob.setAttribute('d', `M${x - 6} ${AXY - 12} L${x + 6} ${AXY - 12} L${x} ${AXY - 20} Z`);
+    const {ev} = stateAt(S.ph), e = S.ph - ev.t;
+    $('tj-t').textContent = S.ph.toFixed(1) + '분';
+    $('tj-s').textContent = showS(ev.s);
+    $('tj-e').textContent = e.toFixed(1) + '분';
+    $('tj-ta').textContent = ev.s.sig === INF ? '∞' : (ev.s.sig - e).toFixed(1) + '분';
+    for(const k in rows) rows[k].classList.remove('on');
+    let msg;
+    if(ev.kind === 'init') msg = '아직 아무 전이도 없었습니다. 초기 상태 (쉼, 0, ∞)는 ta = ∞인 수동 상태라 입력을 기다립니다.';
+    else if(ev.kind === 'ext'){
+      msg = `<b>${f1(ev.t)}분, δ<sub>ext</sub></b>: 주문이 들어왔습니다. 마지막 전이 뒤 e = ${f1(ev.e)}분이 흘렀고, ${showS(ev.before)} → ${showS(ev.s)}.`;
+      rows.X.classList.add('on'); rows.ext.classList.add('on');
+    }else{
+      msg = `<b>${f1(ev.t)}분, λ 다음 δ<sub>int</sub></b>: e가 ta(s) = ${f1(ev.before.sig)}분에 닿았습니다. 먼저 λ가 음료를 내보내고, 이어서 ${showS(ev.before)} → ${showS(ev.s)}.`;
+      rows.Y.classList.add('on'); rows.lam.classList.add('on'); rows.int.classList.add('on');
+    }
+    $('tj-fired').innerHTML = msg;
+  }
+  function svgT(evt){
+    const p = svg.createSVGPoint(); p.x = evt.clientX; p.y = evt.clientY;
+    const q = p.matrixTransform(svg.getScreenCTM().inverse());
+    return {t:tx_(q.x), y:q.y};
+  }
+  let dragging = false;
+  svg.addEventListener('pointerdown', evt => {
+    const {t, y} = svgT(evt);
+    if(t < -0.3 || t > T1 + 0.3) return;
+    if(y >= TR.X[0] && y <= TR.X[0] + TR.X[1]){
+      const near = S.inp.findIndex(v => Math.abs(v - t) < 0.4);
+      if(near >= 0) S.inp.splice(near, 1);
+      else S.inp.push(Math.max(0, Math.min(T1, Math.round(t * 2) / 2)));
+      document.querySelectorAll('#tj-preset button').forEach(b => b.setAttribute('aria-pressed', 'false'));
+      draw(); return;
+    }
+    dragging = true; svg.setPointerCapture(evt.pointerId); stop(); setPh(t);
+  });
+  svg.addEventListener('pointermove', evt => { if(dragging) setPh(svgT(evt).t); });
+  svg.addEventListener('pointerup', () => { dragging = false; });
+  svg.addEventListener('pointercancel', () => { dragging = false; });
+  $('tj-d').addEventListener('input', e => { S.d = +e.target.value; $('tj-d-o').textContent = f1(S.d) + '분'; draw(); });
+  seg('tj-preset', dt => { S.inp = PRE[dt.p].slice(); draw(); });
+  let raf = 0, lastT = 0;
+  const btn = $('tj-play');
+  function stop(){ S.playing = false; btn.textContent = '재생'; cancelAnimationFrame(raf); }
+  function tick(now){
+    const dt = (now - lastT) / 1000; lastT = now;
+    setPh(S.ph + dt * 3);
+    if(S.ph >= T1){ stop(); return; }
+    raf = requestAnimationFrame(tick);
+  }
+  btn.addEventListener('click', () => {
+    if(S.playing){ stop(); return; }
+    if(S.ph >= T1 - 0.01) S.ph = 0;
+    if(reduceMotion){ setPh(T1); return; }
+    S.playing = true; btn.textContent = '멈춤'; lastT = performance.now(); raf = requestAnimationFrame(tick);
+  });
+  S.ph = 12.5;
+  draw();
+})();
+
+/* ================= 3절: 결합 구조 탐색 ================= */
+(function explore(){
+  const svg = $('ex-dg'); if(!svg) return;
+  const D = cafeDiagram(svg, false);
+  let kind = 'all', folded = false, picked = null;
+  const NAMES = {eic:'EIC', eoc:'EOC', ic:'IC'};
+  const OWNER = k => INNER.has(k) ? '카운터' : '카페';
+  const pretty = k => { const [ty, rest] = k.split(':'); const [a, b] = rest.split('>'); return {ty, a, b}; };
+  for(const k in CPL){
+    const h = el('path', {d:CPL[k], class:'hit' + (INNER.has(k) ? ' inner' : '')}, D.hitLayer);
+    h.addEventListener('click', () => { picked = picked === k ? null : k; paint(); });
+  }
+  const set = (ty, owner, list) => `<span data-ty="${ty}" data-own="${owner}">${list}</span>`;
+  function tupleHTML(){
+    const c = folded ? ' style="opacity:.38"' : '';
+    return `<div${c}>카운터 = ⟨X = {in}, Y = {out}, D = {Q, B}, ` +
+      set('eic','카운터','EIC = {(카운터.in, Q.in)}') + ', ' +
+      set('eoc','카운터','EOC = {(B.out, 카운터.out)}') + ', ' +
+      set('ic','카운터','IC = {(Q.out, B.in), (B.out, Q.ready)}') + ', Select = B, Q⟩</div>' +
+      '<div style="margin-top:6px">카페 = ⟨X = ∅, Y = {out}, D = {G, 카운터, T}, ' +
+      set('eic','카페','EIC = ∅') + ', ' +
+      set('eoc','카페','EOC = {(카운터.out, 카페.out)}') + ', ' +
+      set('ic','카페','IC = {(G.out, 카운터.in), (G.out, T.arrived), (카운터.out, T.solved), (T.out, G.stop)}') + ', Select = 카운터, G, T⟩</div>';
+  }
+  function paint(){
+    svg.classList.toggle('folded', folded);
+    if(picked && folded && INNER.has(picked)) picked = null;
+    const any = picked || kind !== 'all';
+    svg.classList.toggle('dim', !!any);
+    for(const k in D.edges){
+      const on = picked ? k === picked : (kind !== 'all' && k.startsWith(kind + ':'));
+      D.edges[k].classList.toggle('hl', on);
+    }
+    const tup = $('ex-tuple'); tup.innerHTML = tupleHTML();
+    tup.querySelectorAll('span[data-ty]').forEach(sp => {
+      let on = picked ? (sp.dataset.ty === pretty(picked).ty && sp.dataset.own === OWNER(picked)) : sp.dataset.ty === kind;
+      if(folded && sp.dataset.own === '카운터') on = false;
+      sp.style.background = on ? 'var(--acc-soft)' : '';
+      sp.style.boxShadow = on ? '0 0 0 3px var(--acc-soft)' : '';
+      sp.style.borderRadius = '3px';
+    });
+    const pk = $('ex-pick');
+    if(picked){
+      const {ty, a, b} = pretty(picked);
+      const why = {eic:'결합 모델의 입력 포트를 부품의 입력 포트로 잇습니다.', eoc:'부품의 출력 포트를 결합 모델의 출력 포트로 잇습니다.', ic:'한 부품의 출력 포트를 같은 결합 모델 안 다른 부품의 입력 포트로 잇습니다.'}[ty];
+      pk.innerHTML = `<b>${OWNER(picked)}의 ${NAMES[ty]}</b>: (${a.replace('.', ', ')}) → (${b.replace('.', ', ')}). ${why}`;
+    }else if(folded){
+      pk.textContent = '카운터의 안쪽 선은 카페의 튜플에 나오지 않습니다. 카페가 아는 것은 카운터의 in과 out뿐입니다.';
+    }else pk.textContent = '선을 누르면 그 선이 어느 튜플의 어떤 원소인지 여기에 나옵니다.';
+  }
+  seg('ex-kind', d => { kind = d.k; picked = null; paint(); });
+  const fb = $('ex-fold');
+  fb.addEventListener('click', () => { folded = !folded; fb.setAttribute('aria-pressed', folded); fb.textContent = folded ? '카운터 안 보이기' : '카운터 안 숨기기'; paint(); });
+  paint();
+})();
+
+/* ================= 4절: 추상 시뮬레이터 추적 ================= */
+(function trace(){
+  const svg = $('tr-svg'); if(!svg) return;
+  const sim = new ClassicSim(makeCafe({g:{first:1, gap:() => 3}, b:{svc:() => 4}, t:{obs:8}}), {log:true, snap:true});
+  sim.init(0); while(sim.step());
+  const LOG = sim.log, N = LOG.length;
+  const POS = {ROOT:[320,30], '카페':[320,112], G:[102,206], '카운터':[320,206], T:[538,206], Q:[218,308], B:[422,308]};
+  const KIND = {ROOT:'루트 코디네이터', '카페':'코디네이터: 카페', '카운터':'코디네이터: 카운터', G:'시뮬레이터: G', Q:'시뮬레이터: Q', B:'시뮬레이터: B', T:'시뮬레이터: T'};
+  const ATOM = new Set(['G','Q','B','T']);
+  const PARENT = {'카페':'ROOT', G:'카페', '카운터':'카페', T:'카페', Q:'카운터', B:'카운터'};
+  const COL = {i:'var(--mi)', '*':'var(--ms)', x:'var(--mx)', y:'var(--my)', done:'var(--md)'};
+  const BW = 184, BH = {atom:66, co:52};
+  const NM = n => n === 'ROOT' ? '루트' : n;
+  const nodeEl = {};
+  for(const c in PARENT){
+    const [x1, y1] = POS[PARENT[c]], [x2, y2] = POS[c];
+    el('line', {x1, y1:y1 + (PARENT[c] === 'ROOT' ? 22 : 26), x2, y2:y2 - (ATOM.has(c) ? 33 : 26), class:'tl'}, svg);
+  }
+  const msgG = el('g', {}, svg);
+  for(const n in POS){
+    const [x, y] = POS[n], h = n === 'ROOT' ? 44 : (ATOM.has(n) ? BH.atom : BH.co);
+    const g = el('g', {}, svg);
+    const r = el('rect', {x:x - BW / 2, y:y - h / 2, width:BW, height:h, rx:8, class:'nd' + (ATOM.has(n) ? ' atom' : '')}, g);
+    const t1 = tx(g, x - BW / 2 + 10, y - h / 2 + 18, KIND[n], 'nn');
+    const t2 = tx(g, x - BW / 2 + 10, y - h / 2 + 38, '', 'nt');
+    const t3 = ATOM.has(n) ? tx(g, x - BW / 2 + 10, y - h / 2 + 57, '', 'ns') : null;
+    nodeEl[n] = {r, t2, t3};
+  }
+  const summary = (n, s) => {
+    if(!s) return '아직 초기화 전';
+    if(n === 'G') return s.phase === 'passive' ? 'stop을 받아 멈춤' : '다음은 손님 ' + (s.n + 1);
+    if(n === 'Q') return '줄 [' + s.q.map(c => c.id).join(', ') + ']' + (s.phase === 'send' ? ', 바로 넘김' : ', B ' + (s.busy ? '바쁨' : '빔'));
+    if(n === 'B') return s.phase === 'busy' ? '손님 ' + s.job.id + ' 제조 중' : '쉬는 중';
+    if(n === 'T') return '도착 ' + s.nA + ', 완료 ' + s.nD + (s.phase === 'passive' && s.sigma === INF ? ', 관측 끝' : '');
+    return '';
+  };
+  function cplText(cpl){ const [ty, rest] = cpl.split(':'); const [a, b] = rest.split('>'); return {ty:ty.toUpperCase(), a, b}; }
+  function explain(m){
+    const f = NM(m.from), t = NM(m.to);
+    switch(m.type){
+      case 'i':
+        if(m.from === 'ROOT') return '시뮬레이션을 초기화합니다. 코디네이터는 이 메시지를 자식들에게 그대로 내려보냅니다.';
+        return ATOM.has(m.to) ? `${t}의 시뮬레이터가 초기 상태 s₀를 정하고 tN = 0 + ta(s₀)를 계산합니다.` : `${josa(t,'은','는')} 코디네이터라서 자기 자식들에게 다시 내려보냅니다.`;
+      case '*':
+        if(m.from === 'ROOT') return `맨 위의 tN이 ${f1(m.t)}분입니다. 루트가 시계를 ${f1(m.t)}분으로 옮기고 (*, ${f1(m.t)}) 메시지를 내려보냅니다.`;
+        return m.imm.length > 1
+          ? `${f}: 지금 차례인 자식이 ${m.imm.join(', ')} 둘 이상입니다. Select 순서에 따라 ${t}를 먼저 실행합니다.`
+          : `${f}: tN = ${f1(m.t)}분인 자식은 ${t}입니다. 그쪽으로 (*) 메시지를 내려보냅니다.`;
+      case 'y':
+        if(m.cpl){
+          const c = cplText(m.cpl);
+          return `${f}: EOC (${c.a} → ${c.b})를 따라 자기 ${m.port} 포트로 올려보냅니다.` + (m.to === 'ROOT' ? ` 카페 바깥으로 나가는 출력이니 ${josa(who(m.value), '이', '가')} 카페를 떠난 것입니다.` : '');
+        }
+        if(m.value === 'stop') return 'T: 관측 시간 8분이 끝났습니다. λ가 out 포트로 stop 신호를 내보냅니다.';
+        return `${f}: λ가 ${m.port} 포트로 ${josa(who(m.value), '을', '를')} 내보냅니다. 출력은 언제나 내부 전이 바로 직전에 나옵니다.`;
+      case 'x':{
+        const c = cplText(m.cpl);
+        return `${f}: ${c.ty} (${c.a} → ${c.b})에 따라 ${t}의 ${m.port} 포트로 ${m.value === 'stop' ? 'stop 신호를' : josa(who(m.value), '을', '를')} 전달합니다.`;
+      }
+      case 'done':{
+        const tn = f1(m.to === 'ROOT' && m.t === INF ? INF : m.t);
+        if(m.fn === 'init') return `${f}: 초기화 끝. 다음 예정 시각 tN = ${tn}` + (ATOM.has(m.from) ? (m.t === INF ? '. ta = ∞인 수동 상태로 입력을 기다립니다.' : '.') : '. 자식들 tN 중 가장 이른 값입니다.');
+        if(m.fn === 'coord') return `${f}: 자식들 tN의 최솟값(${tn})을 자기 tN으로 올려보냅니다.` + (m.to === 'ROOT' && m.t === INF ? ' 모든 부품의 tN이 ∞입니다. 시뮬레이션이 끝났습니다.' : '');
+        if(m.fn === 'ext'){
+          let add = '';
+          if(m.from === 'Q'){ const q = m.snap.Q.s; add = q.phase === 'send' ? ' ta = 0, 같은 시각에 곧바로 손님을 넘기겠다는 뜻입니다.' : (q.busy ? ' 바리스타가 바쁘니 줄에 세워 두고 기다립니다.' : ' 바리스타는 비었지만 줄이 비어 있어 다음 손님을 기다립니다.'); }
+          if(m.from === 'B') add = ` 제조를 시작했고 ${tn}분에 끝납니다.`;
+          if(m.from === 'G') add = ' 더 이상 손님을 내보내지 않습니다.';
+          return `${f}: δext 실행 (경과 시간 e = ${f1(m.e)}분). 새 tN = ${tn}.` + add;
+        }
+        let add = '';
+        if(m.from === 'G') add = ' 다음 손님까지 3분.';
+        if(m.from === 'Q') add = ' 손님을 넘겼으니 다시 ready를 기다립니다.';
+        if(m.from === 'B') add = ' 다음 손님을 받을 때까지 쉽니다.';
+        return `${f}: 출력 직후 δint 실행. 새 tN = ${tn}.` + add;
+      }
+    }
+    return '';
+  }
+  function short(m){
+    const a = NM(m.from) + ' → ' + NM(m.to);
+    if(m.type === 'done') return a + '  tN = ' + f1(m.t);
+    if(m.type === 'x' || m.type === 'y') return a + '  ' + m.port + ': ' + who(m.value);
+    return a;
+  }
+  // 시각 열: done의 t는 tN이므로, 그 시점의 시계를 따로 계산
+  const clockAt = []; let ck = 0;
+  for(const m of LOG){ if(m.type === '*' && m.from === 'ROOT') ck = m.t; clockAt.push(ck); }
+  const ol = $('tr-log');
+  LOG.forEach((m, i) => {
+    const li = document.createElement('li');
+    li.style.setProperty('--c', COL[m.type]);
+    li.innerHTML = `<span class="tt">${f1(clockAt[i])}분</span><span class="ty">${m.type}</span><span>${short(m)}</span>`;
+    li.addEventListener('click', () => { stopAuto(); go(i); });
+    ol.appendChild(li);
+  });
+  const lis = ol.children;
+  let pos = 0;
+  function go(i){
+    pos = Math.max(0, Math.min(N - 1, i));
+    const m = LOG[pos];
+    for(const n in nodeEl){
+      if(n === 'ROOT'){ nodeEl[n].t2.textContent = '시계 t = ' + f1(clockAt[pos]) + '분'; continue; }
+      const sn = m.snap[n];
+      nodeEl[n].t2.textContent = 'tL = ' + f1(sn.tL) + ',  tN = ' + f1(sn.tN);
+      if(nodeEl[n].t3) nodeEl[n].t3.textContent = summary(n, sn.s);
+      nodeEl[n].r.classList.toggle('act', n === m.from || n === m.to);
+    }
+    nodeEl.ROOT.r.classList.toggle('act', m.from === 'ROOT' || m.to === 'ROOT');
+    msgG.innerHTML = '';
+    const down = PARENT[m.to] === m.from;
+    const [px, py] = POS[down ? m.from : m.to], [cx, cy] = POS[down ? m.to : m.from];
+    const off = down ? -9 : 9;
+    const yA = py + (PARENT[down ? m.to : m.from] === 'ROOT' ? 22 : 26), yB = cy - (ATOM.has(down ? m.to : m.from) ? 33 : 26);
+    let ax1 = px + off, ay1 = yA, ax2 = cx + off, ay2 = yB;
+    if(!down){ [ax1, ay1, ax2, ay2] = [ax2, ay2, ax1, ay1]; }
+    const col = COL[m.type];
+    const L = Math.hypot(ax2 - ax1, ay2 - ay1), ux = (ax2 - ax1) / L, uy = (ay2 - ay1) / L;
+    el('line', {x1:ax1, y1:ay1, x2:ax2 - ux * 8, y2:ay2 - uy * 8, class:'msg', style:'stroke:' + col}, msgG);
+    el('path', {d:`M${ax2} ${ay2} L${ax2 - ux * 11 - uy * 6} ${ay2 - uy * 11 + ux * 6} L${ax2 - ux * 11 + uy * 6} ${ay2 - uy * 11 - ux * 6} Z`, style:'fill:' + col}, msgG);
+    const mx = (ax1 + ax2) / 2 + (down ? -12 : 12), my = (ay1 + ay2) / 2 + 4;
+    const label = '(' + m.type + ', ' + f1(m.type === 'done' ? m.t : clockAt[pos]) + ')';
+    const lt = tx(msgG, mx, my, label, 'mlab', down ? 'end' : 'start'); lt.style.fill = col;
+    $('tr-explain').innerHTML = `<div class="hd" style="color:${col}">${label} ${NM(m.from)} → ${NM(m.to)}</div>${explain(m)}`;
+    for(let k = 0; k < N; k++){ lis[k].classList.toggle('cur', k === pos); lis[k].classList.toggle('fut', k > pos); }
+    const li = lis[pos], top = li.offsetTop - ol.offsetTop;
+    if(top < ol.scrollTop || top > ol.scrollTop + ol.clientHeight - li.offsetHeight) ol.scrollTop = top - ol.clientHeight / 2;
+    $('tr-pos').textContent = (pos + 1) + ' / ' + N;
+    $('tr-prev').disabled = pos === 0; $('tr-next').disabled = pos === N - 1;
+  }
+  let auto = 0;
+  const ab = $('tr-auto');
+  function stopAuto(){ clearInterval(auto); auto = 0; ab.textContent = '자동 재생'; }
+  ab.addEventListener('click', () => {
+    if(auto){ stopAuto(); return; }
+    if(pos === N - 1) go(0);
+    ab.textContent = '멈춤';
+    auto = setInterval(() => { if(pos >= N - 1){ stopAuto(); return; } go(pos + 1); }, 900);
+  });
+  $('tr-next').addEventListener('click', () => { stopAuto(); go(pos + 1); });
+  $('tr-prev').addEventListener('click', () => { stopAuto(); go(pos - 1); });
+  $('tr-first').addEventListener('click', () => { stopAuto(); go(0); });
+  $('tr-cycle').addEventListener('click', () => {
+    stopAuto();
+    for(let k = pos + 1; k < N; k++) if(LOG[k].type === '*' && LOG[k].from === 'ROOT'){ go(k); return; }
+    go(N - 1);
+  });
+  go(0);
+  const sx = svg.parentElement; if(sx.scrollWidth > sx.clientWidth) sx.scrollLeft = (sx.scrollWidth - sx.clientWidth) / 2;
+})();
+
+/* ================= 5절: 동시 사건 ================= */
+(function clash(){
+  const svg = $('cl-svg'); if(!svg) return;
+  const S = {mode:'c-g', d:4, K:0};
+  function run(){
+    const {mode, d, K} = S, order = mode === 'p-in' ? ['in','ready'] : ['ready','in'];
+    const cafe = makeFlatCafe({g:{first:2, gap:() => 4}, b:{svc:() => d}, q:{K, order}});
+    const rows = {}, qrec = [];
+    const hooks = {trans:(n, kind, t, b, a, bag) => {
+      if(n.name === 'Q' && bag){
+        for(const x of bag) if(x.port === 'in') rows[x.value.id] = {arr:t};
+        if(a.lost > b.lost) for(const id of a.lostIds.slice(b.lostIds.length)) rows[id].lost = true;
+        if(Math.abs(t - 6) < 1e-9) qrec.push({b, a, ports:bag.map(x => x.port)});
+      }
+      if(n.name === 'B' && kind === 'ext' && a.job && !b.job) rows[a.job.id].start = t;
+      if(n.name === 'B' && (kind === 'int' || kind === 'con') && b.job) rows[b.job.id].end = t;
+    }};
+    let sim, story = [];
+    const both = Math.abs(2 + d - 6) < 1e-9;
+    if(mode[0] === 'c'){
+      const sel = mode === 'c-g' ? ['G','B','Q'] : ['B','G','Q'];
+      sim = new ClassicSim(cafe, {hooks, log:true, select:{'카페':sel}});
+      sim.init(0);
+      while(sim.root.tN <= 42) sim.step();
+      story = tell(sim.log.filter(m => Math.abs(sim_t(m) - 6) < 1e-9), qrec, both, true);
+    }else{
+      sim = new ParallelSim(cafe, {hooks});
+      sim.init(0);
+      while(sim.tN <= 42) sim.step();
+      story = tell(sim.trace.filter(m => Math.abs(m.t - 6) < 1e-9), qrec, both, false, order);
+    }
+    return {rows, story};
+  }
+  function sim_t(m){ return m.type === 'done' ? NaN : m.t; }
+  function tell(ms, qrec, both, classic, order){
+    const out = [], K = S.K;
+    if(both) out.push(classic
+      ? `카페 코디네이터: G와 B가 둘 다 6분 차례입니다. Select 순서에 따라 ${S.mode === 'c-g' ? 'G' : 'B'}를 먼저 실행합니다.`
+      : 'G와 B가 둘 다 6분 차례입니다. 병렬 DEVS는 둘의 λ를 한꺼번에 불러 출력을 모읍니다.');
+    else out.push(`6분에 차례인 부품은 G뿐입니다. 바리스타는 ${f1(2 + S.d)}분에 끝나므로 겹치지 않습니다.`);
+    let qi = 0;
+    const qText = r => {
+      const lost = r.a.lost > r.b.lost, hasIn = r.ports.includes('in'), hasReady = r.ports.includes('ready');
+      if(hasIn && hasReady){
+        const first = order[0];
+        return `Q: in과 ready를 한 꾸러미로 동시에 받습니다. Q의 δext는 ${first}부터 처리하도록 짜여 있어서, ` +
+          (lost ? '바리스타가 아직 바쁘다고 보고 손님 2를 돌려보냅니다.' : (first === 'ready' ? '바리스타가 비었다는 것을 먼저 알고 손님 2를 받아 곧바로 넘길 준비를 합니다.' : '손님 2를 줄에 세운 뒤 ready를 보고 곧바로 넘길 준비를 합니다.'));
+      }
+      if(hasIn){
+        if(lost) return `Q: in으로 손님 2가 들어옵니다. Q가 아는 바리스타 상태는 '바쁨'이고 기다릴 자리가 ${K === 0 ? '없어서' : '다 차서'} 손님 2는 돌아갑니다.`;
+        return r.b.busy ? 'Q: in으로 손님 2를 받아 줄에 세웁니다. 바리스타가 아직 바쁘기 때문입니다.' : 'Q: in으로 손님 2를 받습니다. 바리스타가 비어 있으니 ta = 0으로 곧바로 넘길 준비를 합니다.';
+      }
+      return 'Q: ready를 받아 바리스타가 비었다고 기록합니다.' + (r.a.phase === 'send' ? ' 줄 맨 앞 손님을 ta = 0으로 곧바로 넘길 준비를 합니다.' : ' 줄이 비어 있으니 그냥 기다립니다.');
+    };
+    for(const m of ms){
+      if(classic){
+        if(m.type === 'y' && m.from === 'G') out.push('G: 손님 2를 내보냅니다.');
+        else if(m.type === 'y' && m.from === 'B') out.push('B: 손님 1의 음료를 내보내고 쉬는 상태가 됩니다.');
+        else if(m.type === 'y' && m.from === 'Q') out.push('Q: 손님 2를 바리스타에게 넘깁니다.');
+        else if(m.type === 'x' && m.to === 'Q' && qrec[qi]) out.push(qText(qrec[qi++]));
+        else if(m.type === 'x' && m.to === 'B') out.push('B: 손님 2 제조를 시작합니다.');
+      }else{
+        if(m.kind === 'y' && m.from === 'G') out.push('G: 손님 2를 내보냅니다.');
+        else if(m.kind === 'y' && m.from === 'B') out.push('B: 손님 1의 음료를 내보내고 쉬는 상태가 됩니다.');
+        else if(m.kind === 'y' && m.from === 'Q') out.push('Q: 손님 2를 바리스타에게 넘깁니다.');
+        else if(m.kind === 'bag' && m.to === 'Q' && qrec[qi]) out.push(qText(qrec[qi++]));
+        else if(m.kind === 'bag' && m.to === 'B') out.push('B: 손님 2 제조를 시작합니다.');
+      }
+    }
+    return out;
+  }
+  const X0 = 78, X1 = 744, TM = 42, xt = t => X0 + (X1 - X0) * t / TM, RH = 27, TOP = 14;
+  function draw(){
+    const {rows, story} = run();
+    svg.innerHTML = '';
+    for(let t = 0; t <= 40; t += 5){
+      el('line', {x1:xt(t), x2:xt(t), y1:TOP - 4, y2:TOP + RH * 10 + 2, class:'gx'}, svg);
+      tx(svg, xt(t), TOP + RH * 10 + 18, t + '분', 'row-l', 'middle');
+    }
+    el('line', {x1:xt(6), x2:xt(6), y1:TOP - 8, y2:TOP + RH * 10 + 4, class:'vline'}, svg);
+    let lost = 0;
+    for(let i = 1; i <= 10; i++){
+      const r = rows[i], y = TOP + RH * (i - 1) + RH / 2;
+      tx(svg, 8, y + 4, '손님 ' + i, 'row-l');
+      if(!r) continue;
+      if(r.lost){
+        lost++;
+        const x = xt(r.arr);
+        el('line', {x1:x - 5, y1:y - 5, x2:x + 5, y2:y + 5, class:'lost'}, svg);
+        el('line', {x1:x - 5, y1:y + 5, x2:x + 5, y2:y - 5, class:'lost'}, svg);
+        tx(svg, x + 10, y + 4, '돌아감', 'lostt');
+        continue;
+      }
+      if(r.start > r.arr + 1e-9) el('rect', {x:xt(r.arr), y:y - 4, width:xt(r.start) - xt(r.arr), height:8, rx:2, class:'wait'}, svg);
+      if(r.start !== undefined){
+        const end = r.end === undefined ? TM : r.end;
+        el('rect', {x:xt(r.start), y:y - 8, width:Math.max(2, xt(Math.min(end, TM)) - xt(r.start)), height:16, rx:3, class:'svc'}, svg);
+      }
+      el('circle', {cx:xt(r.arr), cy:y, r:4.5, class:'arr'}, svg);
+    }
+    $('cl-verdict').innerHTML = lost ? `손님 10명 중 <b class="bad">${lost}명</b>이 자리가 없어 돌아갔습니다.` : '손님 10명 모두 음료를 받았습니다.';
+    $('cl-story').innerHTML = story.map(s => '<li>' + s + '</li>').join('');
+  }
+  seg('cl-mode', d => { S.mode = d.m; draw(); });
+  $('cl-d').addEventListener('input', e => { S.d = Math.round(+e.target.value * 10) / 10; $('cl-d-o').textContent = S.d.toFixed(1) + '분'; draw(); });
+  $('cl-k').addEventListener('input', e => { S.K = +e.target.value; $('cl-k-o').textContent = S.K + '자리'; draw(); });
+  draw();
+})();
+})();
+
+/* ================= 7절: 보행자 버튼 신호등 ================= */
+(function signal(){
+  const $ = id => document.getElementById(id);
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); if(parent) parent.appendChild(e); return e; };
+  const tx = (parent, x, y, s, cls, anchor) => { const t = el('text', {x, y}, parent); if(cls) t.setAttribute('class', cls); if(anchor) t.setAttribute('text-anchor', anchor); t.textContent = s; return t; };
+  const scene = $('sg-scene'); if(!scene) return;
+  const chart = $('sg-chart');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const PH = {car:'차량 녹색', yellow:'차량 황색', walk:'보행 신호'};
+  const f1 = v => (Math.abs(v - Math.round(v)) < 1e-6 ? String(Math.round(v)) : v.toFixed(1));
+  const GMAX = 60;
+  const S = {speed:5, playing:!reduceMotion, visible:true, auto:true, seed:11};
+  let sim, clock, hist, bands, marks, walkers, carT, lastPhT, cars, nextCar, rng;
+
+  /* ---- 장면 ---- */
+  el('rect', {x:0, y:30, width:520, height:56, class:'walkway'}, scene);
+  el('rect', {x:0, y:86, width:520, height:128, class:'road'}, scene);
+  el('rect', {x:0, y:214, width:520, height:56, class:'walkway'}, scene);
+  el('line', {x1:0, x2:520, y1:150, y2:150, class:'lane'}, scene);
+  for(let y = 92; y < 208; y += 14) el('rect', {x:230, y, width:60, height:8, class:'zebra'}, scene);
+  el('line', {x1:220, x2:220, y1:153, y2:211, class:'stopl'}, scene);
+  el('line', {x1:300, x2:300, y1:89, y2:147, class:'stopl'}, scene);
+  const carLayer = el('g', {}, scene);
+  el('rect', {x:150, y:4, width:26, height:78, rx:6, class:'house'}, scene);
+  const lampR = el('circle', {cx:163, cy:18, r:9, class:'lamp r'}, scene);
+  const lampY = el('circle', {cx:163, cy:43, r:9, class:'lamp y'}, scene);
+  const lampG = el('circle', {cx:163, cy:68, r:9, class:'lamp g'}, scene);
+  tx(scene, 184, 22, '차량 신호', 'lab');
+  el('rect', {x:304, y:218, width:24, height:48, rx:5, class:'house'}, scene);
+  const pR = el('circle', {cx:316, cy:230, r:8, class:'lamp r'}, scene);
+  const pG = el('circle', {cx:316, cy:254, r:8, class:'lamp g'}, scene);
+  tx(scene, 336, 234, '멈춤', 'lab'); tx(scene, 336, 258, '건너요', 'lab');
+  const pedLayer = el('g', {}, scene);
+  const waitTxt = tx(scene, 12, 290, '', 'lab');
+
+  function onTrans(n, kind, t, b, a, bag){
+    if(n.name === 'C'){
+      hist.push({t, sig:a.sigma});
+      if(kind === 'int'){
+        if(b.phase === 'car') carT += t - lastPhT;
+        lastPhT = t; bands.push({ph:a.phase, t0:t});
+      }else if(bag){
+        const v = bag[0].value, user = v === 'user';
+        marks.push({t, user});
+        const who = user ? '여러분이 누른' : '보행자 ' + v.id + '번이 누른';
+        const gmin = +$('sg-gmin').value;
+        let msg;
+        if(b.phase !== 'car') msg = `${who} 버튼: 지금은 ${PH[b.phase]} 중이라 무시합니다. σ − e로 하던 일을 계속합니다 (남은 ${f1(a.sigma)}초).`;
+        else if(b.req) msg = `${who} 버튼: 이미 요청이 들어와 있어서 σ − e로 하던 일을 계속합니다 (남은 ${f1(a.sigma)}초).`;
+        else if(a.sigma === 0) msg = `${who} 버튼: 녹색 ${f1(a.g)}초째라 최소 녹색 ${gmin}초를 이미 넘겼습니다. σ = 0이 되어 곧바로 황색으로 바뀝니다.`;
+        else msg = `${who} 버튼: 녹색 ${f1(a.g)}초째. δext가 σ를 ${f1(b.sigma - (a.g - b.g))}초에서 ${f1(a.sigma)}초(= ${gmin} − ${f1(a.g)})로 다시 정했습니다.`;
+        if(user || !S.userMsgAt || t - S.userMsgAt > 6){ $('sg-msg').innerHTML = msg; if(user) S.userMsgAt = t; }
+      }
+    }else if(n.name === 'W' && kind === 'ext' && a.lastCross > 0){
+      for(let i = 0; i < a.lastCross; i++) walkers.push({t, k:walkers.length + i});
+    }
+  }
+  function build(){
+    const rate = +$('sg-rate').value, gmin = +$('sg-gmin').value;
+    rng = mulberry32(S.seed);
+    sim = new ClassicSim(makeCrossing({press:S.auto, p:{gap:() => expo(rng, 60 / rate)}, c:{gmin, gmax:GMAX}}), {hooks:{trans:onTrans}});
+    clock = 0; hist = [{t:0, sig:GMAX}]; bands = [{ph:'car', t0:0}]; marks = []; walkers = []; carT = 0; lastPhT = 0;
+    cars = {R:[], L:[]}; nextCar = {R:0, L:1.5}; S.userMsgAt = null;
+    sim.init(0);
+    $('sg-gmin-o').textContent = gmin + '초';
+    $('sg-rate-o').textContent = f1(rate) + '명';
+    $('sg-tuple').innerHTML = '교차로 = ⟨X = {button}, Y = {signal}, D = {P, C, W}, EIC = {(교차로.button, C.button)}, EOC = {(C.signal, 교차로.signal)}, IC = {' +
+      (S.auto ? '<span style="background:var(--acc-soft); box-shadow:0 0 0 3px var(--acc-soft); border-radius:3px">(P.out, C.button)</span>, ' : '') +
+      '(P.out, W.arrive), (C.signal, W.signal)}⟩';
+    $('sg-msg').textContent = "'버튼 누르기'를 눌러 보세요. 녹색이 얼마나 지났을 때 누르느냐에 따라 σ가 다르게 바뀝니다.";
+    $('sg-fast-o').innerHTML = '';
+    render();
+  }
+  function moveCars(dt, green){
+    const v = 45, L = 30, gap = 8;
+    for(const lane of ['R','L']){
+      if(clock >= nextCar[lane]){
+        const arr = cars[lane], last = arr[arr.length - 1];
+        const ok = !last || (lane === 'R' ? last.x - L > -40 + gap : last.x + L < 560 - gap);
+        if(ok) arr.push({x: lane === 'R' ? -40 : 560});
+        nextCar[lane] = clock + 2 + Math.random() * 4;
+      }
+      const arr = cars[lane];
+      for(let i = 0; i < arr.length; i++){
+        const c = arr[i], prev = arr[i - 1];
+        if(lane === 'R'){
+          let x = c.x + v * dt;
+          if(prev) x = Math.min(x, prev.x - L - gap);
+          if(!green && c.x <= 218) x = Math.min(x, 218);
+          c.x = Math.max(c.x, x);
+        }else{
+          let x = c.x - v * dt;
+          if(prev) x = Math.max(x, prev.x + L + gap);
+          if(!green && c.x >= 302) x = Math.max(x, 302);
+          c.x = Math.min(c.x, x);
+        }
+      }
+      cars[lane] = arr.filter(c => c.x > -60 && c.x < 600);
+    }
+  }
+  function render(){
+    const C = sim.node('C'), W = sim.node('W');
+    const ph = C.s.phase;
+    lampR.classList.toggle('on', ph === 'walk'); lampY.classList.toggle('on', ph === 'yellow'); lampG.classList.toggle('on', ph === 'car');
+    pG.classList.toggle('on', ph === 'walk'); pR.classList.toggle('on', ph !== 'walk');
+    carLayer.innerHTML = '';
+    for(const c of cars.R) el('rect', {x:c.x - 30, y:174, width:30, height:18, rx:5, class:'car'}, carLayer);
+    for(const c of cars.L) el('rect', {x:c.x, y:108, width:30, height:18, rx:5, class:'car'}, carLayer);
+    pedLayer.innerHTML = '';
+    const nw = W.s.waiting.length;
+    for(let i = 0; i < Math.min(nw, 24); i++) el('circle', {cx:236 + (i % 6) * 9, cy:226 + Math.floor(i / 6) * 10, r:3.6, class:'ped'}, pedLayer);
+    walkers = walkers.filter(w => clock - w.t < 9);
+    walkers.forEach((w, i) => {
+      const u = Math.min(1, (clock - w.t) / 9);
+      el('circle', {cx:236 + (i % 6) * 9, cy:222 - u * 178, r:3.6, class:'ped'}, pedLayer);
+    });
+    waitTxt.textContent = '보도에서 기다리는 사람 ' + nw + '명';
+    $('sg-ph').textContent = PH[ph];
+    $('sg-sig').textContent = Math.max(0, C.tN - clock).toFixed(1) + '초';
+    $('sg-g').textContent = ph === 'car' ? (C.s.g + clock - C.tL).toFixed(1) + '초' : '–';
+    $('sg-req').textContent = C.s.req ? '있음' : '없음';
+    $('sg-n').textContent = W.s.n;
+    $('sg-w').textContent = W.s.n ? (W.s.sumW / W.s.n).toFixed(1) + '초' : '–';
+    const ct = carT + (ph === 'car' ? clock - lastPhT : 0);
+    $('sg-car').textContent = clock > 0 ? (100 * ct / clock).toFixed(0) + '%' : '–';
+    drawChart();
+  }
+  function drawChart(){
+    const WIN = 150, X0 = 44, X1 = 750, Y0 = 112, YT = 16, t0 = clock - WIN;
+    const xt = t => X0 + (X1 - X0) * (t - t0) / WIN, yv = s => Y0 - Math.min(s, GMAX) / GMAX * (Y0 - YT);
+    chart.innerHTML = '';
+    el('rect', {x:X0, y:YT - 4, width:X1 - X0, height:Y0 - YT + 8, class:'bg', rx:4}, chart);
+    for(const s of [0, 30, 60]){ el('line', {x1:X0, x2:X1, y1:yv(s), y2:yv(s), class:'gl'}, chart); tx(chart, X0 - 6, yv(s) + 4, s + '초', 'lbl', 'end'); }
+    for(let k = 0; k < bands.length; k++){
+      const a = Math.max(bands[k].t0, t0), b = k + 1 < bands.length ? bands[k + 1].t0 : clock;
+      if(b <= t0) continue;
+      el('rect', {x:xt(a), y:122, width:Math.max(0, xt(b) - xt(a)), height:10, class:'b-' + bands[k].ph}, chart);
+    }
+    let pts = '';
+    for(let k = 0; k < hist.length; k++){
+      const h = hist[k], te = k + 1 < hist.length ? hist[k + 1].t : clock;
+      if(te < t0) continue;
+      const a = Math.max(h.t, t0);
+      pts += xt(a) + ',' + yv(h.sig - (a - h.t)) + ' ' + xt(te) + ',' + yv(h.sig - (te - h.t)) + ' ';
+    }
+    if(pts) el('polyline', {points:pts.trim(), class:'sl'}, chart);
+    for(const m of marks){ if(m.t < t0) continue; const x = xt(m.t); el('path', {d:`M${x - 5} 2 L${x + 5} 2 L${x} 10 Z`, class: m.user ? 'mk-u' : 'mk-p'}, chart); }
+    tx(chart, X0, 147, '150초 전', 'lbl'); tx(chart, X1, 147, '지금', 'lbl', 'end');
+    tx(chart, (X0 + X1) / 2, 147, '아래 띠: 초록 = 차량 녹색, 노랑 = 황색, 파랑 = 보행 신호', 'lbl', 'middle');
+    if(hist.length > 400){ const cut = clock - 220; hist = hist.filter((h, i) => i === hist.length - 1 || hist[i + 1].t >= cut); bands = bands.filter((b, i) => i === bands.length - 1 || bands[i + 1].t0 >= cut); marks = marks.filter(m => m.t >= cut); }
+  }
+  let last = performance.now();
+  function frame(now){
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if(S.playing && S.visible){
+      const ds = dt * S.speed;
+      clock += ds;
+      while(sim.root.tN <= clock) sim.step();
+      moveCars(ds, sim.node('C').s.phase === 'car');
+      render();
+    }
+    requestAnimationFrame(frame);
+  }
+  $('sg-press').addEventListener('click', () => { sim.inject(clock, {port:'button', value:'user'}); render(); });
+  const pb = $('sg-play');
+  const syncPlay = () => { pb.textContent = S.playing ? '일시정지' : '재생'; };
+  pb.addEventListener('click', () => { S.playing = !S.playing; syncPlay(); });
+  $('sg-reset').addEventListener('click', build);
+  $('sg-gmin').addEventListener('input', build);
+  $('sg-rate').addEventListener('input', build);
+  const ab = $('sg-auto');
+  ab.addEventListener('click', () => { S.auto = !S.auto; ab.setAttribute('aria-pressed', S.auto); ab.textContent = '보행자도 버튼을 누름: ' + (S.auto ? '켜짐' : '꺼짐'); build(); });
+  $('sg-speed').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    $('sg-speed').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    S.speed = +b.dataset.v;
+  });
+  $('sg-fast').addEventListener('click', () => {
+    const rate = +$('sg-rate').value, gmin = +$('sg-gmin').value, R = 40, T = 3600;
+    const one = (press, seed) => {
+      const r = mulberry32(1000 + seed); let ct = 0, lt = 0, phase = 'car';
+      const s = new ClassicSim(makeCrossing({press, p:{gap:() => expo(r, 60 / rate)}, c:{gmin, gmax:GMAX}}), {hooks:{trans:(n, k, t, b, a) => { if(n.name === 'C' && k === 'int'){ if(b.phase === 'car') ct += t - lt; lt = t; phase = a.phase; } }}});
+      s.init(0); while(s.root.tN <= T) s.step();
+      if(phase === 'car') ct += T - lt;
+      const w = s.node('W').s; return [w.n ? w.sumW / w.n : 0, ct / T];
+    };
+    const rows = [true, false].map(press => { let w = 0, c = 0; for(let i = 1; i <= R; i++){ const [a, b] = one(press, i); w += a; c += b; } return [w / R, c / R]; });
+    $('sg-fast-o').innerHTML = `<table class="fastt"><tr><th>보행자 분당 ${f1(rate)}명, G<sub>min</sub> ${gmin}초</th><th>평균 대기</th><th>차량 녹색 비율</th></tr>` +
+      `<tr><td>보행자가 버튼을 누름</td><td>${rows[0][0].toFixed(1)}초</td><td>${(100 * rows[0][1]).toFixed(1)}%</td></tr>` +
+      `<tr><td>버튼 없음 (고정 주기 78초)</td><td>${rows[1][0].toFixed(1)}초</td><td>${(100 * rows[1][1]).toFixed(1)}%</td></tr></table>`;
+  });
+  if('IntersectionObserver' in window) new IntersectionObserver(es => { S.visible = es[0].isIntersecting; last = performance.now(); }).observe(scene);
+  build(); syncPlay();
+  requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
+})();
+
+</script>
+</body>
+</html>

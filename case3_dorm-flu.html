@@ -1,0 +1,1295 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>응용 사례: 기숙사 독감</title>
+<!--
+  모델링과 시뮬레이션 학습 자료 — 응용 사례 A3: 기숙사 독감 (SD와 ABM 비교)
+  파일명: case3_dorm-flu.html. 강조색은 주로 쓰는 기법(6편 SD)의 색입니다.
+  데모는 외부 라이브러리 없이 맨 아래 <script>에서 동작합니다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F8; --panel:#FFFFFF; --ink:#17202E; --muted:#5A6577; --line:#D5DBE3; --soft:#E8ECF1;
+  --acc:#B4531F; --c1:#3557C9; --c2:#C27C00; --c3:#0E7C6B; --miss:#C8372D;
+  --t1:#2E62D0; --t2:#C2410C; --t3:#0E8A6B; --t4:#8B3FD9; --t5:#B91C5C;
+  --k-kw:#8A3FA8; --k-fn:#2457C5; --k-str:#2E7D32; --k-num:#B5560F; --k-com:#7A8494; --k-bi:#0F7C86;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --math:"STIX Two Text","Times New Roman",Times,serif;
+  --code:"D2Coding","Consolas","SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+    --acc:#F49A6A; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+    --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+    --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151C; --panel:#18202A; --ink:#E5E9EF; --muted:#9AA5B4; --line:#2C3644; --soft:#222B37;
+  --acc:#F49A6A; --c1:#7690F2; --c2:#F0A928; --c3:#2DB59D; --miss:#EE5D52;
+  --t1:#7EA6F5; --t2:#F59E5B; --t3:#4CC9A4; --t4:#C79BF5; --t5:#F07FA8;
+  --k-kw:#D08BEA; --k-fn:#7FA6F5; --k-str:#8BCB8E; --k-num:#F0A060; --k-com:#7D8899; --k-bi:#5CC6CF;
+  color-scheme:dark;
+}
+:root{box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 16px); scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+body{margin:0; background:var(--bg); color:var(--ink); font:400 17px/1.75 var(--sans); -webkit-font-smoothing:antialiased; word-break:keep-all; overflow-wrap:break-word}
+a{color:var(--acc)}
+.wrap{max-width:980px; margin:0 auto; padding:40px 24px 48px}
+.prose{max-width:42em}
+p{margin:0 0 1em}
+code{font-family:var(--code); font-size:.9em; background:var(--soft); padding:1px 5px; border-radius:4px}
+
+/* 머리말 */
+.back{font-size:15px; margin:0 0 36px}
+.back a{color:var(--muted)}
+.series{margin:0 0 10px; color:var(--muted); font-size:15px}
+h1{margin:0; font-weight:700; font-size:clamp(34px,6vw,54px); line-height:1.12; letter-spacing:-0.02em}
+h1 .n{font-family:var(--math); font-weight:500; color:var(--acc); margin-right:.2em}
+.lead{margin:18px 0 0; color:var(--muted); max-width:38em; font-size:18px}
+.goals{display:grid; grid-template-columns:1.4fr 1fr; gap:24px; margin:32px 0 0}
+.goals > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px}
+.goals h2{font-size:15px; margin:0 0 6px}
+.goals ul{margin:0; padding-left:1.1em; font-size:15px; line-height:1.65}
+.goals .pre a{display:inline-block; margin:2px 6px 2px 0; font-size:14px; text-decoration:none; padding:2px 9px; border-radius:5px; background:var(--soft); color:var(--ink)}
+.goals .pre a:hover{background:var(--acc); color:var(--panel)}
+.goals .pre p{font-size:14.5px; color:var(--muted); margin:6px 0 0}
+.toc{margin:28px 0 0; display:grid; grid-template-columns:repeat(4,1fr); gap:0 24px; border-top:2px solid var(--ink); padding-top:16px}
+.toc h2{font-size:15px; margin:0 0 6px}
+.toc h2 a{color:var(--ink); text-decoration:none}
+.toc ol{list-style:none; margin:0; padding:0; font-size:14px; line-height:1.65}
+.toc ol a{color:var(--muted); text-decoration:none}
+.toc a:hover{color:var(--acc); text-decoration:underline}
+
+/* 장, 절 */
+.chap{margin-top:88px}
+.chap > h2{display:flex; align-items:baseline; gap:16px; font-size:clamp(28px,4.4vw,38px); line-height:1.2; margin:0 0 12px; letter-spacing:-0.01em}
+.chap > h2 .n{font:500 1.5em/1 var(--math); color:var(--acc)}
+.chap > .intro{color:var(--muted); font-size:18px; max-width:40em; margin-bottom:8px}
+h3{font-size:22px; line-height:1.35; margin:56px 0 12px}
+h3 .n{font:500 1em var(--math); color:var(--acc); margin-right:10px}
+h4{font-size:17px; margin:24px 0 6px}
+.m{font-family:var(--math); font-style:italic; font-size:1.08em; white-space:nowrap}
+.mr{font-family:var(--math); font-size:1.08em; white-space:nowrap}
+.note{max-width:42em; margin:20px 0; padding:14px 18px; border-radius:8px; background:var(--soft); font-size:15.5px; line-height:1.7}
+.note > :last-child{margin-bottom:0}
+.link-note{max-width:42em; margin:20px 0; padding:12px 18px 12px 16px; border-left:3px solid var(--acc); background:var(--panel); border-radius:0 8px 8px 0; font-size:15.5px}
+.link-note > :last-child{margin-bottom:0}
+.link-note .k{font-weight:700; color:var(--acc); margin-right:6px}
+dl.terms{display:grid; grid-template-columns:auto 1fr; gap:6px 18px; max-width:42em; margin:0; font-size:15.5px}
+dl.terms dt{font-weight:700}
+dl.terms dd{margin:0; color:var(--muted)}
+.cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:20px 0}
+.cards.two{grid-template-columns:1fr 1fr}
+.cards > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; font-size:15.5px}
+.cards h4{margin:0 0 6px}
+.cards p{margin:0}
+ol.steps{list-style:none; margin:20px 0; padding:0; counter-reset:s; max-width:44em}
+ol.steps > li{counter-increment:s; position:relative; padding:0 0 14px 44px}
+ol.steps > li::before{content:counter(s); position:absolute; left:0; top:-2px; width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font:500 17px/1 var(--math); background:var(--acc); color:var(--panel)}
+ol.steps > li b{display:block}
+
+/* 사례 연구 머리 */
+.case{margin:56px 0 0; padding-top:18px; border-top:1px solid var(--line)}
+.case h3{margin-top:0}
+.lvl{display:inline-block; font-size:13px; font-weight:500; padding:1px 8px; border-radius:4px; margin-left:8px; vertical-align:3px; background:var(--soft); color:var(--muted)}
+.lvl.real{background:var(--acc); color:var(--panel)}
+
+/* 수식 탐색기 */
+.eqx{margin:28px 0; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px 16px}
+.eqx > .cap{margin:0 0 4px; font-size:14px; color:var(--muted)}
+.eq-big{font-family:var(--math); font-size:clamp(24px,3.6vw,36px); line-height:1.6; padding:12px 0 14px; overflow-x:auto; white-space:nowrap; text-align:center}
+.eq-big .t{--tc:var(--ink); border-bottom:3px solid var(--tc); padding:0 3px; border-radius:4px; cursor:pointer; transition:background .15s}
+.eq-big .t:hover, .eqx[data-on] .eq-big .t.on{background:color-mix(in srgb, var(--tc) 22%, transparent)}
+.eqx[data-on] .eq-big .t:not(.on){opacity:.4}
+.eq-big .op{color:var(--muted); padding:0 .12em}
+.eq-big sub, .eq-big sup{font-size:.6em}
+.eq-big .frac{display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; line-height:1.15; margin:0 .1em}
+.eq-big .frac > span:first-child{border-bottom:2px solid currentColor; padding:0 .15em .05em}
+.eq-big .frac > span:last-child{padding:.08em .15em 0}
+.t[data-c="1"]{--tc:var(--t1)} .t[data-c="2"]{--tc:var(--t2)} .t[data-c="3"]{--tc:var(--t3)} .t[data-c="4"]{--tc:var(--t4)} .t[data-c="5"]{--tc:var(--t5)}
+.eq-terms{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; margin:4px 0 0}
+.eq-terms button{
+  --tc:var(--ink); text-align:left; font:400 14px/1.5 var(--sans); color:var(--ink); background:var(--bg);
+  border:1px solid var(--line); border-left:4px solid var(--tc); border-radius:6px; padding:8px 10px; cursor:pointer;
+}
+.eq-terms button b{display:block; font-family:var(--math); font-size:17px; font-weight:500; color:var(--tc)}
+.eq-terms button[aria-pressed="true"]{background:color-mix(in srgb, var(--tc) 14%, var(--panel)); border-color:var(--tc)}
+.eq-terms button:focus-visible{outline:2px solid var(--tc); outline-offset:2px}
+.eq-detail{margin:12px 0 0; padding:12px 14px; border-radius:8px; background:var(--soft); font-size:15px; min-height:3em}
+.eq-detail:empty{display:none}
+.eq-live{margin-top:14px; padding-top:12px; border-top:1px dashed var(--line)}
+.eq-live .sub{font-size:14px; color:var(--muted); margin:0 0 6px}
+.eqx canvas{display:block; width:100%; height:auto; margin-top:8px}
+.hat{position:relative; display:inline-block}
+.hat::after{content:"ˆ"; position:absolute; left:50%; top:-.42em; transform:translateX(-45%); font-style:normal}
+.lim{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; line-height:1; margin:0 .08em; font-size:1.3em}
+.lim small{font-size:.34em; line-height:1.15}
+.eq-num{font-family:var(--math); font-size:22px; text-align:center; margin:10px 0 2px; overflow-x:auto; white-space:nowrap}
+.eq-num .t{border-bottom:2px solid var(--tc); padding:0 2px}
+
+/* 위젯 */
+.widget{margin:24px 0 28px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px 14px}
+.widget > h4{margin:0 0 2px; font-size:16px}
+.widget > .sub{margin:0 0 12px; color:var(--muted); font-size:14.5px}
+.widget canvas{display:block; width:100%; height:auto; touch-action:manipulation}
+.ctrl, .eq-live .ctrl{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin-top:12px; font-size:14px}
+.ctrl button, .seg button{font:500 14px/1 var(--sans); color:var(--ink); background:var(--soft); border:1px solid var(--line); border-radius:7px; padding:8px 12px; cursor:pointer}
+.ctrl button:hover, .seg button:hover{border-color:var(--acc)}
+.ctrl button.primary{background:var(--acc); border-color:var(--acc); color:var(--panel)}
+.ctrl button:disabled{opacity:.5; cursor:default}
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+.seg{display:inline-flex; flex-wrap:wrap; gap:4px}
+.seg button[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--panel)}
+.ctrl label{display:inline-flex; align-items:center; gap:8px; color:var(--muted)}
+.ctrl label b, .ctrl label output{color:var(--ink); font-weight:500; min-width:2.8em; font-variant-numeric:tabular-nums}
+.ctrl input[type=range]{width:150px; accent-color:var(--acc)}
+.ctrl input[type=checkbox]{accent-color:var(--acc); width:16px; height:16px}
+.ctrl select{font:400 14px var(--sans); color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px 8px}
+textarea.data{width:100%; min-height:90px; font:400 13.5px/1.5 var(--code); color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px; resize:vertical}
+.readout{margin:12px 0 0; font-size:14.5px; line-height:1.6; color:var(--muted); font-variant-numeric:tabular-nums}
+.readout b{color:var(--ink); font-weight:500}
+.readout .good{color:var(--c3); font-weight:500}
+.readout .bad{color:var(--miss); font-weight:500}
+.split{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+
+/* 표 */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:15px; line-height:1.55}
+th,td{padding:9px 12px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line)}
+thead th{font-weight:700; color:var(--muted); font-size:14px}
+tbody tr:last-child th, tbody tr:last-child td{border-bottom:0}
+table.num td{font-variant-numeric:tabular-nums}
+.tbl{background:var(--panel); border:1px solid var(--line); border-radius:10px; margin:20px 0; max-width:46em}
+
+/* 연습 문제 */
+.ex{max-width:44em; margin:16px 0}
+.ex details{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 16px; margin:0 0 8px}
+.ex summary{cursor:pointer; font-weight:500}
+.ex summary::marker{color:var(--acc)}
+.ex details > div{margin-top:8px; color:var(--muted); font-size:15.5px}
+.ex details > div > :last-child{margin-bottom:0}
+
+/* 코드 */
+pre.code{margin:20px 0; padding:16px 18px; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow-x:auto; font:400 14px/1.65 var(--code); tab-size:4; max-width:46em}
+pre.code code{background:none; padding:0; font-size:1em}
+pre.code .kw{color:var(--k-kw); font-weight:500}
+pre.code .fn{color:var(--k-fn)}
+pre.code .bi{color:var(--k-bi)}
+pre.code .str{color:var(--k-str)}
+pre.code .num{color:var(--k-num)}
+pre.code .com{color:var(--k-com); font-style:italic}
+.code-cap{font-size:14px; color:var(--muted); margin:-12px 0 20px}
+
+/* 이전 / 다음 */
+.pager{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:72px}
+.pager a{display:block; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; text-decoration:none; color:var(--ink)}
+.pager a:hover{border-color:var(--acc)}
+.pager span{display:block; font-size:13.5px; color:var(--muted)}
+.pager b{font-size:17px}
+.pager .next{text-align:right}
+footer{margin-top:40px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:14px}
+footer a{color:inherit}
+
+@media (max-width:760px){
+  .wrap{padding:28px 18px 40px}
+  .toc{grid-template-columns:1fr 1fr; gap:14px}
+  .goals, .cards, .cards.two, .split, .pager{grid-template-columns:1fr}
+  .widget, .eqx{padding:14px 12px 12px; margin-left:-6px; margin-right:-6px}
+  .ctrl input[type=range]{width:120px}
+}
+@media (min-width:761px){ .toc{grid-template-columns:repeat(5,1fr)} }
+.tbl{overflow-x:auto}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="back"><a href="index.html">모델링과 시뮬레이션 목차</a></p>
+<header>
+  <p class="series">모델링과 시뮬레이션, 응용 사례 A3</p>
+  <h1><span class="n">A3</span>기숙사 독감: 같은 질문, 두 모델</h1>
+  <p class="lead">기숙사 한 곳에서 독감 환자가 둘 생겼습니다. 대책이 없으면 몇 명이 앓을까요? 증상자를 격리하는 것과 층 휴게실을 닫는 것 중 무엇이 나을까요? 같은 질문을 6편의 시스템 다이내믹스(SD)와 3편의 에이전트 기반 모델(ABM)로 풀고, 두 모델이 어디서 같은 답을 내고 어디서 갈라지는지 봅니다.</p>
+  <div class="goals">
+    <div>
+      <h2>이 사례에서 해 볼 것</h2>
+      <ul>
+        <li>같은 감염 과정을 접촉 구조가 있는 ABM과 고루 섞인 SD로 각각 적습니다.</li>
+        <li>같은 매개변수에서 두 모델의 유행 크기와 정점 시기가 왜 다른지 설명합니다.</li>
+        <li>ABM의 반복 실행으로 "초기에 저절로 꺼지는" 유행의 비율을 재고, SD가 말해 주지 못하는 것을 확인합니다.</li>
+        <li>SD를 ABM에 맞춰 보정한 뒤에도 정책 효과의 예측이 갈라지는 지점을 찾습니다.</li>
+        <li>5절에서 학생마다 다른 일과(수업, 식사, 샤워, 휴게실, 엘리베이터) 위에 감염을 얹고, 검사 방식과 격리 프로토콜을 바꿔 가며 비교합니다.</li>
+      </ul>
+    </div>
+    <div class="pre">
+      <h2>먼저 보면 좋은 것</h2>
+      <a href="ch6_system-dynamics.html">6편 SD</a><a href="ch3_ABM.html">3편 ABM</a><a href="ch5_output-analysis.html">5편 출력 분석</a><a href="ch8_verification-optimization.html">8편 보정</a>
+      <p>각 절의 단계 표시는 <a href="ch0_simulation-101.html#s1-5">0편 1.5절</a>의 시뮬레이션 연구 일곱 단계입니다. 이 사례의 숫자는 모두 학습용 가정이며 실제 독감 자료가 아닙니다.</p>
+    </div>
+  </div>
+  <nav class="toc" aria-label="목차">
+    <div><h2><a href="#ch1">1. 질문과 개념 모델</a></h2><ol><li><a href="#s1-1">질문 정하기</a></li><li><a href="#s1-2">개념 모델</a></li></ol></div>
+    <div><h2><a href="#ch2">2. 데이터와 구현</a></h2><ol><li><a href="#s2-1">데이터 모으기</a></li><li><a href="#s2-2">프로그램 짜기</a></li><li><a href="#s2-3">검증과 타당성</a></li></ol></div>
+    <div><h2><a href="#ch3">3. 실험과 결정</a></h2><ol><li><a href="#s3-1">같은 매개변수, 두 모델</a></li><li><a href="#s3-2">대책 비교</a></li><li><a href="#s3-3">분석과 결정</a></li></ol></div>
+    <div style="order:5"><h2><a href="#ch5">5. 일과 위의 ABM</a></h2><ol><li><a href="#s5-1">모델 구조</a></li><li><a href="#s5-2">시뮬레이터</a></li><li><a href="#s5-3">프로토콜 비교</a></li><li><a href="#s5-4">모델을 넓히는 법</a></li></ol></div>
+    <div><h2><a href="#ch4">4. 연결과 정리</a></h2><ol><li><a href="#s4-1">모델의 한계</a></li><li><a href="#s4-2">쓰인 편들</a></li><li><a href="#s4-3">파이썬으로 확인하기</a></li><li><a href="#s4-4">연습과 확장</a></li></ol></div>
+  </nav>
+</header>
+
+<section class="chap" id="ch1">
+  <h2><span class="n">1</span>질문과 개념 모델</h2>
+  <p class="intro">감염의 단계는 두 모델이 같고, 다른 것은 누가 누구를 만나느냐뿐입니다.</p>
+
+  <h3 id="s1-1"><span class="n">1.1</span>질문 정하기<span class="lvl">단계 1</span></h3>
+  <div class="prose">
+    <p>결정해야 할 것은 둘입니다. 대책이 필요한가, 필요하다면 증상자 격리와 층 휴게실 폐쇄 중 무엇을 할까. 여기에 방법에 대한 질문이 하나 붙습니다. 6편에서 캠퍼스 독감을 SD로 풀어 보았는데, 기숙사처럼 방과 층으로 나뉜 곳에서도 그 답을 믿을 수 있을까?</p>
+  </div>
+
+  <h3 id="s1-2"><span class="n">1.2</span>개념 모델<span class="lvl">단계 2</span></h3>
+  <div class="prose">
+    <p>기숙사는 4개 동, 동마다 5층, 층마다 2인실 15개로 모두 600명입니다. 감염은 SEIR로 적습니다. 감염된 사람은 잠복(E, 평균 2일)을 거쳐 전파 가능(I, 평균 4일) 상태가 되었다가 회복(R)합니다. 시간은 하루씩 갑니다.</p>
+    <p>ABM에서는 전파 가능한 사람 한 명이 하루 동안 다음 확률로 각 사람을 감염시킵니다. 아래 표의 값에 전파력 <span class="m">s</span>를 곱한 것입니다.</p>
+  </div>
+  <div class="tbl"><table class="num">
+    <thead><tr><th>접촉</th><th>대상</th><th>하루 감염 확률 (× <span class="m">s</span>)</th><th>하루 기대 감염자 (× <span class="m">s</span>)</th></tr></thead>
+    <tbody>
+      <tr><td>룸메이트</td><td>1명</td><td>0.20</td><td>0.20</td></tr>
+      <tr><td>같은 층</td><td>28명</td><td>0.012</td><td>0.336</td></tr>
+      <tr><td>같은 동 다른 층</td><td>120명</td><td>0.0012</td><td>0.144</td></tr>
+      <tr><td>다른 동</td><td>450명</td><td>0.0002</td><td>0.09</td></tr>
+      <tr><td><b>합</b></td><td></td><td></td><td><b>0.77</b></td></tr>
+    </tbody>
+  </table></div>
+  <div class="prose">
+    <p>SD는 이 구조를 모릅니다. 모두가 모두와 고르게 섞인다고 보고, 하루 기대 감염자의 합 β = 0.77<span class="m">s</span>만 씁니다. 감염 기간이 평균 4일이므로 기본 재생산수는 <span class="m">R</span><sub>0</sub> = β × 4입니다. 기본값 <span class="m">s</span> = 0.7이면 β = 0.54, <span class="m">R</span><sub>0</sub> = 2.16입니다. 두 모델은 사람 한 명이 하루에 감염시킬 기대 인원이 같도록 맞춘 것입니다.</p>
+    <p>대책은 두 가지입니다. <b>증상자 격리</b>는 전파 가능한 사람이 하루에 25% 확률로 발견되어 빈 방으로 옮겨지고, 그 뒤로는 아무도 만나지 않는 것입니다. <b>층 휴게실 폐쇄</b>는 같은 층 접촉을 70%, 같은 동 접촉을 40% 줄입니다.</p>
+  </div>
+</section>
+
+<section class="chap" id="ch2">
+  <h2><span class="n">2</span>데이터와 구현</h2>
+  <p class="intro">잴 수 있는 것과 맞춰야 하는 것을 나누고, 두 모델을 같은 시간 축에서 돌립니다.</p>
+
+  <h3 id="s2-1"><span class="n">2.1</span>데이터 모으기<span class="lvl">단계 3</span></h3>
+  <div class="prose">
+    <p>잠복기와 감염 기간은 의학 문헌에서 가져옵니다. 접촉 구조는 설문(하루에 누구를, 어디서, 몇 분이나 만나는가)으로 얻을 수 있습니다. 와이파이 접속 기록처럼 더 정밀한 자료도 있지만 개인정보 동의 없이는 쓸 수 없습니다. 접촉 한 번당 감염 확률은 직접 잴 수 없으므로, 보건진료소의 일별 환자 수 같은 실제 유행 곡선에 모델을 맞춰 정합니다(8편의 보정). 이 사례에는 그런 자료가 없으므로, 아래 숫자는 결론이 아니라 두 모델의 차이를 보여 주는 실험입니다.</p>
+  </div>
+
+  <h3 id="s2-2"><span class="n">2.2</span>프로그램 짜기<span class="lvl">단계 4</span></h3>
+  <div class="prose">
+    <p>아래 그림은 ABM 한 번의 실행입니다. 네 덩어리가 네 개 동이고, 한 덩어리 안에서 가로가 방, 세로가 층, 작은 칸 하나가 사람 한 명입니다. 아래 그래프에는 같은 매개변수로 돌린 SD 곡선(점선)을 함께 그렸습니다.</p>
+  </div>
+  <div class="widget" id="w-dorm">
+    <h4>기숙사 600명의 하루하루</h4>
+    <p class="sub">회색은 감염되지 않은 사람, 노랑은 잠복, 빨강은 전파 가능, 테두리만 있는 빨강은 격리, 연한 색은 회복입니다.</p>
+    <canvas data-w="640" data-h="320" role="img" aria-label="기숙사 동과 층, 방별 감염 상태와 날마다의 전파 가능 인원 곡선"></canvas>
+    <div class="ctrl">
+      <label>전파력 <span class="m">s</span> <input type="range" min="0.4" max="1" step="0.05" value="0.7" data-s> <b></b></label>
+      <div class="seg" data-g="pol"><button type="button" aria-pressed="true" data-v="none">대책 없음</button><button type="button" aria-pressed="false" data-v="iso">증상자 격리</button><button type="button" aria-pressed="false" data-v="floor">층 휴게실 폐쇄</button></div>
+    </div>
+    <div class="ctrl">
+      <button type="button" class="primary" data-act="play">일시정지</button>
+      <button type="button" data-act="new">새 시드</button>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>새 시드를 몇 번 눌러 보세요. 가끔 처음 두 사람이 룸메이트 한 명만 감염시키고 유행이 그대로 끝납니다. SD의 점선은 늘 같은 모양입니다.</p>
+  </div>
+
+  <h3 id="s2-3"><span class="n">2.3</span>검증과 타당성<span class="lvl">단계 5</span></h3>
+  <div class="prose">
+    <p><b>검증.</b> 매일 S, E, I, R의 합이 600인지, 잠복과 감염 기간의 평균이 2일과 4일인지 확인합니다. 더 강한 점검도 있습니다. 모든 접촉 확률을 같게 만들어 구조를 없애면 ABM 여러 번의 평균 곡선이 SD 곡선에 가까워져야 합니다. 같은 가정의 두 구현이 같은 답을 내는지 보는 것이므로, 어느 한쪽 코드의 실수를 잡아냅니다(연습 1).</p>
+    <p><b>타당성.</b> 실제 기숙사 유행의 일별 환자 수가 있다면 곡선의 모양, 정점이 오는 날, 최종 감염 비율을 비교합니다. 숫자 하나가 아니라 여러 패턴을 함께 맞추는지가 중요합니다. 이 사례에는 그 비교가 빠져 있다는 점이 가장 큰 한계입니다.</p>
+  </div>
+</section>
+
+<section class="chap" id="ch3">
+  <h2><span class="n">3</span>실험과 결정</h2>
+  <p class="intro">ABM을 여러 번 돌려 분포를 만들고, SD 한 줄과 비교합니다.</p>
+
+  <h3 id="s3-1"><span class="n">3.1</span>같은 매개변수, 두 모델<span class="lvl">단계 6</span></h3>
+  <div class="widget" id="w-ens">
+    <h4>ABM 40번과 SD</h4>
+    <p class="sub">가는 선 하나가 ABM 한 번의 전파 가능 인원입니다. 굵은 점선은 같은 매개변수의 SD, 가는 점선은 ABM의 평균 최종 감염률에 맞춰 β를 보정한 SD입니다.</p>
+    <canvas data-w="640" data-h="250" role="img" aria-label="ABM 40번 실행의 유행 곡선과 SD 곡선"></canvas>
+    <div class="ctrl">
+      <label>전파력 <span class="m">s</span> <input type="range" min="0.4" max="1" step="0.05" value="0.7" data-s> <b></b></label>
+      <div class="seg" data-g="pol"><button type="button" aria-pressed="true" data-v="none">대책 없음</button><button type="button" aria-pressed="false" data-v="iso">증상자 격리</button><button type="button" aria-pressed="false" data-v="floor">층 휴게실 폐쇄</button></div>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>기본값(<span class="m">s</span> = 0.7, 대책 없음)에서 ABM을 100번 돌리면 평균 최종 감염률은 68.1% ± 5.2%p이고, 그중 13번은 열 명도 앓기 전에 꺼집니다. 같은 매개변수의 SD는 83.5%를 예측합니다. 정점도 다릅니다. 유행이 크게 번진 ABM 실행들은 평균 46일째에 58명으로 정점을 찍고, SD는 36일째에 72명입니다. SD가 더 크고 빠른 유행을 예측하는 것입니다.</p>
+    <p>이유는 접촉의 군집에 있습니다. 룸메이트 한 명, 층 사람 28명은 감염원이 가장 자주 만나는 사람들인데, 이들이 먼저 감염되거나 회복하면 그 감염원이 새로 옮길 사람이 빨리 바닥납니다. SD는 감염원이 언제나 600명 전체에서 고르게 새 사람을 만난다고 보므로 이 포화를 보지 못합니다.</p>
+  </div>
+
+  <h3 id="s3-2"><span class="n">3.2</span>대책 비교<span class="lvl">단계 6</span></h3>
+  <div class="prose">
+    <p>SD가 틀렸다면 보정하면 되지 않을까요? SD의 β를 ABM의 평균 최종 감염률(68.1%)이 나오도록 맞추면 <span class="m">R</span><sub>0</sub>가 2.16에서 1.67로 내려갑니다. 그 보정한 SD로 대책의 효과를 예측해 ABM과 비교합니다. 대책별 ABM은 같은 시드들을 써서(5편의 공통 난수) 차이만 보이게 했습니다.</p>
+  </div>
+  <div class="widget" id="w-pol">
+    <h4>대책별 최종 감염률</h4>
+    <p class="sub">막대는 ABM 40번의 평균과 95% 신뢰구간, ○는 같은 매개변수의 SD, ◆는 보정한 SD입니다.</p>
+    <canvas data-w="640" data-h="220" role="img" aria-label="대책별 ABM 평균 최종 감염률과 두 SD 예측"></canvas>
+    <div class="ctrl"><label>전파력 <span class="m">s</span> <input type="range" min="0.4" max="1" step="0.05" value="0.7" data-s> <b></b></label></div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="tbl"><table class="num">
+    <thead><tr><th><span class="m">s</span> = 0.7, ABM 100번</th><th>ABM</th><th>초기에 꺼짐</th><th>SD (같은 매개변수)</th><th>SD (보정)</th></tr></thead>
+    <tbody>
+      <tr><td>대책 없음</td><td>68.1% ± 5.2</td><td>13%</td><td>83.5%</td><td>68.1% (맞춘 값)</td></tr>
+      <tr><td>증상자 격리</td><td>6.1% ± 1.8</td><td>66%</td><td>36.2%</td><td>4.9%</td></tr>
+      <tr><td>층 휴게실 폐쇄</td><td>6.2% ± 1.8</td><td>72%</td><td>46.3%</td><td>11.9%</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 id="s3-3"><span class="n">3.3</span>분석과 결정<span class="lvl">단계 7</span></h3>
+  <div class="prose">
+    <p><b>결정.</b> 이 모델에서는 두 대책 모두 최종 감염률을 열 배 넘게 줄이고, 둘의 효과는 비슷합니다. 그렇다면 비용으로 고릅니다. 증상자 격리에는 빈 방이 필요하고, 휴게실 폐쇄에는 학생들의 불편이 따릅니다. 필요한 격리실 수는 ABM에서 격리 중인 사람 수의 최댓값으로 셀 수 있습니다(연습 3). SD로는 셀 수 없는 숫자입니다.</p>
+    <p><b>방법에 대한 교훈.</b> 같은 매개변수의 SD는 유행을 크게 과대평가했습니다. 보정한 SD는 훨씬 가까워지지만, 두 대책의 효과를 모두 작게 예측하고 특히 휴게실 폐쇄에서 차이가 큽니다(위 표에서 11.9% 대 6.2%). 보정값에도 민감합니다. 위젯의 40번처럼 기준 감염률이 조금 높게 나와 <span class="m">R</span><sub>0</sub>가 1.81로 보정되면, SD가 예측하는 대책 후 감염률이 두 배 가까이 뜁니다. 대책을 쓴 뒤의 재생산수가 1 근처라서 작은 차이가 크게 불어나기 때문입니다. SD에서는 휴게실 폐쇄가 "β를 층 접촉의 몫만큼 줄인다"로만 표현되는데, ABM에서 층 접촉은 방과 방을 잇는 다리라서 그것을 끊는 효과가 몫보다 큽니다. 또 SD는 유행의 절반 넘게가 초기에 저절로 꺼진다는 사실을 말해 주지 못합니다. 집단 전체의 평균이 궁금하고 섞임이 고른 곳이라면 SD가 빠르고 충분합니다. 누구와 누구가 만나는지가 대책의 대상이라면 ABM이 필요합니다.</p>
+  </div>
+</section>
+
+<section class="chap" id="ch4">
+  <h2><span class="n">4</span>연결과 정리</h2>
+
+  <h3 id="s4-1"><span class="n">4.1</span>모델의 한계</h3>
+  <dl class="terms">
+    <dt>강의실과 식당</dt><dd>기숙사 밖 접촉(수업, 식당, 동아리)은 "다른 동" 하나로 뭉뚱그렸습니다. 실제로는 이것이 동과 동을 잇는 주된 통로일 수 있습니다.</dd>
+    <dt>같은 사람들</dt><dd>모두의 감수성과 접촉량이 같습니다. 사람마다 접촉 수의 차이가 크면(마당발) 유행의 모양이 크게 달라집니다.</dd>
+    <dt>발견</dt><dd>증상은 모두 드러나고 발견 확률은 하루 25%로 일정합니다. 무증상 전파가 있으면 격리의 효과는 줄어듭니다.</dd>
+    <dt>하루 단위</dt><dd>하루 안의 순서(아침에 감염되어 저녁에 옮기는 일)는 무시했습니다.</dd>
+  </dl>
+
+  <h3 id="s4-2"><span class="n">4.2</span>쓰인 편들</h3>
+  <div class="link-note"><p><span class="k">6편과 3편</span>같은 SEIR을 저량과 유량으로, 개체와 접촉으로 적었습니다.</p></div>
+  <div class="link-note"><p><span class="k">5편</span>ABM은 실행마다 결과가 다르므로 반복과 신뢰구간으로 말하고, 대책 비교에는 같은 시드를 씁니다.</p></div>
+  <div class="link-note"><p><span class="k">8편</span>SD를 ABM에 맞춘 것은 보정이고, 보정한 모델이 보정에 쓰지 않은 상황(대책)에서도 맞는지 본 것은 타당성 확인입니다. 맞춘 상황에서만 맞는 모델은 과적합입니다.</p></div>
+
+  <h3 id="s4-3"><span class="n">4.3</span>파이썬으로 확인하기</h3>
+  <div class="prose"><p>ABM과 SD를 같은 매개변수로 돌려 대책 없음과 휴게실 폐쇄를 비교합니다. 표준 라이브러리만 씁니다.</p></div>
+<pre class="code"><code><span class="com"># dorm_flu.py : 기숙사 독감을 ABM과 SD로 같은 매개변수로 돌려 비교한다</span>
+<span class="kw">import</span> math, random, statistics <span class="kw">as</span> st
+
+B, F, R = <span class="num">4</span>, <span class="num">5</span>, <span class="num">15</span>                     <span class="com"># 4개 동 × 5층 × 15실 × 2명 = 600명</span>
+N = B * F * R * <span class="num">2</span>
+SIG, GAM = <span class="num">0.5</span>, <span class="num">0.25</span>                   <span class="com"># 하루에 E→I, I→R로 넘어갈 확률</span>
+BASE = {<span class="str">&quot;room&quot;</span>: <span class="num">0.20</span>, <span class="str">&quot;floor&quot;</span>: <span class="num">0.012</span>, <span class="str">&quot;bldg&quot;</span>: <span class="num">0.0012</span>, <span class="str">&quot;all&quot;</span>: <span class="num">0.0002</span>}
+
+<span class="kw">def</span> <span class="fn">rates</span>(s, floor_closed=<span class="kw">False</span>):
+    q = {k: v * s <span class="kw">for</span> k, v <span class="kw">in</span> BASE.items()}
+    <span class="kw">if</span> floor_closed:
+        q[<span class="str">&quot;floor&quot;</span>] *= <span class="num">0.3</span>; q[<span class="str">&quot;bldg&quot;</span>] *= <span class="num">0.6</span>
+    <span class="kw">return</span> q
+
+<span class="kw">def</span> <span class="fn">abm</span>(s, seed, floor_closed=<span class="kw">False</span>, days=<span class="num">120</span>):
+    rng = random.Random(seed)
+    q = rates(s, floor_closed)
+    room = [i // <span class="num">2</span> <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(N)]
+    flo = [r // R <span class="kw">for</span> r <span class="kw">in</span> room]
+    bld = [r // (R * F) <span class="kw">for</span> r <span class="kw">in</span> room]
+    state = [<span class="num">0</span>] * N                    <span class="com"># 0=S, 1=E, 2=I, 3=R</span>
+    <span class="kw">for</span> i <span class="kw">in</span> rng.sample(<span class="bi">range</span>(N), <span class="num">2</span>):
+        state[i] = <span class="num">2</span>
+    infected = <span class="num">2</span>
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(days):
+        cr, cf, cb = [<span class="num">0</span>] * (N // <span class="num">2</span>), [<span class="num">0</span>] * (B * F), [<span class="num">0</span>] * B
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(N):
+            <span class="kw">if</span> state[i] == <span class="num">2</span>:
+                cr[room[i]] += <span class="num">1</span>; cf[flo[i]] += <span class="num">1</span>; cb[bld[i]] += <span class="num">1</span>
+        ca = <span class="bi">sum</span>(cb)
+        <span class="kw">if</span> ca == <span class="num">0</span> <span class="kw">and</span> <span class="num">1</span> <span class="kw">not</span> <span class="kw">in</span> state:
+            <span class="kw">break</span>
+        new = state[:]
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(N):
+            <span class="kw">if</span> state[i] == <span class="num">0</span>:          <span class="com"># 방, 층, 동, 나머지 순으로 노출된 횟수</span>
+                nr = cr[room[i]]; nf = cf[flo[i]] - nr
+                nb = cb[bld[i]] - cf[flo[i]]; na = ca - cb[bld[i]]
+                escape = ((<span class="num">1</span> - q[<span class="str">&quot;room&quot;</span>]) ** nr * (<span class="num">1</span> - q[<span class="str">&quot;floor&quot;</span>]) ** nf
+                          * (<span class="num">1</span> - q[<span class="str">&quot;bldg&quot;</span>]) ** nb * (<span class="num">1</span> - q[<span class="str">&quot;all&quot;</span>]) ** na)
+                <span class="kw">if</span> rng.random() &gt; escape:
+                    new[i] = <span class="num">1</span>; infected += <span class="num">1</span>
+            <span class="kw">elif</span> state[i] == <span class="num">1</span> <span class="kw">and</span> rng.random() &lt; SIG: new[i] = <span class="num">2</span>
+            <span class="kw">elif</span> state[i] == <span class="num">2</span> <span class="kw">and</span> rng.random() &lt; GAM: new[i] = <span class="num">3</span>
+        state = new
+    <span class="kw">return</span> infected / N
+
+<span class="kw">def</span> <span class="fn">sd</span>(s, floor_closed=<span class="kw">False</span>, days=<span class="num">200</span>):
+    q = rates(s, floor_closed)          <span class="com"># 같은 접촉 강도를 고루 섞인 집단에 펼친다</span>
+    beta = q[<span class="str">&quot;room&quot;</span>] + <span class="num">28</span> * q[<span class="str">&quot;floor&quot;</span>] + <span class="num">120</span> * q[<span class="str">&quot;bldg&quot;</span>] + <span class="num">450</span> * q[<span class="str">&quot;all&quot;</span>]
+    S, E, I = N - <span class="num">2.0</span>, <span class="num">0.0</span>, <span class="num">2.0</span>
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(days):
+        new_e = S * (<span class="num">1</span> - math.exp(-beta * I / N))
+        S, E, I = S - new_e, E + new_e - SIG * E, I + SIG * E - GAM * I
+    <span class="kw">return</span> (N - S) / N, beta / GAM
+
+s = <span class="num">0.7</span>
+<span class="kw">for</span> closed, name <span class="kw">in</span> ((<span class="kw">False</span>, <span class="str">&quot;대책 없음&quot;</span>), (<span class="kw">True</span>, <span class="str">&quot;층 휴게실 폐쇄&quot;</span>)):
+    runs = [abm(s, seed, closed) <span class="kw">for</span> seed <span class="kw">in</span> <span class="bi">range</span>(<span class="num">30</span>)]
+    m, hw = st.mean(runs), <span class="num">1.96</span> * st.stdev(runs) / math.sqrt(<span class="bi">len</span>(runs))
+    fizzled = <span class="bi">sum</span>(r &lt; <span class="num">0.05</span> <span class="kw">for</span> r <span class="kw">in</span> runs)
+    sd_attack, r0 = sd(s, closed)
+    <span class="bi">print</span>(<span class="str">f&quot;</span>{name}<span class="str">: ABM </span>{m:<span class="str">.1%</span>}<span class="str"> ± </span>{hw:<span class="str">.1%</span>}<span class="str"> (30번 중 </span>{fizzled}<span class="str">번은 초기에 꺼짐), </span><span class="str">&quot;</span>
+          <span class="str">f&quot;</span><span class="str">SD </span>{sd_attack:<span class="str">.1%</span>}<span class="str"> (R0 = </span>{r0:<span class="str">.2f</span>}<span class="str">)</span><span class="str">&quot;</span>)</code></pre>
+  <pre class="code"><code>대책 없음: ABM 65.3% ± 10.6% (30번 중 5번은 초기에 꺼짐), SD 83.5% (R0 = 2.16)
+층 휴게실 폐쇄: ABM 6.4% ± 3.4% (30번 중 22번은 초기에 꺼짐), SD 46.3% (R0 = 1.34)</code></pre>
+  <p class="code-cap">실행 30번이라 신뢰구간이 위 표(100번)보다 넓습니다. 난수 생성기가 달라 숫자는 조금 다르지만 결론은 같습니다.</p>
+
+  <h3 id="s4-4"><span class="n">4.4</span>연습과 확장</h3>
+  <div class="ex">
+    <details><summary>1. 파이썬 코드에서 네 가지 접촉 확률을 모두 같게(각 사람이 나머지 599명을 같은 확률로 만나도록) 바꾸면 ABM과 SD는 어떻게 될까요?</summary><div><p>β가 같도록 확률을 0.77<span class="m">s</span>/599로 두면, 유행이 번진 실행들의 평균 최종 감염률이 SD의 83.5%에 가까워집니다. 구조가 없으면 ABM은 SD의 확률 버전이 되기 때문입니다. 이것이 두 구현이 같은 가정에서 같은 답을 내는지 보는 검증입니다. 초기에 꺼지는 실행은 여전히 있습니다.</p></div></details>
+    <details><summary>2. 기본 재생산수가 1을 넘는데도 유행이 저절로 꺼지는 이유는 무엇일까요?</summary><div><p>처음 몇 명일 때는 감염이 우연에 크게 좌우됩니다. 첫 환자가 회복할 때까지 아무도 감염시키지 못할 확률이 작지 않고, 감염시킨 상대가 룸메이트뿐이면 그 방에서 끝나기도 합니다. 분기 과정 이론에 따르면 섞임이 고른 집단에서도 환자 한 명에서 시작한 유행이 꺼질 확률은 대략 1/<span class="m">R</span><sub>0</sub> 근처입니다. SD는 평균만 따라가므로 이 우연을 표현하지 못합니다.</p></div></details>
+    <details><summary>3. 증상자 격리를 하려면 격리실이 몇 개 필요할까요? ABM을 어떻게 고쳐서 재야 할까요?</summary><div><p>날마다 격리 중인 사람 수를 기록하고, 실행마다 그 최댓값을 구한 뒤, 여러 실행의 분포에서 95번째 백분위수를 고릅니다. 평균만큼 방을 준비하면 유행이 큰 해에는 모자랍니다. 1편의 M/M/c/K처럼 "방이 다 차면 어떻게 하는가"라는 규칙도 모델에 넣어야 합니다.</p></div></details>
+    <details><summary>4. 6편의 캠퍼스 독감 모델을 이 사례에 맞춰 고친다면 무엇을 바꾸겠습니까?</summary><div><p>동마다 저량을 따로 두고(S, E, I, R을 동별로), 동 안과 동 사이의 접촉률을 다르게 주는 구획 모델로 바꿀 수 있습니다. 그러면 SD도 구조의 일부를 표현하게 되어 ABM과의 차이가 줄어듭니다. 구획을 방까지 쪼개면 사실상 ABM이 됩니다. 어디까지 쪼갤지가 곧 모델 선택입니다.</p></div></details>
+  </div>
+</section>
+
+<section class="chap" id="ch5">
+  <h2><span class="n">5</span>학생 160명의 일과 위에 쌓은 ABM</h2>
+  <p class="intro">1~3절의 모델은 접촉을 확률표로 적었습니다. 이번에는 학생마다 시간표와 생활 습관을 주고, 실제로 강의실, 식당, 샤워실, 휴게실, 엘리베이터를 오가게 합니다. 감염은 같은 시간에 같은 곳에 있을 때만 일어납니다. 그 위에 검사와 격리 규칙을 따로 얹어, 규칙을 바꿔 가며 비교할 수 있게 만들었습니다.</p>
+
+  <h3 id="s5-1"><span class="n">5.1</span>모델 구조</h3>
+  <div class="prose">
+    <p><b>사람과 장소.</b> 2개 동 × 4층 × 2인실 10개, 모두 160명입니다. 층마다 샤워실과 휴게실이 하나씩, 동마다 엘리베이터(정원 8명)와 1층 로비가 있고, 캠퍼스에는 강의실 6개, 학생식당, 모형 밖 장소(도서관 등)가 있습니다. 시간은 10분씩 갑니다.</p>
+    <p><b>일과.</b> 학생마다 다른 성질을 가집니다. 일어나는 시각(평균 7시 45분, 표준편차 40분), 아침에 씻는지 저녁에 씻는지, 휴게실에 들르는 확률(10~90%), 엘리베이터를 타는 확률(2층 이상, 30~100%), 끼니를 거르지 않는 정도가 사람마다 다릅니다. 시간표는 24개 강좌 중 3~5개를 들으며, 강좌마다 요일(월수, 화목, 금), 시간대(9시부터 여섯 개), 강의실이 정해져 있어서 같은 강좌 학생들은 매주 같은 사람을 만납니다. 날마다 이 성질에서 하루 일정을 새로 뽑으므로, 모두가 같은 시각에 움직이지 않습니다. 기숙사 안과 밖을 오가는 순간 2층 이상 학생은 엘리베이터나 계단을 지나고, 같은 10분에 엘리베이터를 타려는 사람이 정원을 넘으면 로비에서 기다립니다.</p>
+    <p><b>감염.</b> 같은 10분 동안 같은 장소에 있는 감수성자 <span class="m">i</span>가 감염될 확률은 다음과 같습니다.</p>
+  </div>
+  <div class="eq-num" style="font-size:20px; margin:12px 0 16px"><i>P</i>(<i>i</i> 감염) = 1 − exp( −<i>s</i> · <i>β</i><sub>ℓ</sub> · <i>m</i><sub>ℓ</sub><sup>2</sup> · Δ<i>t</i><sub>ℓ</sub> · Σ<sub><i>j</i> ∈ ℓ</sub> <i>ι</i><sub><i>j</i></sub> )</div>
+  <div class="prose">
+    <p><span class="m">s</span>는 전체 전파력, <span class="m">β</span><sub>ℓ</sub>는 장소 ℓ에서 감염원 한 명이 1분 동안 옆 사람을 감염시키는 세기, <span class="m">m</span><sub>ℓ</sub>는 마스크 효과(쓰는 곳에서 0.5, 감염원과 감수성자 양쪽이 쓰므로 제곱), Δ<span class="m">t</span><sub>ℓ</sub>는 그 칸에서 함께 있는 시간(보통 10분, 엘리베이터 1분, 로비 3분), <span class="m">ι</span><sub><i>j</i></sub>는 같은 곳에 있는 사람 <span class="m">j</span>의 감염력입니다.</p>
+  </div>
+  <div class="tbl"><table class="num">
+    <thead><tr><th>장소</th><th>β (1분, 한 명당)</th><th>마스크 적용</th><th>함께 있는 시간</th></tr></thead>
+    <tbody>
+      <tr><td>방 (룸메이트)</td><td>0.0006</td><td>아니요</td><td>10분 단위, 밤 내내</td></tr>
+      <tr><td>층 샤워실</td><td>0.008</td><td>아니요</td><td>10~30분</td></tr>
+      <tr><td>층 휴게실</td><td>0.0015</td><td>아니요</td><td>30~90분</td></tr>
+      <tr><td>엘리베이터</td><td>0.012</td><td>예</td><td>1분</td></tr>
+      <tr><td>1층 로비 (엘리베이터 대기)</td><td>0.001</td><td>예</td><td>3분</td></tr>
+      <tr><td>강의실</td><td>0.00008</td><td>예</td><td>80분</td></tr>
+      <tr><td>학생식당</td><td>0.00006</td><td>예</td><td>30분</td></tr>
+    </tbody>
+  </table></div>
+  <div class="prose">
+    <p><b>병의 진행.</b> 감염된 사람은 잠복(E, 감염력 0) → 증상 전(P, 감염력 0.8) → 증상(감염력 1, 이틀 뒤부터 0.5) 또는 무증상(A, 감염력 0.5, 35%) → 회복(R)을 거칩니다. 각 단계의 기간은 사람마다 로그정규분포에서 뽑습니다(평균 잠복 2일, 증상 전 1.5일, 증상과 무증상 4일). 증상이 생긴 사람의 60%는 수업과 휴게실에 가지 않고 방에 머물며, 끼니와 샤워는 절반쯤 계속합니다. 증상 전 단계의 사람은 자기가 아픈 줄 모르고 평소대로 다닙니다.</p>
+    <p><b>검사.</b> 검사 결과는 그 순간의 병의 단계에 따라 달라집니다.</p>
+  </div>
+  <div class="tbl"><table class="num">
+    <thead><tr><th>단계</th><th>신속항원 양성 확률</th><th>PCR 양성 확률</th></tr></thead>
+    <tbody>
+      <tr><td>감염 안 됨 (위양성)</td><td>0.5%</td><td>0.1%</td></tr>
+      <tr><td>잠복</td><td>0%</td><td>15%</td></tr>
+      <tr><td>증상 전</td><td>35%</td><td>85%</td></tr>
+      <tr><td>증상 첫 이틀 / 그 뒤</td><td>80% / 50%</td><td>95% / 90%</td></tr>
+      <tr><td>무증상</td><td>45%</td><td>90%</td></tr>
+      <tr><td>회복 직후 (신속항원 3일, PCR 10일 이내)</td><td>5%</td><td>50%</td></tr>
+      <tr><td>결과가 나오는 시간</td><td>바로</td><td>하루 뒤</td></tr>
+    </tbody>
+  </table></div>
+  <div class="prose">
+    <p><b>검사 방식.</b> 증상이 생기면 하루 안쪽으로 70% 확률로 검사를 받는 방식(신속항원 또는 PCR), 아침 8시마다 80%가 참여하는 매일 신속항원 선별, 월요일과 목요일의 PCR 선별 중에서 고릅니다. <b>격리 프로토콜.</b> 양성이 나오면 격리실(10실, 차면 자기 방)이나 자기 방에서 격리하고, 룸메이트는 그대로 두거나, 함께 5일 격리하거나, 바로 신속항원 검사를 합니다. 해제는 5일, 7일, 또는 3일째부터 증상이 없고 신속항원이 음성일 때 중에서 고릅니다. 한 층에서 일주일 안에 확진자가 2명 나오면 그 층 휴게실을 7일 닫는 규칙도 켤 수 있습니다.</p>
+  </div>
+
+  <h3 id="s5-2"><span class="n">5.2</span>시뮬레이터</h3>
+  <div class="widget" id="w-live">
+    <h4>기숙사 160명의 생활과 독감</h4>
+    <p class="sub">회색 건강, 노랑 잠복, 주황 증상 전, 빨강 증상, 보라 무증상, 연한 색 회복. 빨간 테두리는 격리, 노란 테두리는 룸메이트 격리입니다. 건강한 학생을 누르면 감염되고, 감염 의심 학생을 누르면 신속항원 검사를 합니다(음성이 나올 수도 있습니다). 휴게실을 누르면 7일 닫습니다.</p>
+    <canvas data-w="640" data-h="500" role="img" aria-label="강의실, 학생식당, 두 동의 방과 샤워실, 휴게실, 엘리베이터, 격리실 사이를 오가는 학생 160명과 감염 곡선"></canvas>
+    <div class="ctrl">
+      <button type="button" class="primary" data-act="play">일시정지</button>
+      <button type="button" data-act="reset">처음부터</button>
+      <span>속도</span><div class="seg" data-g="spd"><button type="button" aria-pressed="false" data-v="1">1배</button><button type="button" aria-pressed="true" data-v="4">4배</button><button type="button" aria-pressed="false" data-v="16">16배</button><button type="button" aria-pressed="false" data-v="64">64배</button></div>
+      <label>전파력 <span class="m">s</span> <input type="range" min="0.3" max="1" step="0.05" value="0.6" data-s> <b></b></label>
+    </div>
+    <div class="ctrl">
+      <label>검사 <select data-pol="test"><option value="none">검사 없음</option><option value="symRAT">증상 시 신속항원</option><option value="symPCR">증상 시 PCR</option><option value="dailyRAT">매일 신속항원 선별</option><option value="twicePCR">주 2회 PCR 선별</option></select></label>
+      <label>격리 장소 <select data-pol="place"><option value="ward">격리실</option><option value="room">자기 방</option></select></label>
+      <label>룸메이트 <select data-pol="mate"><option value="none">그대로</option><option value="quarantine">함께 5일 격리</option><option value="test">바로 신속항원</option></select></label>
+      <label>해제 <select data-pol="release"><option value="fixed5">5일</option><option value="fixed7">7일</option><option value="negative">3일째부터 음성이면</option></select></label>
+    </div>
+    <div class="ctrl">
+      <label><input type="checkbox" data-pol="sick" checked> 아프면 방에 머무름 (60%)</label>
+      <label><input type="checkbox" data-pol="floor"> 층에 확진 2명이면 휴게실 7일 폐쇄</label>
+      <label><input type="checkbox" data-pol="mask"> 마스크 (강의실, 식당, 엘리베이터, 로비)</label>
+    </div>
+    <p class="readout" data-out></p>
+  </div>
+  <div class="prose">
+    <p>속도를 1배로 두고 아침 8~9시를 보세요. 학생들이 일어나는 시각에 따라 하나둘 샤워실에 들렀다가, 수업 시간에 맞춰 엘리베이터를 타고 강의실로 흩어집니다. 저녁에는 일부만 휴게실로 모이고, 밤 9시 넘어 저녁에 씻는 사람들이 샤워실에 들어갑니다. 정책은 재생 중에 바꿔도 바로 적용되고, "처음부터"를 누르면 새 시드로 다시 시작합니다.</p>
+  </div>
+
+  <h3 id="s5-3"><span class="n">5.3</span>프로토콜 비교 실험</h3>
+  <div class="prose">
+    <p>정책 하나를 화면으로 보는 것과 여러 정책을 공정하게 비교하는 것은 다른 일입니다. 아래 실험은 시나리오마다 같은 시드 1~10번을 써서(5편의 공통 난수) 감염률뿐 아니라 격리실이 몇 개 필요했는지, 학생들이 격리로 잃은 날이 며칠인지, 검사를 몇 번 했고 위양성이 몇 번 나왔는지를 함께 셉니다. "위 시뮬레이터의 정책 추가"를 누르면 5.2절에서 고른 조합이 시나리오로 추가됩니다.</p>
+  </div>
+  <div class="widget" id="w-proto">
+    <h4>격리 프로토콜 비교</h4>
+    <div class="ctrl">
+      <button type="button" class="primary" data-act="run">실험 돌리기</button>
+      <button type="button" data-act="add">위 시뮬레이터의 정책 추가</button>
+      <label>전파력 <span class="m">s</span> <input type="range" min="0.3" max="1" step="0.05" value="0.6" data-s> <b></b></label>
+    </div>
+    <div class="scroll"><table class="num" data-tbl></table></div>
+    <p class="readout" data-out>시나리오마다 10번씩 돌리면 10~20초 걸립니다.</p>
+  </div>
+  <div class="prose">
+    <p>같은 방식으로 시나리오마다 20번 돌린 결과입니다(<span class="m">s</span> = 0.6). 격리 인일은 격리와 룸메이트 격리를 합친 사람·일 수입니다.</p>
+  </div>
+  <div class="tbl"><table class="num">
+    <thead><tr><th>시나리오 (각 20번)</th><th>최종 감염률</th><th>격리실 최대</th><th>격리 인일</th><th>검사 수</th><th>위양성</th></tr></thead>
+    <tbody>
+      <tr><td>검사 없음</td><td>54.3% ± 11.7</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+      <tr><td>증상 시 신속항원, 격리실 5일</td><td>23.5% ± 8.7</td><td>5.2</td><td>111</td><td>25</td><td>0</td></tr>
+      <tr><td>증상 시 PCR (결과 하루 뒤), 격리실 5일</td><td>34.4% ± 12.0</td><td>6.3</td><td>183</td><td>35</td><td>0</td></tr>
+      <tr><td>증상 시 신속항원, 자기 방 격리</td><td>29.1% ± 10.0</td><td>0</td><td>129</td><td>29</td><td>0</td></tr>
+      <tr><td>증상 시 신속항원, 격리실 + 룸메이트 5일 격리</td><td>14.4% ± 5.9</td><td>4.5</td><td>123</td><td>15</td><td>0</td></tr>
+      <tr><td>증상 시 신속항원 + 층 휴게실 자동 폐쇄</td><td>19.3% ± 7.8</td><td>5.0</td><td>94</td><td>21</td><td>0</td></tr>
+      <tr><td>주 2회 PCR 선별, 격리실, 음성 확인 해제</td><td>9.2% ± 4.6</td><td>5.2</td><td>79</td><td>786</td><td>0.9</td></tr>
+      <tr><td>매일 신속항원 선별, 격리실 5일</td><td>2.8% ± 0.7</td><td>7.2</td><td>54</td><td>1,467</td><td>7.5</td></tr>
+      <tr><td>마스크만 (검사 없음)</td><td>9.1% ± 3.4</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+    </tbody>
+  </table></div>
+  <div class="prose">
+    <p>몇 가지가 눈에 띕니다. PCR은 신속항원보다 정확하지만 결과가 하루 늦어, 증상 시 검사에서는 오히려 감염률이 높았습니다. 기다리는 하루 동안 증상 전 단계와 증상 첫날의 전파가 계속되기 때문입니다. 자기 방 격리는 격리실보다 감염률이 높은데, 감염의 40% 가까이가 방에서 일어나는 이 모델에서 룸메이트를 그대로 두기 때문이고, 룸메이트까지 격리하면 같은 검사로 감염률이 절반 넘게 줄어듭니다. 매일 선별검사는 감염을 거의 막지만 검사가 1,500번 가까이 들고 위양성으로 격리되는 사람이 생깁니다. 무엇이 "최선"인지는 감염률 하나가 아니라 검사 비용, 격리실 수, 학생들이 잃는 날을 함께 놓고 정해야 하고, 이 모델은 그 표를 만들어 줍니다. 단, 모든 숫자는 위 표의 가정에서 나온 것이며 실제 독감 자료로 보정한 것이 아닙니다.</p>
+  </div>
+
+  <h3 id="s5-4"><span class="n">5.4</span>모델을 넓히는 법</h3>
+  <div class="prose">
+    <p>이 모델은 정책 실험을 늘려 가기 쉽게 네 부분으로 나눠 두었습니다. 페이지 소스의 <code>dormabm</code> 부분에 모두 있습니다.</p>
+  </div>
+  <dl class="terms">
+    <dt>장소 (<code>DA.BETA</code>, <code>planDay</code>)</dt><dd>새 장소는 β 값 하나와 일과에 들어가는 규칙 한 줄로 추가합니다. 예를 들어 세탁실, 편의점, 체육관. 샤워실을 시간대별로 나눠 쓰게 하는 규칙도 <code>planDay</code>에서 샤워 시각을 정하는 줄만 바꾸면 됩니다.</dd>
+    <dt>병의 진행 (<code>DA.DIS</code>)</dt><dd>단계별 기간 분포, 무증상 비율, 단계별 감염력. 실제 질병 자료로 바꿀 때 여기만 고칩니다.</dd>
+    <dt>검사 (<code>DA.TEST</code>, <code>testing</code>)</dt><dd>새 검사 종류는 단계별 민감도, 특이도, 결과 지연 세 가지로 정의합니다. 검사 일정(누가 언제 받는가)은 <code>testing</code> 함수에 한 갈래를 더하면 됩니다. 예를 들어 "증상이 생기면 신속항원, 음성이면 이틀 뒤 PCR 재검사", "룸메이트가 양성이면 3일 연속 신속항원" 같은 규칙입니다.</dd>
+    <dt>격리 프로토콜 (<code>result</code>, <code>release</code>)</dt><dd>양성이 나왔을 때 누구를 어디로 보내는지, 언제 풀어 주는지. 층 단위 격리, 격리실 정원과 대기, 격리 중 샤워 시간 분리 같은 규칙이 여기 들어갑니다.</dd>
+  </dl>
+  <h3 id="s5-5"><span class="n">5.5</span>해 볼 것</h3>
+  <ol class="steps">
+    <li><b>어디서 옮나</b>검사 없이 한 번 돌리고 읽음 줄의 "감염이 일어난 곳"을 보세요. 방이 가장 많고, 그다음은 엘리베이터, 샤워실, 휴게실, 강의실이 비슷합니다. 짧게 머물러도 좁고 붐비는 곳이 오래 머무는 넓은 곳만큼 중요합니다.</li>
+    <li><b>PCR을 기다리는 하루</b>"증상 시 신속항원"과 "증상 시 PCR"을 비교 실험에서 나란히 돌려 보세요. 정확도와 속도 중 무엇이 더 중요한지가 질병의 증상 전 기간에 달려 있다는 것을, <code>DA.DIS</code>의 P 기간을 바꿔 확인할 수 있습니다.</li>
+    <li><b>룸메이트를 어떻게 할까</b>룸메이트를 그대로 두기, 함께 격리하기, 바로 검사하기를 비교하세요. 바로 검사하면 증상 전 단계의 룸메이트를 놓치기 쉽습니다(신속항원 민감도 35%).</li>
+    <li><b>매일 검사의 값</b>매일 선별검사의 참여율 <code>compliance</code>를 0.8에서 0.4로 낮추면 감염률과 검사 수가 어떻게 바뀌는지, 위양성으로 격리된 학생이 몇 명인지 함께 보세요.</li>
+  </ol>
+</section>
+
+<nav class="pager" aria-label="이전 다음 사례">
+  <a href="case2_course-registration.html"><span>이전 사례</span><b>A2. 수강신청 서버</b></a>
+  <a class="next" href="case4_phantom-jam.html"><span>다음 사례</span><b>A4. 유령 정체</b></a>
+</nav>
+<footer><a href="https://sites.google.com/view/knunextcom">Next-generation Computing Systems Lab</a>, 경북대학교 컴퓨터학부</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ===== 공통 도구: 색, 캔버스, 난수, 통계, 수식 탐색기 ===== */
+var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+var COL = {};
+function readColors(){
+  var s = getComputedStyle(document.documentElement);
+  ["ink","muted","line","soft","panel","bg","acc","c1","c2","c3","miss","t1","t2","t3","t4","t5"].forEach(function(k){ COL[k] = s.getPropertyValue("--"+k).trim(); });
+}
+readColors();
+function rgba(hex, a){
+  var h = hex.replace("#",""); if(h.length===3) h = h.replace(/(.)/g,"$1$1");
+  var n = parseInt(h,16); return "rgba("+(n>>16&255)+","+(n>>8&255)+","+(n&255)+","+a+")";
+}
+function F(size, weight){ return (weight||400)+" "+size+'px "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif'; }
+function txt(c, s, x, y, o){
+  o = o || {}; c.font = o.font || F(o.size||11, o.weight); c.fillStyle = o.color || COL.muted;
+  c.textAlign = o.align || "left"; c.textBaseline = o.base || "alphabetic"; c.fillText(s, x, y);
+  c.textAlign = "left"; c.textBaseline = "alphabetic";
+}
+function line(c, x0, y0, x1, y1, col, w, dash){
+  c.strokeStyle = col; c.lineWidth = w||1; c.setLineDash(dash||[]);
+  c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.setLineDash([]); c.lineWidth = 1;
+}
+function dot(c, x, y, r, col){ c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+function fmt(v, d){ if(!isFinite(v)) return "∞"; return (+v).toFixed(d===undefined?2:d); }
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+var CANVASES = [];
+function setup(rootOrCanvas, draw){
+  var cv = rootOrCanvas.tagName === "CANVAS" ? rootOrCanvas : rootOrCanvas.querySelector("canvas");
+  var c = cv.getContext("2d"), W = +cv.dataset.w, H = +cv.dataset.h;
+  cv.style.aspectRatio = W + " / " + H;
+  var o = {cv:cv, c:c, W:W, H:H};
+  o.redraw = function(){ c.clearRect(0,0,W,H); draw(c, W, H); };
+  o.fit = function(){
+    var w = cv.clientWidth || W, d = window.devicePixelRatio || 1;
+    cv.width = Math.round(w*d); cv.height = Math.round(w*H/W*d);
+    c.setTransform(cv.width/W, 0, 0, cv.height/H, 0, 0); o.redraw();
+  };
+  o.toLocal = function(ev){ var r = cv.getBoundingClientRect(); return {x:(ev.clientX-r.left)/r.width*W, y:(ev.clientY-r.top)/r.height*H}; };
+  new ResizeObserver(o.fit).observe(cv);
+  CANVASES.push(o);
+  return o;
+}
+function seg(root, sel, onPick){
+  var g = typeof sel === "string" ? root.querySelector(sel) : sel;
+  g.addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    g.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x===b ? "true" : "false"); });
+    onPick(b.dataset.v, b);
+  });
+}
+function bindRange(root, sel, onChange, fmtFn){
+  var inp = root.querySelector(sel), out = inp.parentElement.querySelector("b,output");
+  function u(){ if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value; onChange(+inp.value); }
+  inp.addEventListener("input", u); if(out) out.textContent = fmtFn ? fmtFn(+inp.value) : inp.value;
+  return inp;
+}
+
+/* 축과 눈금 */
+function scale(box, xr, yr){
+  return {box:box, xr:xr, yr:yr,
+    X:function(v){ return box[0] + (v-xr[0])/(xr[1]-xr[0])*(box[2]-box[0]); },
+    Y:function(v){ return box[3] - (v-yr[0])/(yr[1]-yr[0])*(box[3]-box[1]); }};
+}
+function axes(c, s, o){
+  o = o || {}; var b = s.box;
+  (o.yt||[]).forEach(function(v){ var y = s.Y(v); line(c, b[0], y+.5, b[2], y+.5, COL.soft); txt(c, o.fy ? o.fy(v) : v, b[0]-6, y+4, {align:"right", size:10}); });
+  line(c, b[0], b[3]+.5, b[2], b[3]+.5, COL.line);
+  line(c, b[0]+.5, b[1], b[0]+.5, b[3], COL.line);
+  (o.xt||[]).forEach(function(v){ var x = s.X(v); line(c, x+.5, b[3], x+.5, b[3]+4, COL.line); txt(c, o.fx ? o.fx(v) : v, x, b[3]+15, {align:"center", size:10}); });
+  if(o.xl) txt(c, o.xl, b[2], b[3]+28, {align:"right", size:10});
+  if(o.yl) txt(c, o.yl, b[0], b[1]-6, {size:10});
+}
+function path(c, s, pts, col, w, dash){
+  var bx = s.box; c.save(); c.beginPath(); c.rect(bx[0]-1, bx[1]-3, bx[2]-bx[0]+2, bx[3]-bx[1]+4); c.clip();
+  c.strokeStyle = col; c.lineWidth = w||1.6; c.setLineDash(dash||[]); c.beginPath();
+  var started = false;
+  pts.forEach(function(p){ if(p == null || !isFinite(p[1])){ started = false; return; }
+    var x = s.X(p[0]), y = clamp(s.Y(p[1]), s.box[1]-2, s.box[3]+2); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; });
+  c.stroke(); c.setLineDash([]); c.lineWidth = 1; c.restore();
+}
+function ticks(a, b, n){
+  var span = b - a, step = Math.pow(10, Math.floor(Math.log10(span/n))), err = span/n/step;
+  step *= err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1;
+  var out = [], v = Math.ceil(a/step)*step;
+  for(; v <= b + 1e-9; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+
+/* 난수: 재현 가능한 생성기와 분포 */
+function mulberry(seed){ var a = seed >>> 0; return function(){ a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function U(r){ return (r || Math.random)(); }
+function expo(mean, r){ return -mean*Math.log(1-U(r)); }
+function normal(r){ var u = 1-U(r), v = U(r); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gammaRV(k, theta, r){
+  if(k < 1){ return gammaRV(k+1, theta, r)*Math.pow(U(r), 1/k); }
+  var d = k - 1/3, cc = 1/Math.sqrt(9*d);
+  while(true){ var x, v; do { x = normal(r); v = 1 + cc*x; } while(v <= 0);
+    v = v*v*v; var u = U(r);
+    if(u < 1 - .0331*x*x*x*x || Math.log(u) < .5*x*x + d*(1 - v + Math.log(v))) return d*v*theta; }
+}
+function lognormRV(mu, s, r){ return Math.exp(mu + s*normal(r)); }
+function poissonRV(lam, r){ var L = Math.exp(-lam), k = 0, p = 1; do { k++; p *= U(r); } while(p > L); return k-1; }
+
+/* 통계 */
+function mean(a){ var s = 0; for(var i=0;i<a.length;i++) s += a[i]; return s/a.length; }
+function sd(a){ var m = mean(a), s = 0; for(var i=0;i<a.length;i++) s += (a[i]-m)*(a[i]-m); return Math.sqrt(s/(a.length-1)); }
+function quantile(sorted, p){ var i = (sorted.length-1)*p, lo = Math.floor(i), hi = Math.ceil(i); return sorted[lo] + (sorted[hi]-sorted[lo])*(i-lo); }
+function normInv(p){ // Acklam 근사
+  var a=[-39.6968302866538,220.946098424521,-275.928510446969,138.357751867269,-30.6647980661472,2.50662827745924],
+      b=[-54.4760987982241,161.585836858041,-155.698979859887,66.8013118877197,-13.2806815528857],
+      cc=[-.00778489400243029,-.322396458041136,-2.40075827716184,-2.54973253934373,4.37466414146497,2.93816398269878],
+      d=[.00778469570904146,.32246712907004,2.445134137143,3.75440866190742], q, r;
+  if(p < .02425){ q = Math.sqrt(-2*Math.log(p)); return (((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if(p > .97575){ q = Math.sqrt(-2*Math.log(1-p)); return -(((((cc[0]*q+cc[1])*q+cc[2])*q+cc[3])*q+cc[4])*q+cc[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  q = p - .5; r = q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+}
+function normCdf(x){ var t = 1/(1+.2316419*Math.abs(x)), y = .3989423*Math.exp(-x*x/2)*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return x > 0 ? 1-y : y; }
+function tcrit(df, conf){ // 양측 신뢰수준 conf의 t 임계값 (Cornish-Fisher 근사)
+  var z = normInv(1 - (1-(conf||.95))/2), z3 = z*z*z, z5 = z3*z*z, z7 = z5*z*z;
+  return z + (z3+z)/(4*df) + (5*z5+16*z3+3*z)/(96*df*df) + (3*z7+19*z5+17*z3-15*z)/(384*df*df*df);
+}
+
+/* 수식 탐색기: 항을 누르면 강조하고 설명을 보여 준다. EQ[id](값) 이 실시간 계산을 맡는다. */
+var EQ = {}, EQRUN = {};
+function refreshEq(id){ if(EQRUN[id]) EQRUN[id](); }
+function initEqx(){
+  document.querySelectorAll(".eqx").forEach(function(box){
+    var detail = box.querySelector(".eq-detail"), btns = box.querySelectorAll(".eq-terms button");
+    function pick(t){
+      var same = box.dataset.on === t;
+      if(same || !t){ delete box.dataset.on; } else box.dataset.on = t;
+      box.querySelectorAll(".eq-big .t").forEach(function(s){ s.classList.toggle("on", !same && s.dataset.t === t); });
+      btns.forEach(function(b){ b.setAttribute("aria-pressed", !same && b.dataset.t === t ? "true" : "false"); });
+      if(detail){ var src = box.querySelector('template[data-t="'+t+'"]'); detail.innerHTML = !same && src ? src.innerHTML : ""; }
+    }
+    btns.forEach(function(b){
+      var t = box.querySelector('.eq-big .t[data-t="'+b.dataset.t+'"]'); if(t) b.dataset.c = t.dataset.c;
+      b.style.setProperty("--tc", "var(--t"+(b.dataset.c||1)+")");
+      b.addEventListener("click", function(){ pick(b.dataset.t); });
+    });
+    box.querySelectorAll(".eq-big .t").forEach(function(s){ s.tabIndex = 0; s.setAttribute("role","button");
+      s.addEventListener("click", function(){ pick(s.dataset.t); });
+      s.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pick(s.dataset.t); } }); });
+    var fn = EQ[box.id];
+    if(fn){
+      var vars = box.querySelectorAll("[data-var]");
+      var run = function(){
+        var v = {}; vars.forEach(function(i){ v[i.dataset.var] = i.type === "checkbox" ? i.checked : +i.value;
+          var o = i.parentElement.querySelector("b"); if(o) o.textContent = i.dataset.fmt ? fmt(+i.value, +i.dataset.fmt) : i.value; });
+        var res = fn(v, box) || {};
+        Object.keys(res).forEach(function(k){ box.querySelectorAll('[data-o="'+k+'"]').forEach(function(el){ el.innerHTML = res[k]; }); });
+      };
+      vars.forEach(function(i){ i.addEventListener("input", run); });
+      EQRUN[box.id] = run; run();
+    }
+  });
+}
+function onTheme(){ readColors(); CANVASES.forEach(function(o){ o.redraw(); }); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onTheme);
+new MutationObserver(onTheme).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+
+/* 감마 함수와 분포 함수 */
+function lgamma(x){
+  var g = 7, cf = [0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(x < .5) return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*x))) - lgamma(1-x);
+  x -= 1; var a = cf[0], t = x + g + .5;
+  for(var i=1;i<g+2;i++) a += cf[i]/(x+i);
+  return .5*Math.log(2*Math.PI) + (x+.5)*Math.log(t) - t + Math.log(a);
+}
+function gammaP(a, x){ // 정규화된 하부 불완전 감마 함수
+  if(x <= 0) return 0;
+  var gln = lgamma(a);
+  if(x < a + 1){ var ap = a, sum = 1/a, del = sum; for(var n=0;n<300;n++){ ap++; del *= x/ap; sum += del; if(Math.abs(del) < Math.abs(sum)*1e-12) break; } return sum*Math.exp(-x + a*Math.log(x) - gln); }
+  var b = x + 1 - a, c = 1e300, d = 1/b, h = d;
+  for(var i=1;i<300;i++){ var an = -i*(i-a); b += 2; d = an*d + b; if(Math.abs(d) < 1e-300) d = 1e-300; c = b + an/c; if(Math.abs(c) < 1e-300) c = 1e-300; d = 1/d; var del2 = d*c; h *= del2; if(Math.abs(del2-1) < 1e-12) break; }
+  return 1 - Math.exp(-x + a*Math.log(x) - gln)*h;
+}
+function gammaPdf(x, k, th){ if(x <= 0) return (k < 1 && x === 0) ? Infinity : 0; return Math.exp((k-1)*Math.log(x) - x/th - lgamma(k) - k*Math.log(th)); }
+function chi2crit(df, z){ z = z || 1.6449; var a = 2/(9*df); return df*Math.pow(1 - a + z*Math.sqrt(a), 3); }
+function seededSample(seed, n, gen){ var r = mulberry(seed), out = []; for(var i=0;i<n;i++) out.push(gen(r)); return out; }
+
+
+/* ===== 응용 사례 A3 기숙사 독감 ===== */
+/* ---------- 기숙사 독감: ABM과 SD ---------- */
+/* 4개 동 × 5층 × 15실 × 2명 = 600명. 하루 단위. S(0) → E(1) → I(2) → R(3). 격리된 I는 접촉이 없다 */
+var FLU = {B:4, F:5, R:15, sig:.5, gam:.25, det:.25, base:{room:.20, floor:.012, bldg:.0012, all:.0002}};
+FLU.N = FLU.B*FLU.F*FLU.R*2;
+function fluRates(s, pol){ var q = FLU.base; return {room:q.room*s, floor:q.floor*s*(pol === "floor" ? .3 : 1), bldg:q.bldg*s*(pol === "floor" ? .6 : 1), all:q.all*s}; }
+function fluABM(o, seed){
+  var rng = mulberry(seed), N = FLU.N, F = FLU.F, R = FLU.R, q = fluRates(o.s, o.pol), days = o.days || 120;
+  var st = new Uint8Array(N), iso = new Uint8Array(N), room = new Int16Array(N), flo = new Int16Array(N), bld = new Int16Array(N);
+  for(var i=0;i<N;i++){ var rm = i >> 1; room[i] = rm; flo[i] = Math.floor(rm/R); bld[i] = Math.floor(rm/(R*F)); }
+  for(var k=0;k<o.seed0;k++) st[Math.floor(rng()*N)] = 2;
+  var cR = new Int16Array(N/2), cF = new Int16Array(FLU.B*F), cB = new Int16Array(FLU.B), nxt = new Uint8Array(N), curve = [], cum = 0, snaps = o.snap ? [] : null;
+  var lr = Math.log(1-q.room), lf = Math.log(1-q.floor), lb = Math.log(1-q.bldg), la = Math.log(1-q.all);
+  for(var d=0; d<days; d++){
+    cR.fill(0); cF.fill(0); cB.fill(0); var cA = 0, active = 0;
+    for(i=0;i<N;i++){ if(st[i] === 2 && !iso[i]){ cR[room[i]]++; cF[flo[i]]++; cB[bld[i]]++; cA++; } if(st[i] === 1 || st[i] === 2) active++; }
+    if(!active){ for(; d<days; d++){ curve.push(0); if(snaps) snaps.push(snaps[snaps.length-1]); } break; }
+    var I = 0;
+    for(i=0;i<N;i++){
+      var s = st[i];
+      if(s === 0){ var nr = cR[room[i]], nf = cF[flo[i]] - nr, nb = cB[bld[i]] - cF[flo[i]], na = cA - cB[bld[i]];
+        nxt[i] = rng() < 1 - Math.exp(nr*lr + nf*lf + nb*lb + na*la) ? 1 : 0; if(nxt[i]) cum++; }
+      else if(s === 1) nxt[i] = rng() < FLU.sig ? 2 : 1;
+      else if(s === 2) nxt[i] = rng() < FLU.gam ? 3 : 2;
+      else nxt[i] = 3;
+    }
+    for(i=0;i<N;i++){
+      if(st[i] === 2 && nxt[i] === 2 && o.pol === "iso" && !iso[i] && rng() < FLU.det) iso[i] = 1;
+      if(nxt[i] !== 2) iso[i] = 0;
+      st[i] = nxt[i]; if(st[i] === 2) I++;
+    }
+    curve.push(I);
+    if(snaps){ var sn = new Uint8Array(N); for(i=0;i<N;i++) sn[i] = st[i] + (iso[i] ? 4 : 0); snaps.push(sn); }
+  }
+  var pk = Math.max.apply(null, curve);
+  return {curve:curve, attack:(cum + o.seed0)/N, snaps:snaps, peak:pk, peakDay:curve.indexOf(pk)};
+}
+/* 같은 접촉 강도를 고루 섞인 집단에 펼친 SD (차분방정식, Δt = 1일). beta를 주면 그 값을 쓴다 */
+function fluBeta(s, pol){ var q = fluRates(s, pol); return q.room*1 + q.floor*28 + q.bldg*120 + q.all*450; }
+function fluSD(o){
+  var N = FLU.N, beta = o.beta !== undefined ? o.beta : fluBeta(o.s, o.pol), S = N - o.seed0, E = 0, Ia = o.seed0, Iq = 0, curve = [], isoF = o.pol === "iso" ? FLU.det : 0;
+  var D = o.days || 120;
+  for(var d=0; d<Math.max(D, 400); d++){
+    var inf = S*(1 - Math.exp(-beta*Ia/N)), toI = E*FLU.sig, recA = Ia*FLU.gam, recQ = Iq*FLU.gam, isoN = (Ia - recA)*isoF;
+    S -= inf; E += inf - toI; Ia += toI - recA - isoN; Iq += isoN - recQ;
+    if(d < D) curve.push(Ia + Iq);
+  }
+  var pk = Math.max.apply(null, curve);
+  return {curve:curve, attack:(N - S)/N, peak:pk, peakDay:curve.indexOf(pk), beta:beta};
+}
+/* SD의 beta를 목표 최종 감염률에 맞춘다 (보정) */
+function fluCalib(target, days){ var a = .01, b = 2; for(var i=0;i<50;i++){ var m = (a+b)/2; if(fluSD({beta:m, seed0:2, pol:"none", days:days||200}).attack < target) a = m; else b = m; } return (a+b)/2; }
+
+function inView(el, cb){ if(!("IntersectionObserver" in window)){ cb(true); return; } new IntersectionObserver(function(es){ cb(es[0].isIntersecting); }, {rootMargin:"60px"}).observe(el); }
+var POLN = {none:"대책 없음", iso:"증상자 격리", floor:"층 휴게실 폐쇄"};
+/* 반복 실행 캐시: 화면이 멈추지 않도록 조금씩 나눠 돌린다 */
+var RUNS = {}, RUNQ = [];
+function getRuns(s, pol, n, cb){
+  var key = s.toFixed(2) + pol;
+  if(RUNS[key] && RUNS[key].done) { cb(RUNS[key].res); return; }
+  if(!RUNS[key]) RUNS[key] = {res:[], done:false, cbs:[]};
+  RUNS[key].cbs.push(cb);
+  if(RUNS[key].started) return;
+  RUNS[key].started = true;
+  (function chunk(){
+    var R = RUNS[key];
+    for(var k=0; k<5 && R.res.length < n; k++) R.res.push(fluABM({s:s, pol:pol, seed0:2}, R.res.length + 1));
+    if(R.res.length < n) setTimeout(chunk, 0);
+    else { R.done = true; R.cbs.forEach(function(f){ f(R.res); }); R.cbs = []; }
+  })();
+}
+function stats(res){ var a = res.map(function(r){ return r.attack; }), m = mean(a), h = 1.96*sd(a)/Math.sqrt(a.length); return {m:m, h:h, fade:a.filter(function(x){ return x < .05; }).length}; }
+
+/* ---------- 2.2 기숙사 한 번의 실행 ---------- */
+(function(){
+  var root = document.getElementById("w-dorm"); if(!root) return;
+  var s = .7, pol = "none", seed = 1, run, sdr, day = 0, playing = !REDUCED, visible = false, acc = 0;
+  function rerun(){ run = fluABM({s:s, pol:pol, seed0:2, snap:true}, seed); sdr = fluSD({s:s, pol:pol, seed0:2}); day = REDUCED ? 119 : 0; }
+  var view = setup(root, function(c, W, H){
+    var snap = run.snaps[Math.min(day, run.snaps.length-1)], bw = 140, gap = 16, x0 = 16, y0 = 22, rw = bw/15, fh = 14;
+    for(var b=0;b<4;b++){
+      var bx = x0 + b*(bw + gap);
+      txt(c, (b+1) + "동", bx, 14, {size:10.5, color:COL.ink});
+      for(var f=0;f<5;f++) for(var r=0;r<15;r++) for(var k=0;k<2;k++){
+        var i = ((b*5 + f)*15 + r)*2 + k, v = snap[i], x = bx + r*rw + k*(rw/2) + .5, y = y0 + (4 - f)*fh + 1, w = rw/2 - 1.2, h = fh - 3;
+        var st = v & 3, iso = v >= 4;
+        if(iso){ c.strokeStyle = COL.miss; c.lineWidth = 1.2; c.strokeRect(x + .5, y + .5, w - 1, h - 1); c.lineWidth = 1; continue; }
+        c.fillStyle = st === 0 ? COL.line : st === 1 ? COL.c2 : st === 2 ? COL.miss : rgba(COL.acc, .35);
+        c.fillRect(x, y, w, h);
+      }
+    }
+    var top = Math.max(10, Math.max.apply(null, run.curve), Math.max.apply(null, sdr.curve))*1.1;
+    var s2 = scale([44, 116, 620, 288], [0, 120], [0, top]);
+    axes(c, s2, {xt:[0,20,40,60,80,100,120], yt:ticks(0, top, 4), xl:"날짜", yl:"전파 가능 인원"});
+    path(c, s2, sdr.curve.map(function(v, d){ return [d+1, v]; }), COL.ink, 2, [6,4]);
+    path(c, s2, run.curve.slice(0, day + 1).map(function(v, d){ return [d+1, v]; }), COL.miss, 2.2);
+    line(c, s2.X(day+1), s2.box[1], s2.X(day+1), s2.box[3], COL.muted, 1, [2,3]);
+    txt(c, "ABM (실선), SD (점선)", 620, 112, {size:10, align:"right"});
+  });
+  function report(){
+    var snap = run.snaps[Math.min(day, run.snaps.length-1)], nI = 0, nQ = 0, ever = 0;
+    for(var i=0;i<snap.length;i++){ var st = snap[i] & 3; if(st === 2){ nI++; if(snap[i] >= 4) nQ++; } if(st > 0) ever++; }
+    root.querySelector("[data-out]").innerHTML = (day + 1) + "일째: 전파 가능 <b>" + nI + "명</b>" + (pol === "iso" ? "(그중 격리 " + nQ + "명)" : "") + ", 지금까지 감염 <b>" + ever + "명</b>(" + fmt(100*ever/FLU.N, 1) + "%). 같은 날 SD는 " + fmt(sdr.curve[day], 0) + "명. 이 실행의 최종 감염률 " + fmt(run.attack*100, 1) + "%, SD는 " + fmt(sdr.attack*100, 1) + "%.";
+  }
+  bindRange(root, "[data-s]", function(v){ s = v; rerun(); view.redraw(); report(); }, function(v){ return fmt(v, 2); });
+  seg(root, '[data-g="pol"]', function(v){ pol = v; rerun(); view.redraw(); report(); });
+  var pb = root.querySelector('[data-act="play"]');
+  pb.onclick = function(){ playing = !playing; if(playing && day >= 119) day = 0; pb.textContent = playing ? "일시정지" : "재생"; };
+  pb.textContent = playing ? "일시정지" : "재생";
+  root.querySelector('[data-act="new"]').onclick = function(){ seed++; rerun(); view.redraw(); report(); };
+  inView(root, function(v){ visible = v; });
+  rerun(); view.redraw(); report();
+  var last = performance.now();
+  (function frame(now){
+    var dt = Math.min(.1, (now - last)/1000); last = now;
+    if(playing && visible && day < 119){ acc += dt; if(acc > .12){ acc = 0; day++; view.redraw(); report(); } }
+    requestAnimationFrame(frame);
+  })(last);
+})();
+
+/* ---------- 3.1 ABM 40번과 SD ---------- */
+(function(){
+  var root = document.getElementById("w-ens"); if(!root) return;
+  var s = .7, pol = "none", res = null, base = null, out = root.querySelector("[data-out]");
+  function calBeta(){ return fluCalib(stats(base).m); }
+  var view = setup(root, function(c, W, H){
+    var raw = fluSD({s:s, pol:pol, seed0:2}), top = Math.max(10, Math.max.apply(null, raw.curve));
+    if(res) res.forEach(function(r){ top = Math.max(top, Math.max.apply(null, r.curve)); });
+    top *= 1.1;
+    var sc = scale([44, 14, 620, 216], [0, 120], [0, top]);
+    axes(c, sc, {xt:[0,20,40,60,80,100,120], yt:ticks(0, top, 4), xl:"날짜", yl:"전파 가능 인원"});
+    if(res) res.forEach(function(r){ path(c, sc, r.curve.map(function(v, d){ return [d+1, v]; }), rgba(COL.acc, .3), 1.1); });
+    path(c, sc, raw.curve.map(function(v, d){ return [d+1, v]; }), COL.ink, 2.4, [7,4]);
+    if(base){ var b = calBeta()*fluBeta(s, pol)/fluBeta(s, "none"), cal = fluSD({beta:b, pol:pol, seed0:2}); path(c, sc, cal.curve.map(function(v, d){ return [d+1, v]; }), COL.muted, 1.6, [3,3]); }
+  });
+  function report(){
+    if(!res || !base){ out.innerHTML = "ABM 40번을 돌리는 중입니다…"; return; }
+    var st = stats(res), raw = fluSD({s:s, pol:pol, seed0:2}), bc = calBeta(), b = bc*fluBeta(s, pol)/fluBeta(s, "none"), cal = fluSD({beta:b, pol:pol, seed0:2});
+    out.innerHTML = POLN[pol] + ": ABM 평균 최종 감염률 <b>" + fmt(st.m*100, 1) + "% ± " + fmt(st.h*100, 1) + "</b>, 40번 중 <b>" + st.fade + "번</b>은 초기에 꺼짐. 같은 매개변수의 SD <b>" + fmt(raw.attack*100, 1) + "%</b>(R<sub>0</sub> = " + fmt(fluBeta(s, pol)/FLU.gam, 2) + "), 보정한 SD " + fmt(cal.attack*100, 1) + "%(대책 없음 기준 R<sub>0</sub> = " + fmt(bc/FLU.gam, 2) + ").";
+  }
+  function load(){ res = null; base = null; view.redraw(); report();
+    var S0 = s, P0 = pol;
+    getRuns(S0, "none", 40, function(b){ if(S0 !== s) return; base = b; getRuns(S0, P0, 40, function(r){ if(S0 !== s || P0 !== pol) return; res = r; view.redraw(); report(); }); });
+  }
+  bindRange(root, "[data-s]", function(v){ s = v; load(); }, function(v){ return fmt(v, 2); });
+  seg(root, '[data-g="pol"]', function(v){ pol = v; load(); });
+  inView(root, function(v){ if(v && !res && !base) load(); });
+  report();
+})();
+
+/* ---------- 3.2 대책별 최종 감염률 ---------- */
+(function(){
+  var root = document.getElementById("w-pol"); if(!root) return;
+  var s = .7, R = {}, out = root.querySelector("[data-out]"), P = ["none","iso","floor"];
+  var view = setup(root, function(c, W, H){
+    var sc = scale([150, 14, 620, 190], [0, 100], [0, 3]);
+    axes(c, sc, {xt:[0,20,40,60,80,100], fx:function(v){ return v + "%"; }, xl:"최종 감염률"});
+    var bc = R.none ? fluCalib(stats(R.none).m) : null;
+    P.forEach(function(p, i){
+      var y = 30 + i*54; txt(c, POLN[p], 142, y + 14, {align:"right", size:12, color:COL.ink});
+      if(R[p]){ var st = stats(R[p]); c.fillStyle = rgba(COL.acc, .6); c.fillRect(sc.X(0), y, sc.X(st.m*100) - sc.X(0), 22);
+        line(c, sc.X((st.m - st.h)*100), y + 11, sc.X((st.m + st.h)*100), y + 11, COL.ink, 1.6); }
+      var raw = fluSD({s:s, pol:p, seed0:2}).attack*100;
+      c.strokeStyle = COL.ink; c.lineWidth = 1.6; c.beginPath(); c.arc(sc.X(raw), y + 11, 5, 0, 7); c.stroke(); c.lineWidth = 1;
+      if(bc){ var cal = fluSD({beta:bc*fluBeta(s, p)/fluBeta(s, "none"), pol:p, seed0:2}).attack*100, x = sc.X(cal);
+        c.fillStyle = COL.c2; c.beginPath(); c.moveTo(x, y + 4); c.lineTo(x + 6, y + 11); c.lineTo(x, y + 18); c.lineTo(x - 6, y + 11); c.fill(); }
+    });
+  });
+  function report(){
+    if(!R.none || !R.iso || !R.floor){ out.innerHTML = "ABM을 대책마다 40번씩 돌리는 중입니다…"; return; }
+    var a = P.map(function(p){ var st = stats(R[p]); return POLN[p] + " " + fmt(st.m*100, 1) + "%"; });
+    out.innerHTML = "ABM: " + a.join(", ") + ". 같은 시드 1~40번을 세 대책에 똑같이 썼습니다.";
+  }
+  function load(){ R = {}; view.redraw(); report(); var S0 = s;
+    P.forEach(function(p){ getRuns(S0, p, 40, function(r){ if(S0 !== s) return; R[p] = r; view.redraw(); report(); }); }); }
+  bindRange(root, "[data-s]", function(v){ s = v; load(); }, function(v){ return fmt(v, 2); });
+  var started = false; inView(root, function(v){ if(v && !started){ started = true; load(); } });
+  report();
+})();
+
+/* ===== 5. 학생 160명의 일과 위에 쌓은 ABM ===== */
+/* ================================================================
+   기숙사 ABM: 일과, 장소, 병의 진행, 검사, 격리 프로토콜
+   시간 한 칸 = 10분, 하루 = 144칸. 정책(policy)과 매개변수(P)는 바깥에서 넘긴다.
+   ================================================================ */
+var DA = {
+  B:2, F:4, R:10, TICK:10, DAY:144, PH:6,
+  SLOTS:[9*6, 10.5*6, 12*6, 13.5*6, 15*6, 16.5*6], CLASSLEN:8,    // 시작 칸(10분 단위), 수업 80분 = 8칸
+  NCOURSE:24, NROOM:6, ELEV_CAP:8, WARD:10
+};
+DA.N = DA.B*DA.F*DA.R*2;
+/* 장소마다 감염원 한 명이 1분 동안 옆 사람을 감염시키는 세기 (기본값, 전파력 s를 곱한다) */
+DA.BETA = {room:.0006, shower:.008, lounge:.0015, class:.00008, cafe:.00006, elev:.012, lobby:.001, ward:0, out:0};
+DA.LN = ["room","shower","lounge","class","cafe","out","ward"]; DA.LC = {}; DA.LN.forEach(function(n, i){ DA.LC[n] = i; });
+/* 병의 진행: E 잠복(감염력 없음) → P 증상 전(감염력 있음) → Sy 증상 / A 무증상 → R. 기간은 사람마다 뽑는다(일) */
+DA.DIS = {E:[2.0, .6], P:[1.5, .5], Sy:[4.0, 1.0], A:[4.0, 1.0], pAsym:.35, inf:{P:.8, Sy:1, SyLate:.5, A:.5}};
+/* 검사의 민감도: 상태에 따라 다르다. 특이도는 위양성 확률 = 1 − 특이도 */
+DA.TEST = {
+  RAT:{sens:{S:0, E:0, P:.35, Sy:.8, SyLate:.5, A:.45, R:.05}, spec:.995, delay:0},
+  PCR:{sens:{S:0, E:.15, P:.85, Sy:.95, SyLate:.9, A:.9, R:.5}, spec:.999, delay:1}
+};
+function daLogn(r, m, sd){ var s2 = Math.log(1 + sd*sd/(m*m)), mu = Math.log(m) - s2/2, u = 1 - r(), v = r(); return Math.exp(mu + Math.sqrt(s2)*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)); }
+function daNorm(r, m, sd){ var u = 1 - r(), v = r(); return m + sd*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+
+function DormABM(policy, seed, opt){
+  opt = opt || {};
+  var r = mulberry(seed); this.r = r; this.pol = policy; this.s = opt.s || .5; this.t = 0; this.day = 0;
+  this.A = []; this.log = {inf:[], cum:0, tests:0, fp:0, isoDays:0, missed:0, wardPeak:0, peakInf:0, daily:[]};
+  this.lounge = {}; this.pending = [];
+  // 강좌: 요일 묶음(월수, 화목, 금), 시간대, 강의실
+  this.course = [];
+  for(var c=0;c<DA.NCOURSE;c++) this.course.push({days:[[0,2],[1,3],[4]][c % 3], slot:Math.floor(r()*DA.SLOTS.length), room:Math.floor(r()*DA.NROOM)});
+  for(var i=0;i<DA.N;i++){
+    var rm = i >> 1, fl = Math.floor(rm/DA.R) % DA.F, b = Math.floor(rm/(DA.R*DA.F)), k = 3 + Math.floor(r()*3), cs = [];
+    while(cs.length < k){ var cc = Math.floor(r()*DA.NCOURSE); if(cs.indexOf(cc) < 0) cs.push(cc); }
+    this.A.push({id:i, room:rm, fl:fl, b:b, mate:i ^ 1, courses:cs,
+      wake:Math.round(Math.max(6.5, Math.min(10.5, daNorm(r, 7.75, .7)))*DA.PH), sleep:Math.round(Math.max(22.5, Math.min(26, daNorm(r, 24, .75)))*DA.PH),
+      morningShower:r() < .5, social:.1 + .8*r(), elevPref:fl === 0 ? 0 : .3 + .7*r(), mealP:.6 + .4*r(),
+      st:"S", tIn:0, dur:{}, sym:false, iso:0, quar:0, isoPlace:null, plan:null, loc:"room", locId:rm, prev:"room", prevId:rm, stayIn:false, lastNeg:-99, tested:0, dx:false});
+  }
+  for(var k2=0;k2<(opt.seed0 || 2);k2++) this.infect(this.A[Math.floor(r()*DA.N)], "P");
+  this.planDay();
+}
+DormABM.prototype.infect = function(a, start){
+  var r = this.r, D = DA.DIS; a.st = start || "E"; a.tIn = this.t;
+  a.dur = {E:daLogn(r, D.E[0], D.E[1]), P:daLogn(r, D.P[0], D.P[1])}; a.asym = r() < D.pAsym; a.dur.I = daLogn(r, a.asym ? D.A[0] : D.Sy[0], a.asym ? D.A[1] : D.Sy[1]);
+  a.infT = this.t; this.log.cum++;
+};
+DormABM.prototype.stage = function(a){ // 화면과 검사에 쓰는 세부 상태
+  if(a.st === "I") return a.asym ? "A" : ((this.t - a.tIn)/DA.DAY < 2 ? "Sy" : "SyLate");
+  return a.st;
+};
+DormABM.prototype.infectiousness = function(a){ var g = this.stage(a), f = DA.DIS.inf; return g === "P" ? f.P : g === "Sy" ? f.Sy : g === "SyLate" ? f.SyLate : g === "A" ? f.A : 0; };
+/* 하루 계획: (시작 칸, 끝 칸, 장소, 장소 번호) 목록 */
+DormABM.prototype.planDay = function(){
+  this.A.forEach(function(a){ a.pi = 0; });
+  var r = this.r, wd = this.day % 7, me = this, pol = this.pol;
+  this.A.forEach(function(a){
+    var P = [], sick = a.st === "I" && !a.asym && pol.sickStay && a.stayIn;
+    function add(s, e, loc, id){ P.push([s, e, loc, id]); }
+    if(a.iso || a.quar){ // 격리: 방이나 격리실에서만. 격리 중 샤워는 층 샤워실을 늦은 밤에 혼자 쓴다고 본다
+      a.plan = [daEntry(0, DA.DAY, a.isoPlace === "ward" ? "ward" : "room", a.isoPlace === "ward" ? 0 : a.room)]; return; }
+    var sh = a.morningShower ? a.wake + 1 : 21*DA.PH + Math.floor(r()*2*DA.PH);
+    add(sh, sh + 1 + Math.floor(r()*2), "shower", a.b*DA.F + a.fl);
+    if(wd < 5 && !sick){
+      a.courses.forEach(function(c){ var C = me.course[c]; if(C.days.indexOf(wd) >= 0 && r() < .92) add(DA.SLOTS[C.slot], DA.SLOTS[C.slot] + DA.CLASSLEN, "class", C.room); });
+    }
+    if(!sick || r() < .5){
+      if(r() < a.mealP){ var l0 = 11.5*DA.PH + Math.floor(r()*2*DA.PH); add(l0, l0 + 3, "cafe", 0); }
+      if(r() < a.mealP){ var d0 = 17.5*DA.PH + Math.floor(r()*2*DA.PH); add(d0, d0 + 3, "cafe", 0); }
+    }
+    if(!sick && r() < a.social && !me.lounge[a.b*DA.F + a.fl] && !pol.allLounge){ var g0 = 19.5*DA.PH + Math.floor(r()*2.5*DA.PH); add(g0, g0 + 3 + Math.floor(r()*6), "lounge", a.b*DA.F + a.fl); }
+    if(!sick && wd < 5 && r() < .5){ var o0 = 13*DA.PH + Math.floor(r()*4*DA.PH); add(o0, o0 + DA.PH + Math.floor(r()*2*DA.PH), "out", 0); }   // 도서관, 동아리 등 모형 밖
+    // 겹치면 먼저 들어온 일정을 남긴다
+    P.sort(function(x, y){ return x[0] - y[0]; });
+    var Q = []; P.forEach(function(p){ if(!Q.length || p[0] >= Q[Q.length-1][1]) Q.push(p); });
+    Q.forEach(function(p){ p[4] = DA.LC[p[2]]*1000 + p[3]; p[5] = daOutside(p[2]); });
+    a.plan = Q;
+  });
+};
+DormABM.prototype.where = function(a, k){ // k = 오늘의 칸
+  var p = a.plan; for(var i=0;i<p.length;i++) if(k >= p[i][0] && k < p[i][1]) return [p[i][2], p[i][3]];
+  if(a.iso || a.quar) return [a.isoPlace === "ward" ? "ward" : "room", a.isoPlace === "ward" ? 0 : a.room];
+  return ["room", a.room];
+};
+function daOutside(l){ return l === "class" || l === "cafe" || l === "out"; }
+function daEntry(s, e, loc, id){ return [s, e, loc, id, DA.LC[loc]*1000 + id, daOutside(loc)]; }
+DormABM.prototype.step = function(){
+  var k = this.t % DA.DAY, me = this, A = this.A, pol = this.pol, r = this.r, N = A.length, i, a;
+  if(k === 0) for(i=0;i<N;i++) A[i].pi = 0;
+  // 1) 위치. 계획은 시간순이므로 포인터 하나로 따라간다
+  var nElev = [0, 0];
+  for(i=0;i<N;i++){
+    a = A[i]; var p = a.plan, loc = "room", id = a.room, lc = a.room, out = false;
+    while(a.pi < p.length && k >= p[a.pi][1]) a.pi++;
+    if(a.pi < p.length && k >= p[a.pi][0]){ var e = p[a.pi]; loc = e[2]; id = e[3]; lc = e[4]; out = e[5]; }
+    else if((a.iso || a.quar) && a.isoPlace === "ward"){ loc = "ward"; id = 0; lc = DA.LC.ward*1000; }
+    var wasOut = a.out; a.prev = a.loc; a.loc = loc; a.locId = id; a.lc = lc; a.out = out; a.tc = 0;
+    // 기숙사 안과 밖을 오가는 칸: 2층 이상이면 엘리베이터(정원 8명씩, 넘치면 로비에서 대기)나 계단
+    if(out !== wasOut && a.fl > 0 && !(a.iso || a.quar) && r() < a.elevPref){
+      var n = nElev[a.b]++; a.tc = n < 2*DA.ELEV_CAP ? 90000 + a.b*100 + Math.floor(n/DA.ELEV_CAP) : 95000 + a.b;
+    }
+  }
+  // 2) 감염: 감염력이 있는 사람이 있는 장소만 계산한다
+  var load = {}, any = false, s = this.s, mask = pol.mask ? .5 : 1;
+  for(i=0;i<N;i++){ a = A[i]; if(a.st !== "P" && a.st !== "I") continue; var f = this.infectiousness(a); if(f > 0){ load[a.lc] = (load[a.lc] || 0) + f; if(a.tc) load[a.tc] = (load[a.tc] || 0) + f; any = true; } }
+  if(any) for(i=0;i<N;i++){
+    a = A[i]; if(a.st !== "S") continue;
+    for(var q=0;q<2;q++){ var code = q ? a.tc : a.lc; if(!code || !load[code]) continue;
+      var lname = code >= 95000 ? "lobby" : code >= 90000 ? "elev" : DA.LN[Math.floor(code/1000)], beta = DA.BETA[lname]; if(!beta) continue;
+      var mins = lname === "elev" ? 1 : lname === "lobby" ? 3 : DA.TICK, mk = (lname === "class" || lname === "cafe" || lname === "elev" || lname === "lobby") ? mask : 1;
+      if(r() < 1 - Math.exp(-s*beta*mk*mk*load[code]*mins)){ this.infect(a, "E"); a.where = lname; this.log.inf.push([this.t, lname]); break; } }
+  }
+  // 3) 병의 진행 (한 시간마다 확인해도 충분하다)
+  if(k % DA.PH === 0) for(i=0;i<N;i++){
+    a = A[i]; if(a.st === "S" || a.st === "R") continue;
+    var d = (this.t - a.tIn)/DA.DAY;
+    if(a.st === "E" && d >= a.dur.E){ a.st = "P"; a.tIn = this.t; }
+    else if(a.st === "P" && d >= a.dur.P){ a.st = "I"; a.tIn = this.t; if(!a.asym){ a.sym = true; a.symT = this.t; a.stayIn = r() < (pol.sickStayP || .6); } }
+    else if(a.st === "I" && d >= a.dur.I){ a.st = "R"; a.tIn = this.t; a.sym = false; a.recT = this.t; }
+  }
+  // 4) 검사와 격리 (정책 모듈)
+  this.testing(k);
+  this.t++;
+  if(this.t % DA.DAY === 0) this.endDay();
+};
+DormABM.prototype.testOne = function(a, type){
+  var T = DA.TEST[type], g = this.stage(a); this.log.tests++; a.tested++;
+  if(g === "R" && (this.t - a.recT)/DA.DAY > (type === "PCR" ? 10 : 3)) g = "S";
+  var pos = this.r() < (g === "S" ? 1 - T.spec : T.sens[g]);
+  if(pos && (a.st === "S" || g === "S")) this.log.fp++;
+  return pos;
+};
+DormABM.prototype.order = function(a, type){ // 검사를 하고 결과가 나오면 처리한다
+  var pos = this.testOne(a, type), at = this.t + DA.TEST[type].delay*DA.DAY;
+  if(DA.TEST[type].delay === 0) this.result(a, pos); else this.pending.push([at, a, pos]);
+};
+DormABM.prototype.result = function(a, pos){
+  var pol = this.pol, me = this;
+  if(!pos){ a.lastNeg = this.t; return; }
+  if(a.iso) return;
+  a.dx = true; a.isoStart = this.t;
+  var ward = this.A.filter(function(x){ return x.iso && x.isoPlace === "ward"; }).length;
+  a.iso = 1; a.isoPlace = pol.isoPlace === "ward" && ward < DA.WARD ? "ward" : "room";
+  if(pol.mate !== "none"){ var m = this.A[a.mate]; if(!m.iso){
+      if(pol.mate === "quarantine"){ m.quar = 1; m.quarStart = this.t; m.isoPlace = "room"; }
+      if(pol.mate === "test") this.order(m, "RAT"); } }
+  if(pol.floorRule){ var key = a.b*DA.F + a.fl, n = this.A.filter(function(x){ return x.dx && x.b === a.b && x.fl === a.fl && me.t - x.isoStart < 7*DA.DAY; }).length; if(n >= 2) this.lounge[key] = this.t + 7*DA.DAY; }
+  a.plan = [daEntry(0, DA.DAY, a.isoPlace === "ward" ? "ward" : "room", a.isoPlace === "ward" ? 0 : a.room)]; a.pi = 0;
+};
+DormABM.prototype.testing = function(k){
+  var pol = this.pol, me = this, t = this.t;
+  this.pending = this.pending.filter(function(p){ if(p[0] <= t){ me.result(p[1], p[2]); return false; } return true; });
+  if(k === 8*DA.PH){ // 아침 8시: 정기 선별검사와 격리 해제 판정
+    var wd = this.day % 7;
+    if(pol.screen === "daily" || (pol.screen === "twice" && (wd === 0 || wd === 3))){
+      var type = pol.screen === "daily" ? "RAT" : "PCR";
+      this.A.forEach(function(a){ if(!a.iso && me.r() < (pol.compliance || .8)) me.order(a, type); });
+    }
+    this.A.forEach(function(a){
+      if(a.iso){ var d = (t - a.isoStart)/DA.DAY;
+        if(pol.release === "fixed5" && d >= 5) me.release(a);
+        else if(pol.release === "fixed7" && d >= 7) me.release(a);
+        else if(pol.release === "negative" && d >= 3 && !(a.st === "I" && !a.asym)){ if(!me.testOne(a, "RAT")) me.release(a); } }
+      if(a.quar && (t - a.quarStart)/DA.DAY >= (pol.quarDays || 5)) { a.quar = 0; a.isoPlace = null; }
+    });
+  }
+  if(pol.symTest && k % DA.PH === 0){ // 증상이 생기면 하루 안쪽으로 검사를 받으러 간다
+    this.A.forEach(function(a){ if(a.sym && !a.iso && !a.symTested && (t - a.symT) > me.r()*DA.DAY && me.r() < (pol.seekP || .7)*DA.PH/DA.DAY*4){ a.symTested = true; me.order(a, pol.symTest); } });
+  }
+};
+DormABM.prototype.release = function(a){ a.iso = 0; a.isoPlace = null; a.plan = [daEntry(0, 0, "room", a.room)]; a.pi = 0; };
+DormABM.prototype.endDay = function(){
+  var me = this, L = this.log, cnt = {S:0, E:0, P:0, I:0, R:0}, iso = 0, ward = 0, inf = 0;
+  this.A.forEach(function(a){ cnt[a.st]++; if(a.iso || a.quar){ iso++; L.missed++; } if(a.iso && a.isoPlace === "ward") ward++; if(a.st === "P" || a.st === "I") inf++; if(a.iso) L.isoDays++; });
+  L.wardPeak = Math.max(L.wardPeak, ward); L.peakInf = Math.max(L.peakInf, inf);
+  L.daily.push({day:this.day, S:cnt.S, E:cnt.E, P:cnt.P, I:cnt.I, R:cnt.R, iso:iso, ward:ward, cum:L.cum});
+  Object.keys(this.lounge).forEach(function(k){ if(me.lounge[k] <= me.t) delete me.lounge[k]; });
+  this.day++; this.planDay();
+};
+DormABM.prototype.active = function(){ return this.A.some(function(a){ return a.st === "E" || a.st === "P" || a.st === "I"; }); };
+function daRun(policy, seed, opt){
+  var M = new DormABM(policy, seed, opt), maxD = (opt && opt.days) || 90;
+  while(M.day < maxD){ for(var q=0;q<DA.DAY;q++) M.step(); if(M.day >= 5 && !M.active()) break; }
+  var L = M.log;
+  var where = {}; L.inf.forEach(function(x){ where[x[1]] = (where[x[1]] || 0) + 1; });
+  return {attack:L.cum/DA.N, peak:L.peakInf, ward:L.wardPeak, isoDays:L.isoDays, missed:L.missed, tests:L.tests, fp:L.fp, days:M.day, where:where};
+}
+
+var POLDEF = {sickStay:true, sickStayP:.6, isoPlace:"ward", mate:"none", release:"fixed5", symTest:null, screen:null, floorRule:false, mask:false, compliance:.8, seekP:.7, quarDays:5};
+function polFrom(root){
+  var g = function(k){ var e = root.querySelector('[data-pol="' + k + '"]'); return e.type === "checkbox" ? e.checked : e.value; };
+  var p = Object.assign({}, POLDEF), t = g("test");
+  p.symTest = t === "symRAT" || t === "dailyRAT" ? "RAT" : t === "symPCR" || t === "twicePCR" ? "PCR" : null;
+  p.screen = t === "dailyRAT" ? "daily" : t === "twicePCR" ? "twice" : null;
+  p.isoPlace = g("place"); p.mate = g("mate"); p.release = g("release"); p.floorRule = g("floor"); p.mask = g("mask"); p.sickStay = g("sick");
+  return p;
+}
+function polName(p){
+  var t = p.screen === "daily" ? "매일 신속항원" : p.screen === "twice" ? "주 2회 PCR" : p.symTest === "RAT" ? "증상 시 신속항원" : p.symTest === "PCR" ? "증상 시 PCR" : "검사 없음";
+  if(!p.symTest && !p.screen) return "검사 없음" + (p.mask ? ", 마스크" : "") + (p.sickStay ? "" : ", 아파도 다님");
+  return t + ", " + (p.isoPlace === "ward" ? "격리실" : "자기 방") + (p.mate === "quarantine" ? ", 룸메이트 격리" : p.mate === "test" ? ", 룸메이트 검사" : "") + ", " + (p.release === "negative" ? "음성 확인 해제" : p.release === "fixed7" ? "7일" : "5일") + (p.floorRule ? ", 휴게실 규칙" : "") + (p.mask ? ", 마스크" : "");
+}
+var DAYN = ["월","화","수","목","금","토","일"];
+(function(){
+  var root = document.getElementById("w-live"); if(!root) return;
+  var M, seed = 3, playing = !REDUCED, visible = false, spd = 4, acc = 0, prev = [], cur = [], tw = 1, s = .6;
+  var X0 = function(b){ return 8 + b*322; }, FY = function(f){ return 112 + (3 - f)*66; };
+  function roomXY(a){ var r = a.room % DA.R; return [X0(a.b) + 50 + r*20.2 + 5 + (a.id & 1)*9, FY(a.fl) + 22]; }
+  function jit(id, k){ var x = Math.sin(id*12.9898 + k*78.233)*43758.5453; return x - Math.floor(x); }
+  function box(name, a){
+    if(name === "class"){ var ci = a.locId; return [8 + ci*70, 20, 64, 40]; }
+    if(name === "cafe") return [432, 20, 118, 62];
+    if(name === "out") return [556, 20, 76, 62];
+    if(name === "ward") return [8, 438, 196, 58];
+    if(name === "shower") return [X0(a.b) + 256, FY(a.fl) + 6, 26, 34];
+    if(name === "lounge") return [X0(a.b) + 285, FY(a.fl) + 6, 30, 34];
+    return null;
+  }
+  function target(a){
+    if(a.tc){ var lob = a.tc >= 95000; return lob ? [X0(a.b) + 30 + jit(a.id, 5)*240, 382] : [X0(a.b) + 9 + jit(a.id, 6)*8, FY(a.fl) + 10 + jit(a.id, 7)*20]; }
+    var bx = box(a.loc, a); if(!bx) return roomXY(a);
+    return [bx[0] + 5 + jit(a.id, 1)*(bx[2] - 10), bx[1] + 5 + jit(a.id, 2)*(bx[3] - 10)];
+  }
+  function reset(){ M = new DormABM(polFrom(root), seed++, {s:s}); M.step(); cur = M.A.map(target); prev = cur.slice(); tw = 1; }
+  function adv(){ M.pol = polFrom(root); M.s = s; M.step(); prev = cur; cur = M.A.map(target); tw = 0; }
+  function col(a){ var g = M.stage(a); return g === "S" ? rgba(COL.muted, .5) : g === "E" ? COL.c2 : g === "P" ? COL.t2 : g === "A" ? COL.t4 : g === "R" ? rgba(COL.acc, .45) : COL.miss; }
+  var view = setup(root, function(c, W, H){
+    for(var ci=0; ci<DA.NROOM; ci++){ c.fillStyle = COL.soft; c.fillRect(8 + ci*70, 20, 64, 40); txt(c, "강의실 " + (ci + 1), 8 + ci*70, 14, {size:9.5}); }
+    c.fillStyle = COL.soft; c.fillRect(432, 20, 118, 62); txt(c, "학생식당", 432, 14, {size:9.5});
+    c.fillStyle = rgba(COL.soft, .6); c.fillRect(556, 20, 76, 62); txt(c, "도서관 등", 556, 14, {size:9.5});
+    for(var b=0;b<2;b++){
+      var x0 = X0(b); txt(c, (b ? "B" : "A") + "동", x0, 100, {size:11, color:COL.ink, weight:500});
+      c.fillStyle = COL.soft; c.fillRect(x0 + 4, FY(3) + 4, 20, FY(0) + 50 - FY(3)); txt(c, "E/V", x0 + 4, FY(0) + 64, {size:8.5});
+      for(var f=0; f<4; f++){
+        var y = FY(f); txt(c, (f + 1) + "층", x0 + 28, y + 26, {size:9.5});
+        for(var r=0;r<DA.R;r++){ c.strokeStyle = COL.line; c.strokeRect(x0 + 50 + r*20.2 + .5, y + 12.5, 19, 19); }
+        c.fillStyle = COL.soft; c.fillRect(x0 + 256, y + 6, 26, 34); txt(c, "샤워", x0 + 269, y + 50, {size:8.5, align:"center"});
+        var key = b*DA.F + f, closed = M.lounge[key] || M.pol.allLounge;
+        c.fillStyle = closed ? rgba(COL.miss, .1) : COL.soft; c.fillRect(x0 + 285, y + 6, 30, 34);
+        if(closed){ line(c, x0 + 285, y + 6, x0 + 315, y + 40, COL.miss, 1.2); line(c, x0 + 315, y + 6, x0 + 285, y + 40, COL.miss, 1.2); }
+        txt(c, "휴게", x0 + 300, y + 50, {size:8.5, align:"center"});
+      }
+      c.fillStyle = rgba(COL.soft, .7); c.fillRect(x0 + 28, 372, 290, 20); txt(c, "1층 로비", x0 + 30, 404, {size:8.5});
+    }
+    c.fillStyle = rgba(COL.miss, .06); c.fillRect(8, 438, 196, 58); c.strokeStyle = rgba(COL.miss, .5); c.strokeRect(8.5, 438.5, 195, 57); txt(c, "격리실 (" + DA.WARD + "실)", 10, 432, {size:9.5, color:COL.miss});
+    var u = Math.min(1, tw/.5), e = u*u*(3 - 2*u);
+    M.A.forEach(function(a, i){ var p0 = prev[i], p1 = cur[i], x = p0[0] + (p1[0] - p0[0])*e, y = p0[1] + (p1[1] - p0[1])*e;
+      dot(c, x, y, 3.4, col(a)); if(a.iso || a.quar){ c.strokeStyle = a.iso ? COL.miss : COL.c2; c.lineWidth = 1.3; c.beginPath(); c.arc(x, y, 5.2, 0, 7); c.stroke(); c.lineWidth = 1; } });
+    // 곡선: 날마다 앓는 사람(P+I)과 누적
+    var D = M.log.daily, s2 = scale([230, 444, 630, 494], [0, Math.max(20, M.day)], [0, DA.N]);
+    line(c, 230, 494.5, 630, 494.5, COL.line);
+    path(c, s2, D.map(function(d){ return [d.day, d.cum]; }), COL.c2, 1.5);
+    path(c, s2, D.map(function(d){ return [d.day, d.P + d.I]; }), COL.miss, 2);
+    path(c, s2, D.map(function(d){ return [d.day, d.iso]; }), COL.ink, 1.2, [3,2]);
+    txt(c, "감염력 있는 사람(빨강), 누적 감염(노랑), 격리 중(점선)", 630, 438, {align:"right", size:9.5});
+    var k = M.t % DA.DAY, hh = Math.floor(k/DA.PH), mm = (k % DA.PH)*DA.TICK;
+    txt(c, (M.day + 1) + "일째 (" + DAYN[M.day % 7] + ") " + (hh < 10 ? "0" : "") + hh + ":" + (mm < 10 ? "0" : "") + mm, 632, 100, {align:"right", size:11.5, color:COL.ink, weight:500});
+  });
+  function report(){
+    var c = {S:0,E:0,P:0,Sy:0,SyLate:0,A:0,R:0}, iso = 0, quar = 0, where = {};
+    M.A.forEach(function(a){ c[M.stage(a)]++; if(a.iso) iso++; if(a.quar) quar++; });
+    M.log.inf.forEach(function(x){ where[x[1]] = (where[x[1]] || 0) + 1; });
+    var nm = {room:"방", shower:"샤워실", lounge:"휴게실", class:"강의실", cafe:"식당", elev:"엘리베이터", lobby:"로비"}, tot = M.log.inf.length;
+    var top = Object.keys(where).sort(function(x, y){ return where[y] - where[x]; }).slice(0, 4).map(function(k){ return nm[k] + " " + Math.round(100*where[k]/tot) + "%"; }).join(", ");
+    root.querySelector("[data-out]").innerHTML = "잠복 " + c.E + ", 증상 전 " + c.P + ", 증상 " + (c.Sy + c.SyLate) + ", 무증상 " + c.A + "명, 회복 " + c.R + "명. 지금까지 감염 <b>" + M.log.cum + "명</b>(" + fmt(100*M.log.cum/DA.N, 0) + "%). 격리 " + iso + "명, 룸메이트 격리 " + quar + "명. 검사 " + M.log.tests + "번, 위양성 " + M.log.fp + "번." + (tot ? " 감염이 일어난 곳: " + top + "." : "");
+  }
+  root.querySelector("canvas").addEventListener("click", function(ev){
+    var p = view.toLocal(ev);
+    for(var b=0;b<2;b++) for(var f=0;f<4;f++){ var lx = X0(b) + 285, ly = FY(f) + 6; if(p.x >= lx && p.x <= lx + 30 && p.y >= ly && p.y <= ly + 34){ var key = b*DA.F + f; if(M.lounge[key]) delete M.lounge[key]; else M.lounge[key] = M.t + 7*DA.DAY; view.redraw(); return; } }
+    var best = -1, bd = 8; M.A.forEach(function(a, i){ var d = Math.hypot(cur[i][0] - p.x, cur[i][1] - p.y); if(d < bd){ bd = d; best = i; } });
+    if(best < 0) return; var a = M.A[best];
+    if(a.st === "S") M.infect(a, "P"); else if(!a.iso) M.order(a, "RAT");
+    view.redraw(); report();
+  });
+  root.querySelectorAll("[data-pol]").forEach(function(e){ e.addEventListener("change", function(){ M.pol = polFrom(root); view.redraw(); }); });
+  bindRange(root, "[data-s]", function(v){ s = v; }, function(v){ return fmt(v, 2); });
+  seg(root, '[data-g="spd"]', function(v){ spd = +v; });
+  root.querySelector('[data-act="reset"]').onclick = function(){ reset(); view.redraw(); report(); };
+  var pb = root.querySelector('[data-act="play"]');
+  pb.onclick = function(){ playing = !playing; pb.textContent = playing ? "일시정지" : "재생"; };
+  pb.textContent = playing ? "일시정지" : "재생";
+  inView(root, function(v){ visible = v; });
+  reset(); view.redraw(); report();
+  var last = performance.now(), rep = 0;
+  (function frame(now){
+    var dt = Math.min(.1, (now - last)/1000); last = now;
+    if(playing && visible && M.day < 120){ acc += dt*spd*1.5; tw += dt*spd*1.5; var n = 0; while(acc >= 1 && n < 40){ acc -= 1; adv(); n++; } if(n > 1) tw = 1; view.redraw(); rep += dt; if(rep > .3){ rep = 0; report(); } }
+    requestAnimationFrame(frame);
+  })(last);
+  window.__dormPolicy = function(){ return polFrom(root); };
+})();
+
+/* ---------- 5.3 프로토콜 비교 실험 ---------- */
+(function(){
+  var root = document.getElementById("w-proto"); if(!root) return;
+  var B = Object.assign({}, POLDEF), R = 10, running = false, res = {};
+  var SC = [
+    ["검사 없음", Object.assign({}, B)],
+    ["증상 시 신속항원, 격리실 5일", Object.assign({}, B, {symTest:"RAT"})],
+    ["증상 시 PCR(결과 하루 뒤), 격리실 5일", Object.assign({}, B, {symTest:"PCR"})],
+    ["증상 시 신속항원, 자기 방 격리", Object.assign({}, B, {symTest:"RAT", isoPlace:"room"})],
+    ["증상 시 신속항원, 격리실 + 룸메이트 격리", Object.assign({}, B, {symTest:"RAT", mate:"quarantine"})],
+    ["매일 신속항원 선별, 격리실 5일", Object.assign({}, B, {screen:"daily", symTest:"RAT"})]
+  ];
+  function draw(){
+    var rows = SC.map(function(sc, i){ var r = res[i];
+      if(!r) return "<tr><td>" + sc[0] + "</td><td colspan='6' class='muted'>" + (running ? "…" : "") + "</td></tr>";
+      return "<tr><td>" + sc[0] + "</td><td>" + fmt(r.attack*100, 1) + "% ± " + fmt(r.hw*100, 1) + "</td><td>" + fmt(r.peak, 1) + "</td><td>" + fmt(r.ward, 1) + "</td><td>" + fmt(r.missed, 0) + "</td><td>" + fmt(r.tests, 0) + "</td><td>" + fmt(r.fp, 1) + "</td></tr>"; });
+    root.querySelector("[data-tbl]").innerHTML = "<thead><tr><th>시나리오 (각 " + R + "번)</th><th>최종 감염률</th><th>동시 감염 최대</th><th>격리실 최대</th><th>격리 인일</th><th>검사 수</th><th>위양성</th></tr></thead><tbody>" + rows.join("") + "</tbody>";
+  }
+  function go(){
+    if(running) return; running = true; res = {}; draw();
+    var s = +root.querySelector("[data-s]").value, jobs = [];
+    SC.forEach(function(sc, i){ for(var k=1;k<=R;k++) jobs.push([i, k]); });
+    var acc = {}, total = jobs.length, done = 0, out = root.querySelector("[data-out]");
+    (function next(){
+      var j = jobs.shift();
+      if(!j){ running = false; out.innerHTML = "끝. 같은 시드 1~" + R + "번을 모든 시나리오에 썼습니다(공통 난수). 전파력 s = " + fmt(s, 2) + "."; return; }
+      var x = daRun(SC[j[0]][1], j[1], {s:s}); (acc[j[0]] = acc[j[0]] || []).push(x); done++;
+      out.innerHTML = "계산 중… " + done + "/" + total;
+      if(acc[j[0]].length === R){ var a = acc[j[0]], m = function(f){ return mean(a.map(f)); }, at = a.map(function(z){ return z.attack; });
+        res[j[0]] = {attack:mean(at), hw:1.96*sd(at)/Math.sqrt(R), peak:m(function(z){ return z.peak; }), ward:m(function(z){ return z.ward; }), missed:m(function(z){ return z.missed; }), tests:m(function(z){ return z.tests; }), fp:m(function(z){ return z.fp; })}; draw(); }
+      setTimeout(next, 0);
+    })();
+  }
+  root.querySelector('[data-act="run"]').onclick = go;
+  root.querySelector('[data-act="add"]').onclick = function(){ if(running || !window.__dormPolicy) return; var p = window.__dormPolicy(); SC.push([polName(p) + " (추가)", p]); draw(); };
+  bindRange(root, "[data-s]", function(){}, function(v){ return fmt(v, 2); });
+  draw();
+})();
+
+initEqx();
+})();
+</script>
+</body>
+</html>
