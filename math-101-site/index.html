@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<script>
+/* =====================================================================
+   ▼▼▼ 여기만 고치면 됩니다: 여섯 101 페이지의 주소 ▼▼▼
+   - 같은 폴더의 파일 이름(상대 경로)입니다. 다른 곳에 올린 페이지를 쓰려면
+     따옴표 안을 https://… 전체 주소로 바꾸세요(그런 링크는 새 탭으로 열립니다).
+   - 단계로 바로 가는 링크는 이 주소 뒤에 #ch7 처럼 자동으로 붙습니다.
+   - 아래쪽 코드는 손대지 않아도 됩니다.
+   ===================================================================== */
+const LINKS = {
+  calculus:     'calculus-101.html',        // 미적분 101
+  linear:       'linear-algebra-101.html',  // 선형대수 101
+  probability:  'probability-101.html',     // 확률과 통계 101
+  optimization: 'optimization-101.html',    // 최적화 101
+  numerical:    'numerical-101.html',       // 수치해석 101
+  simulation:   'simulation-101.html',      // 시뮬레이션 101
+};
+/* ▲▲▲ 여기까지 ▲▲▲ ================================================== */
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>수학 101 시리즈 — 로보틱스와 M&amp;S를 위한 인터랙티브 수학</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #F2F5F9; --panel: #FFFFFF; --field: #E9EFF6;
+  --ink: #132640; --ink2: #425A7A; --ink3: #7C90AC; --line: rgba(19,38,64,.13);
+  --accent: #C7760F; --onAccent: #FFFFFF;
+  --c-ca: #C7760F; --c-la: #0E84A0; --c-ps: #2F6FD6; --c-op: #1B9566; --c-na: #7A4FD0; --c-si: #C2416B;
+  --font: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --display: "Archivo", "IBM Plex Sans KR", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0B213D; --panel: #0F2948; --field: #12315A;
+    --ink: #DCE9F9; --ink2: #A3BCDD; --ink3: #6A8BB3; --line: rgba(220,233,249,.14);
+    --accent: #FFB547; --onAccent: #0B213D;
+    --c-ca: #FFB547; --c-la: #67D4F5; --c-ps: #82AEFF; --c-op: #63E3AE; --c-na: #B99BFF; --c-si: #FF8FB1;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0B213D; --panel: #0F2948; --field: #12315A;
+  --ink: #DCE9F9; --ink2: #A3BCDD; --ink3: #6A8BB3; --line: rgba(220,233,249,.14);
+  --accent: #FFB547; --onAccent: #0B213D;
+  --c-ca: #FFB547; --c-la: #67D4F5; --c-ps: #82AEFF; --c-op: #63E3AE; --c-na: #B99BFF; --c-si: #FF8FB1;
+  color-scheme: dark;
+}
+html { scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 64px); scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+*, *::before, *::after { box-sizing: inherit; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.7;
+  -webkit-font-smoothing: antialiased; word-break: keep-all; overflow-wrap: anywhere; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 max(20px, env(safe-area-inset-left, 0px)); }
+
+.nav { position: sticky; top: 0; z-index: 5; padding-top: env(safe-area-inset-top, 0px);
+  background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+.nav .wrap { display: flex; align-items: center; gap: 18px; height: 54px; }
+.brand { font-family: var(--display); font-weight: 800; font-stretch: 120%; font-variation-settings: "wdth" 120; font-size: 15px; white-space: nowrap; text-decoration: none; }
+.nav ul { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; overflow-x: auto; scrollbar-width: none; }
+.nav ul::-webkit-scrollbar { display: none; }
+.nav li a { display: block; padding: 6px 10px; border-radius: 8px; text-decoration: none; color: var(--ink2); font-size: 14px; white-space: nowrap; }
+.nav li a:hover { background: var(--field); color: var(--ink); }
+
+.hero { padding: 64px 0 40px; }
+.kicker { font-size: 14px; font-weight: 600; color: var(--ink3); letter-spacing: .02em; margin: 0 0 10px; }
+.hero h1 { font-family: var(--display); font-weight: 820; font-stretch: 125%; font-variation-settings: "wdth" 125;
+  font-size: clamp(36px, 6vw, 68px); line-height: 1.04; margin: 0 0 18px; letter-spacing: -.01em; }
+.hero h1 span { color: var(--accent); }
+.lede { font-size: clamp(16px, 1.6vw, 18.5px); color: var(--ink2); max-width: 64ch; margin: 0 0 30px; }
+.paths { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.path { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 16px; display: flex; flex-direction: column; gap: 6px; }
+.path b { font-family: var(--display); font-weight: 760; font-size: 17px; }
+.path p { margin: 0; color: var(--ink2); font-size: 14.5px; }
+.path .go { margin-top: auto; padding-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 9px; font-weight: 600; font-size: 14px; text-decoration: none;
+  background: var(--accent); color: var(--onAccent); border: 1px solid var(--accent); }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+section.block { padding: 44px 0 10px; }
+h2 { font-family: var(--display); font-weight: 780; font-stretch: 112%; font-variation-settings: "wdth" 112; font-size: clamp(24px, 3vw, 32px); margin: 0 0 6px; line-height: 1.2; }
+.sub { color: var(--ink2); margin: 0 0 22px; max-width: 72ch; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; align-items: start; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px 20px 16px; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+.card::before { content: ""; position: absolute; inset: 0 0 auto; height: 5px; background: var(--c); }
+.card .tag { font-size: 13px; font-weight: 600; color: var(--c); margin: 2px 0 2px; }
+.card h3 { font-family: var(--display); font-weight: 800; font-stretch: 118%; font-variation-settings: "wdth" 118; font-size: 24px; margin: 0 0 4px; line-height: 1.15; }
+.card .tagline { font-size: 14px; color: var(--ink3); margin: 0 0 10px; }
+.card .desc { margin: 0 0 12px; color: var(--ink2); font-size: 15px; }
+.meta { display: flex; gap: 14px; font-size: 13px; color: var(--ink3); margin-bottom: 10px; }
+.meta b { color: var(--ink); font-family: var(--display); font-weight: 700; font-size: 15px; margin-right: 3px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.chip { font-size: 12.5px; padding: 2px 9px; border-radius: 999px; background: var(--field); color: var(--ink2); }
+.card .row { display: flex; gap: 8px; align-items: center; margin-top: auto; }
+.card .btn { background: var(--c); border-color: var(--c); color: var(--paper); }
+details.steps { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+details.steps summary { cursor: pointer; font-size: 14px; color: var(--ink2); font-weight: 600; padding: 4px 0; }
+details.steps ol { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 1px; }
+details.steps li a { display: grid; grid-template-columns: 2.2em 1fr; gap: 6px; padding: 5px 6px; border-radius: 7px; text-decoration: none; font-size: 14px; }
+details.steps li a:hover { background: var(--field); }
+details.steps li a b { font-family: var(--display); color: var(--c); font-weight: 700; text-align: right; }
+.partlbl { font-size: 12px; color: var(--ink3); font-weight: 600; padding: 8px 6px 2px; }
+
+.flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1.15fr; align-items: stretch; gap: 10px; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.stage .lbl { font-size: 12.5px; font-weight: 700; color: var(--ink3); letter-spacing: .04em; margin-bottom: 8px; }
+.stage a.pill { display: flex; align-items: center; gap: 8px; text-decoration: none; padding: 8px 10px; border-radius: 10px; background: var(--field); margin-bottom: 8px; font-weight: 600; }
+.stage a.pill i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+.stage a.pill:hover { outline: 1.5px solid var(--c); }
+.stage p { margin: 0; font-size: 13.5px; color: var(--ink2); }
+.arrow { align-self: center; font-size: 26px; color: var(--ink3); }
+@media (max-width: 860px) { .flow { grid-template-columns: 1fr; } .arrow { justify-self: center; transform: rotate(90deg); } .paths { grid-template-columns: 1fr; } }
+
+.map { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.map th, .map td { padding: 12px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+.map tr:last-child td { border-bottom: 0; }
+.map th { font-size: 13px; color: var(--ink3); font-weight: 600; background: var(--field); }
+.map td:first-child { font-weight: 700; white-space: nowrap; width: 1%; }
+.map td .chips { margin: 0; }
+a.step { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; padding: 3px 10px 3px 8px; border-radius: 999px; text-decoration: none; background: var(--field); border: 1px solid transparent; }
+a.step i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+a.step:hover { border-color: var(--c); }
+.tablewrap { overflow-x: auto; border-radius: 14px; }
+@media (max-width: 640px) { .map td:first-child { white-space: normal; width: auto; } .map, .map tbody, .map tr, .map td { display: block; } .map thead { display: none; } .map td:first-child { padding-bottom: 4px; border-bottom: 0; } }
+
+.search { display: flex; gap: 10px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; margin-bottom: 14px; max-width: 640px; }
+.search input { flex: 1; border: 0; background: transparent; font: inherit; font-size: 16px; color: var(--ink); outline: none; padding: 6px 2px; min-width: 0; }
+.search svg { flex: none; color: var(--ink3); }
+.results { display: grid; gap: 6px; }
+.results a { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: baseline; padding: 9px 12px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); text-decoration: none; }
+.results a:hover { border-color: var(--c); }
+.results a span.p { font-size: 12.5px; font-weight: 700; color: var(--c); white-space: nowrap; }
+.results a mark { background: color-mix(in srgb, var(--accent) 28%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+.hint { color: var(--ink3); font-size: 14px; }
+.chipbar { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 14px; }
+.chipbar button { font: inherit; font-size: 13px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--ink2); cursor: pointer; }
+.chipbar button:hover { border-color: var(--accent); color: var(--accent); }
+
+.format { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; counter-reset: f; }
+.format div { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 14px; color: var(--ink2); }
+.format div b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 2px; }
+.format div b::before { counter-increment: f; content: counter(f) " "; color: var(--accent); font-family: var(--display); }
+@media (max-width: 860px) { .format { grid-template-columns: 1fr 1fr; } }
+footer { padding: 40px 0 60px; color: var(--ink3); font-size: 13.5px; }
+</style>
+</head>
+<body>
+<nav class="nav" aria-label="페이지 안 이동">
+  <div class="wrap">
+    <a class="brand" href="#top">수학 101 시리즈</a>
+    <ul>
+      <li><a href="#pages">여섯 권</a></li>
+      <li><a href="#order">읽는 순서</a></li>
+      <li><a href="#map">로봇 주제별로</a></li>
+      <li><a href="#find">단계 찾기</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <p class="kicker">로보틱스 · 모델링과 시뮬레이션(M&amp;S) 보조 자료</p>
+    <h1>로봇과 Sim을 움직이는 수학, <span>여섯 권</span></h1>
+    <p class="lede">로봇 수업과 모델링·시뮬레이션(M&amp;S)에 나오는 수학을 여섯 페이지로 나눠 모았습니다. 모든 단계가 ‘수식 없이 먼저’ 설명하고, 같은 내용을 식과 파이썬 코드로 적은 뒤, 직접 움직여 보는 실습으로 끝나요. 고등학교에서 미적분을 배우지 않았어도 처음부터 따라올 수 있게 썼습니다.</p>
+    <div class="paths" id="paths"></div>
+  </div>
+</header>
+
+<main>
+  <section class="block" id="pages">
+    <div class="wrap">
+      <h2>여섯 권</h2>
+      <p class="sub">카드의 [단계 목록]을 펼치면 단계마다 바로 가는 링크가 있습니다. 각 페이지 맨 위의 ‘수학 101 시리즈’ 줄로 언제든 다른 권으로 넘어갈 수 있어요.</p>
+      <div class="cards" id="cards"></div>
+    </div>
+  </section>
+
+  <section class="block" id="order">
+    <div class="wrap">
+      <h2>읽는 순서</h2>
+      <p class="sub">처음이라면 왼쪽에서 오른쪽으로 읽으세요. 가운데 두 권은 순서가 없고 서로 자주 오갑니다. 오른쪽은 필요할 때 펼쳐 보는 심화편이고, 시뮬레이션 101은 M&amp;S를 하려면 꼭 거쳐야 하는 권이에요.</p>
+      <div class="flow" id="flow"></div>
+    </div>
+  </section>
+
+  <section class="block" id="map">
+    <div class="wrap">
+      <h2>로봇 주제별로 찾기</h2>
+      <p class="sub">실습을 하다가 식에서 막혔다면 그 실습의 주제를 찾아 해당 단계로 바로 가세요. 왼쪽부터 먼저 보면 좋은 순서입니다.</p>
+      <div class="tablewrap"><table class="map" id="maptable"><thead><tr><th>로봇 주제</th><th>필요한 수학 (누르면 그 단계로)</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <section class="block" id="find">
+    <div class="wrap">
+      <h2>단계 찾기</h2>
+      <p class="sub">여섯 권의 단계 제목과 핵심어에서 찾습니다. ‘칼만’, ‘야코비안’, ‘FFT’처럼 실습에서 본 낱말을 넣어 보세요.</p>
+      <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="예: 칼만, 회전, 경사 하강, 샘플링" autocomplete="off" aria-label="단계 찾기"></label>
+      <div class="chipbar" id="chipbar"></div>
+      <div class="results" id="results" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="block" id="format">
+    <div class="wrap">
+      <h2>모든 단계는 같은 순서로</h2>
+      <p class="sub">여섯 권 모두 단계마다 같은 다섯 칸으로 되어 있어서, 한 권을 읽어 보면 나머지도 같은 방식으로 읽을 수 있습니다.</p>
+      <div class="format">
+        <div><b>먼저, 수식 없이</b>비유와 로봇 이야기로 무엇을 왜 하는지</div>
+        <div><b>조금 더 정확하게</b>같은 이야기를 식으로</div>
+        <div><b>수식 카드와 파이썬</b>번호 주석이 달린 식과 짧은 코드</div>
+        <div><b>실습</b>직접 끌고 바꿔 보는 그림</div>
+        <div><b>해 볼 것과 핵심</b>무엇을 확인할지, 한두 문장 요약</div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer><div class="wrap">각 페이지는 브라우저에서 바로 동작합니다. 실습의 계산은 모두 페이지 안에서 이루어지고 따로 설치할 것은 없어요.</div></footer>
+
+<script>
+// ---------------------------------------------------------------------
+// 아래는 내용 데이터와 화면 그리기입니다. 주소는 맨 위 LINKS에서만 바꾸세요.
+// ---------------------------------------------------------------------
+const PAGES = [
+  { key: 'calculus', name: '미적분 101', color: '--c-ca', tag: '기초', tagline: '재고, 쌓고, 쪼갠다',
+    desc: '함수, 지수와 로그, 삼각함수에서 출발해 미분, 적분, 미분방정식, 복소수를 지나 푸리에 변환과 FFT까지 가고, 5부에서 위상 평면과 로켓 모델링으로 M&S의 첫 단계를 밟습니다. 다른 권들의 바탕이에요.',
+    topics: ['미분과 차분', '연쇄 법칙', '경사 하강', '테일러 전개', '적분', 'RK4', '오일러 공식', 'FFT'],
+    parts: [[0, '준비'], [1, '1부 함수'], [5, '2부 미분'], [10, '3부 적분'], [13, '4부 주파수'], [19, '5부 현실을 미분방정식으로']],
+    steps: ['까먹었어도 괜찮아요: 중학교 수학과 기호', '넣으면 나오는 규칙: 함수와 그래프', '두 배씩 불어나고 반씩 줄어든다: 지수와 로그', '도는 점의 그림자: 삼각함수와 사인파', '끝없이 더해도 끝이 있다: Σ와 극한',
+      '기울기 하나로 변화를 잰다: 미분', '공식 몇 개와 사슬 하나: 미분 규칙과 연쇄 법칙', '기울기가 0인 바닥: 최솟값과 경사 하강', '언덕의 가장 가파른 방향: 편미분과 그래디언트', '곡선을 가까이서 보면 직선: 테일러 전개와 선형화',
+      '조각을 쌓아 넓이를 센다: 적분', '미분과 적분은 서로를 되돌린다: 기본 정리와 확률 밀도', '변화의 규칙으로 미래를 계산한다: 미분방정식과 시뮬레이션',
+      '돌리는 수: 복소수와 오일러 공식', '사인파를 쌓아 무엇이든: 푸리에 급수', '샘플 N개에서 주파수를 찾는다: 이산 푸리에 변환', '너무 드물게 재면 다른 신호로 보인다: 샘플링과 앨리어싱', '반으로 나눠 다시 쓴다: FFT', '주파수에서 지우고, 곱하고, 되돌린다: 필터와 합성곱',
+      '어디로 흘러가나: 비선형 시스템과 위상 평면', '가벼워지며 오르는 로켓: 질량 변화, 대기, 항력'],
+    extra: { 4: '할인 리턴 EMA 지수 이동 평균 D 필터', 5: 'D항 엔코더 속도', 9: 'EKF 작은 각', 10: '오도메트리 I항', 12: '오일러 RK4 시뮬레이터 MuJoCo', 18: '저역 통과 EMA 베이즈 이동 갱신', 19: '위상 평면 평형점 안정성 리밋 사이클 반데르폴 진자', 20: '로켓 방정식 치올콥스키 max-Q 항력 대기 M&S' } },
+  { key: 'linear', name: '선형대수 101', color: '--c-la', tag: '두 기둥', tagline: '가리키고, 옮기고, 맞춘다',
+    desc: '벡터와 행렬로 위치와 방향을 적고, 회전과 좌표 변환, 정기구학과 야코비안, 최소제곱, 공분산과 고유벡터, SVD, 쿼터니언과 행렬 지수까지 다루고, 5부에서 전이 행렬과 그래프 라플라시안으로 M&S를 잇습니다.',
+    topics: ['회전 행렬', '좌표 변환', '정기구학', '야코비안', '최소제곱', '고유값', 'SVD', '쿼터니언'],
+    parts: [[0, '준비'], [1, '기본 도구'], [11, '더 깊이'], [17, '5부 M&S를 위한 선형대수']],
+    steps: ['까먹었어도 괜찮아요: 고등수학', '화살표 하나에 숫자 두 개', '곱해서 숫자 하나: 내적과 외적', '행렬은 열로 읽는다', '돌리기, 그리고 곱하는 순서', '로봇의 눈으로, 지도의 눈으로', '곱해서 이으면 정기구학',
+      '작은 움직임의 행렬, 야코비안', '식이 너무 많을 때, 최소제곱', '퍼진 정도를 행렬로: 공분산과 고유벡터', '곱하고 또 곱하면: 상태공간과 안정성', '손끝은 그대로, 팔꿈치만: 열 공간과 영공간', '돌리고, 늘이고, 돌린다: 특잇값 분해',
+      '언제나 위로 열린 그릇: 양의 정부호 행렬', '캠퍼스 SLAM을 빨리 푸는 법: 촐레스키와 희소 행렬', '3D 회전의 여러 얼굴: 오일러 각, 축과 각, 쿼터니언', '연속 시간을 한 칸씩: 행렬 지수',
+      '오래 지나면 어디에 있나: 전이 행렬과 정상 분포', '연결된 무리의 행렬: 그래프 라플라시안과 합의'],
+    extra: { 5: '좌표 변환 동차 변환', 7: 'IK 역기구학 DLS 특이점', 8: '정규방정식 직선 맞추기', 10: 'LQR 고유값 안정성', 12: 'SVD 조건수 유사역행렬 ICP', 15: '쿼터니언 짐벌 락 드론 자세', 17: '마르코프 전이 행렬 정상 분포 페이지랭크 흡수 위성', 18: '그래프 라플라시안 합의 군집 통신망 다중 로봇 피들러' } },
+  { key: 'probability', name: '확률과 통계 101', color: '--c-ps', tag: '두 기둥', tagline: '모르는 만큼 적고, 볼 때마다 고친다',
+    desc: '비율과 분포에서 출발해 정규분포, 조건부 확률과 베이즈 정리, 마르코프 연쇄, 파티클 필터와 칼만 필터, 최대 가능도, 가설 검정까지 다루고, 6부에서 난수 만들기·몬테카를로·신뢰도·색잡음으로 M&S의 확률 입력을 준비합니다.',
+    topics: ['정규분포', '베이즈 정리', '마르코프 연쇄', '파티클 필터', '칼만 필터', '최대 가능도', '몬테카를로', '신뢰도', '색잡음'],
+    parts: [[1, '분포와 요약'], [10, '믿음을 고치기'], [17, '데이터로 판단하기'], [22, '6부 시뮬레이션을 위한 확률']],
+    steps: [null, '확률은 비율이다', '그리고, 또는, 적어도 한 번', '분포: 히스토그램에서 곡선으로', '평균, 중앙값, 퍼진 정도', '따라가는 평균', '세는 분포: 이항, 기하, 푸아송', '기다리는 시간: 지수분포와 푸아송 과정',
+      '정규분포: 숫자 두 개로 적는 종', '더하면 종이 되고, 퍼짐은 √로 자란다', '조건부 확률: 누구 중에서 세는가', '베이즈 정리: 곱하고, 다시 1로', '움직이면 흐려진다: 전확률과 마르코프 연쇄', '로그 오즈: 증거를 더한다',
+      '점으로 들고 다니기: 무게 달고 다시 뽑기', '두 종을 곱하면 종: 1차원 칼만 필터', '타원으로 들고 다니기: 2차원 가우시안', '가장 그럴듯한 답: 최대 가능도와 최소제곱', 'χ²: 오차가 정직한지 재는 자',
+      '점수를 확률로: 소프트맥스와 온도', '열 번 해 보고 결론 내도 될까', '평균을 비교할 때: t분포와 가설 검정',
+      '원하는 분포의 난수 만들기: 시드, 역변환법, 기각법', '많이 뽑아 어림하기: 몬테카를로와 드문 사건', '언제 고장 날까: 신뢰도, MTTF, 이중화', '시간에 따라 이어지는 잡음: 백색잡음, 랜덤 워크, OU 과정'],
+    extra: { 9: '중심극한정리', 13: '점유 격자', 14: '파티클 필터 MCL 리샘플링', 16: '공분산 타원', 22: '난수 시드 역변환 기각법 M&S', 23: '몬테카를로 중요도 표본추출 착지', 24: '신뢰도 MTTF 이중화 3중화 TMR 위성', 25: '색잡음 랜덤 워크 OU 바이어스 돌풍' } },
+  { key: 'optimization', name: '최적화 101', color: '--c-op', tag: '심화', tagline: '내려가고, 맞추고, 지킨다',
+    desc: '경사 하강 다음 단계입니다. 뉴턴법, 가우스-뉴턴과 레벤버그-마콰트, 강건한 손실, 라그랑주 승수와 KKT, 이차 계획법을 지나 관절 한계가 있는 IK와 QP로 푸는 MPC, 그리고 시뮬레이터를 목적 함수로 쓰는 SPSA·실험 계획까지 갑니다.',
+    topics: ['뉴턴법', '가우스-뉴턴', 'LM', '강건한 손실', '라그랑주 승수', 'KKT', 'QP', 'MPC'],
+    parts: [[0, '준비'], [1, '1부 제약 없이'], [6, '2부 제약을 지키며'], [9, '3부 로봇에 쓰기'], [11, '4부 시뮬레이션과 함께']],
+    steps: ['먼저 챙길 것: 다른 101에서 가져오는 도구', '문제를 세 줄로 쓰기: 변수, 목적, 제약', '휘는 정도까지 보면 한 번에: 뉴턴법과 좁은 골짜기', '잔차를 펴서 푼다: 최소제곱과 가우스-뉴턴', '조심스럽게 걷기: 레벤버그-마콰트', '이상치 하나에 휘둘리지 않기: 강건한 손실',
+      '선 위에서만 움직일 때: 라그랑주 승수', '넘으면 안 되는 선: 부등식 제약, 사영, 벌점', '로봇 최적화의 표준 그릇: 이차 계획법(QP)', '관절 한계를 지키는 IK', '앞을 내다보는 제어: QP로 푸는 MPC',
+      '잡음 섞인 목적 함수 내려가기: SPSA와 교차 엔트로피법', '몇 번만 돌려서 무엇이 중요한지: 실험 계획과 민감도 분석'],
+    extra: { 1: '볼록 국소 최솟값', 2: '모멘텀 Adam 조건수 헤세', 3: 'SLAM 비콘 위치 추정', 4: '파라미터 식별 모터', 5: 'Huber Cauchy IRLS RANSAC', 7: 'KKT 사영 clip', 9: 'IK 역기구학 DLS', 10: 'MPC 모델 예측 제어 드론', 11: 'SPSA CEM 교차 엔트로피 잡음 게인 튜닝 MPPI', 12: '실험 계획 DOE 라틴 하이퍼큐브 민감도 소볼 대리 모델' } },
+  { key: 'numerical', name: '수치해석 101', color: '--c-na', tag: '심화', tagline: '어림하고, 되풀이하고, 따라간다',
+    desc: '같은 수학을 실제 컴퓨터에서 계산할 때 생기는 문제를 다룹니다. 부동소수점과 상쇄, 조건수, 근 찾기와 피벗, 반복법, 보간과 자동 미분, 경직 방정식과 적응 시간 간격, 그리고 5부에서 심플렉틱 적분·확률 미분방정식·구속·열 방정식·수렴 검증까지.',
+    topics: ['부동소수점', '상쇄', '조건수', '근 찾기', 'LU와 피벗', '반복법', '스플라인', '자동 미분', '경직 방정식'],
+    parts: [[0, '준비'], [1, '1부 컴퓨터의 숫자'], [4, '2부 방정식 풀기'], [7, '3부 함수 다루기'], [9, '4부 시간 따라가기'], [11, '5부 M&S를 위한 수치 기법']],
+    steps: ['먼저 챙길 것: 앞의 101에서 가져오는 도구', '자릿수가 정해진 숫자: 부동소수점', '빼기가 위험할 때: 상쇄와 다시 쓰기', '문제가 예민한가, 방법이 불안한가: 조건수', 'g(x) = 0 찾기: 이분법, 뉴턴, 할선',
+      '연립방정식을 안전하게: LU 분해와 피벗', '크고 성긴 격자는 되풀이해서: 반복법', '점 사이를 메우기: 보간과 스플라인', '미분을 정확히: 자동 미분', '딱딱한 것이 터질 때: 경직 방정식과 암시적 방법', '간격은 스스로 고르게: 적응 시간 간격과 사건 찾기',
+      '오래 돌려도 궤도가 무너지지 않게: 심플렉틱 적분', '무작위가 섞인 미분방정식: 오일러-마루야마', '막대 길이가 늘어나는 진자: 구속과 드리프트 보정', '열이 퍼지는 속도와 시간 칸: 열 방정식과 CFL 조건', '맞게 풀었는지 확인하기: 수렴 차수와 제조된 해'],
+    extra: { 1: 'float32 카한 합 오도메트리', 2: 'log-sum-exp 근의 공식', 3: 'QR 정규방정식', 4: '렌즈 왜곡', 6: '조화 퍼텐셜 CG SOR 가우스-자이델 경로 계획', 7: '궤적 룽게 체비쇼프', 8: '이중수 역전파 야코비안', 9: 'MuJoCo 접촉 안정 영역', 10: 'solve_ivp 튀는 공 궤도', 11: '심플렉틱 베를레 궤도 에너지', 12: '확률 미분방정식 SDE 오일러-마루야마 √Δt', 13: '구속 DAE 바움가르테 드리프트', 14: '열 방정식 CFL 위성 열', 15: '수렴 차수 MMS 제조된 해 검증' } },
+  { key: 'simulation', name: '시뮬레이션 101', color: '--c-si', tag: 'M&S', tagline: '세우고, 돌리고, 따진다',
+    desc: '사건 진행(이산 사건) 시뮬레이션과, 무작위가 섞인 시뮬레이션의 결과를 믿을 만하게 만드는 법. 사건 목록, 입력 모델링, 대기행렬, 반복과 신뢰구간, 워밍업, 공통 난수, 검증과 확인, 위성 군집의 고장과 수리.',
+    topics: ['사건 목록', '대기행렬', '리틀의 법칙', '입력 모델링', '신뢰구간', '워밍업', '공통 난수', '검증과 확인'],
+    parts: [[0, '준비'], [1, '1부 모형 세우기'], [4, '2부 확률 입력'], [6, '3부 결과를 믿을 만하게'], [9, '4부 모형을 믿을 수 있나']],
+    steps: ['먼저 챙길 것: 다른 101에서 가져오는 도구', '평균만으로는 줄이 안 보인다: 결정적 모형과 확률적 모형', '시계를 어떻게 넘길까: 고정 간격과 사건 진행', '사건 목록 하나로 시뮬레이터 짜기',
+      '데이터에서 무작위의 모양 정하기: 입력 모델링', '가장 단순한 줄 서기의 공식: M/M/1과 리틀의 법칙', '한 번 돌린 결과는 믿을 수 없다: 반복 실험과 신뢰구간', '처음 구간은 버린다: 워밍업, 자기상관, 배치 평균',
+      '같은 난수로 비교하기: 공통 난수', '코드는 모형대로, 모형은 현실대로: 검증과 확인', '궤도 위성 군집의 고장과 수리'],
+    extra: { 1: 'M&S 충전기 결정적 확률적', 2: '이산 사건 DES 혼합 시뮬레이션', 3: '힙 우선순위 큐 heapq SimPy DES', 4: 'K-S Q-Q 분포 맞추기', 5: '대기행렬 병목 M/M/1', 6: '몬테카를로 시드 반복', 7: '정상 상태 Welch', 8: '분산 줄이기 CRN 난수 흐름', 9: 'V&V 검증 확인 sim-to-real', 10: '가용도 MTBF MTTR 위성 데이터센터 수리 로봇' } },
+];
+const P = Object.fromEntries(PAGES.map((p) => [p.key, p]));
+const url = (key, n) => (LINKS[key] || '#') + (n != null ? '#ch' + n : '');
+const A = (href, cls, inner, color) => `<a class="${cls}" href="${href}"${/^https?:/.test(href) ? ' target="_blank" rel="noopener"' : ''}${color ? ` style="--c:var(${color})"` : ''}>${inner}</a>`;
+const stepCount = (p) => p.steps.filter((s, i) => s && i > 0).length;
+
+// 시작 경로
+document.getElementById('paths').innerHTML = [
+  ['고교 수학이 가물가물하다', '미적분 101의 0단계에서 시작해 선형대수 101, 확률과 통계 101로 넘어가세요.', [['calculus', 0, '미적분 101 0단계'], ['linear', null, '선형대수 101'], ['probability', null, '확률과 통계 101']]],
+  ['실습하다 식에서 막혔다', '아래의 로봇 주제별 표나 단계 찾기에서 그 식이 나오는 단계로 바로 가세요.', [[null, '#map', '주제별로 찾기'], [null, '#find', '단계 찾기']]],
+  ['더 깊이, 또는 M&S', 'SLAM·IK·MPC는 최적화 101, 이상한 계산은 수치해석 101, 사건과 무작위가 있는 시뮬레이션은 시뮬레이션 101.', [['simulation', null, '시뮬레이션 101'], ['optimization', null, '최적화 101'], ['numerical', null, '수치해석 101']]],
+].map(([t, d, links], i) => `<div class="path"><b>${t}</b><p>${d}</p><div class="go">${links.map(([k, n, lab], j) => k ? A(url(k, n), j === 0 && i !== 1 ? 'btn' : 'btn ghost', lab) : `<a class="btn ${j === 0 ? '' : 'ghost'}" href="${n}">${lab}</a>`).join('')}</div></div>`).join('');
+
+// 카드
+document.getElementById('cards').innerHTML = PAGES.map((p) => {
+  const items = []; let pi = 0;
+  p.steps.forEach((s, i) => {
+    while (pi < p.parts.length && p.parts[pi][0] === i) { items.push(`<li class="partlbl">${p.parts[pi][1]}</li>`); pi++; }
+    if (s) items.push(`<li>${A(url(p.key, i), '', `<b>${i}</b><span>${s}</span>`)}</li>`);
+  });
+  return `<article class="card" style="--c:var(${p.color})">
+    <p class="tag">${p.tag}</p><h3>${p.name}</h3><p class="tagline">${p.tagline}</p>
+    <p class="desc">${p.desc}</p>
+    <div class="meta"><span><b>${stepCount(p)}</b>단계</span>${p.steps[0] ? '<span>+ 0단계 준비</span>' : ''}<span>단계마다 실습</span></div>
+    <div class="chips">${p.topics.map((t) => `<span class="chip">${t}</span>`).join('')}</div>
+    <div class="row">${A(url(p.key, null), 'btn', '열기 ↗')}${A(url(p.key, p.steps[0] ? 0 : 1), 'btn ghost', p.steps[0] ? '0단계부터' : '1단계부터')}</div>
+    <details class="steps"><summary>단계 목록</summary><ol>${items.join('')}</ol></details>
+  </article>`;
+}).join('');
+
+// 읽는 순서
+const pill = (k) => A(url(k, null), 'pill', `<i></i>${P[k].name}`, P[k].color);
+document.getElementById('flow').innerHTML = `
+  <div class="stage"><div class="lbl">기초</div>${pill('calculus')}<p>0~12단계를 먼저. 13~18단계(복소수에서 FFT까지)는 신호나 진동을 다룰 때 펼쳐 보세요.</p></div>
+  <div class="arrow" aria-hidden="true">→</div>
+  <div class="stage"><div class="lbl">두 기둥 (순서 없음)</div>${pill('linear')}${pill('probability')}<p>로봇의 위치·방향·움직임은 선형대수, 센서와 추정은 확률과 통계. 서로 자주 오갑니다.</p></div>
+  <div class="arrow" aria-hidden="true">→</div>
+  <div class="stage"><div class="lbl">심화와 M&amp;S</div>${pill('optimization')}${pill('numerical')}${pill('simulation')}<p>SLAM·IK·MPC를 직접 풀 때는 최적화, 코드가 이상한 답을 낼 때는 수치해석, 사건과 무작위가 있는 시스템을 시뮬레이션할 때는 시뮬레이션 101.</p></div>`;
+
+// 로봇 주제별 표
+const MAP = [
+  ['PID 제어', [['calculus', 5, '미분과 D항'], ['calculus', 10, '적분과 I항'], ['calculus', 4, '지수 이동 평균(D 필터)'], ['linear', 10, '상태공간과 안정성'], ['calculus', 16, '샘플링과 제어 주기']]],
+  ['운동 모델과 시뮬레이션', [['calculus', 3, '삼각함수'], ['linear', 4, '회전'], ['calculus', 12, '미분방정식과 적분기'], ['numerical', 9, '경직 방정식'], ['numerical', 10, '적응 간격과 접촉 순간']]],
+  ['베이즈 필터와 칼만 필터', [['probability', 11, '베이즈 정리'], ['probability', 12, '마르코프 연쇄'], ['probability', 15, '1차원 칼만'], ['probability', 16, '2차원 가우시안'], ['linear', 9, '공분산'], ['calculus', 9, '선형화(EKF)']]],
+  ['파티클 필터', [['probability', 14, '무게 달고 다시 뽑기'], ['probability', 13, '로그 오즈'], ['calculus', 2, '로그'], ['numerical', 2, 'log-sum-exp']]],
+  ['포즈 그래프 SLAM', [['linear', 8, '최소제곱'], ['optimization', 3, '가우스-뉴턴'], ['optimization', 4, '레벤버그-마콰트'], ['optimization', 5, '강건한 손실'], ['linear', 14, '촐레스키와 희소 행렬'], ['probability', 18, 'χ²']]],
+  ['로봇팔과 IK', [['linear', 6, '정기구학'], ['calculus', 6, '연쇄 법칙'], ['linear', 7, '야코비안'], ['linear', 11, '영공간'], ['linear', 12, '특잇값과 특이점'], ['optimization', 9, '관절 한계 IK']]],
+  ['드론 제어와 MPC', [['linear', 15, '3D 회전과 쿼터니언'], ['linear', 16, '행렬 지수'], ['linear', 13, '양의 정부호(LQR)'], ['optimization', 8, '이차 계획법'], ['optimization', 10, 'MPC']]],
+  ['경로 계획', [['calculus', 8, '그래디언트와 퍼텐셜 필드'], ['optimization', 1, '볼록과 국소 최솟값'], ['numerical', 6, '조화 퍼텐셜(반복법)'], ['numerical', 7, '스플라인 궤적']]],
+  ['강화학습과 모방학습', [['calculus', 4, '할인 리턴'], ['probability', 19, '소프트맥스와 온도'], ['calculus', 6, '역전파'], ['calculus', 7, '경사 하강'], ['optimization', 2, '모멘텀과 조건수'], ['numerical', 8, '자동 미분']]],
+  ['M&S: 물류·데이터센터 대기열', [['simulation', 1, '확률적 모형'], ['simulation', 3, '사건 목록'], ['probability', 7, '지수분포와 푸아송 과정'], ['simulation', 4, '입력 모델링'], ['simulation', 5, 'M/M/1과 리틀의 법칙']]],
+  ['M&S: 무작위 입력 만들기', [['probability', 22, '난수와 역변환'], ['probability', 23, '몬테카를로'], ['probability', 25, '색잡음'], ['numerical', 12, '오일러-마루야마']]],
+  ['M&S: 모형 세우기', [['calculus', 19, '위상 평면과 평형점'], ['calculus', 20, '로켓: 질량·대기·항력'], ['simulation', 1, '결정적·확률적 모형'], ['linear', 17, '전이 행렬']]],
+  ['M&S: 실험 계획과 튜닝', [['optimization', 12, '실험 계획과 민감도'], ['optimization', 11, 'SPSA와 CEM'], ['probability', 23, '몬테카를로']]],
+  ['M&S: 연속 시간 시뮬레이터', [['numerical', 11, '심플렉틱 적분'], ['numerical', 13, '구속과 드리프트'], ['numerical', 14, '열 방정식과 CFL'], ['numerical', 15, '수렴 차수 검증']]],
+  ['M&S: 결과 믿기와 설계 비교', [['simulation', 6, '반복과 신뢰구간'], ['probability', 21, 't분포'], ['simulation', 7, '워밍업과 배치 평균'], ['simulation', 8, '공통 난수'], ['simulation', 9, '검증과 확인']]],
+  ['M&S: 위성 군집의 고장과 수리', [['probability', 24, '신뢰도와 이중화'], ['linear', 17, '정상 분포와 평균 고장 시간'], ['linear', 18, '군집 통신망과 합의'], ['simulation', 10, '가용도'], ['simulation', 8, '수리 로봇 수 비교'], ['numerical', 10, '궤도와 적응 간격']]],
+  ['센서와 신호', [['probability', 9, '중심극한정리'], ['calculus', 15, 'DFT'], ['calculus', 16, '샘플링과 앨리어싱'], ['calculus', 18, '필터'], ['numerical', 1, '부동소수점'], ['numerical', 7, '보정표 보간']]],
+];
+document.querySelector('#maptable tbody').innerHTML = MAP.map(([t, list]) => `<tr><td>${t}</td><td><div class="chips">${list.map(([k, n, lab]) => A(url(k, n), 'step', `<i></i>${P[k].name.replace(' 101', '')} ${n} · ${lab}`, P[k].color)).join('')}</div></td></tr>`).join('');
+
+// 단계 찾기
+const INDEX = [];
+PAGES.forEach((p) => p.steps.forEach((s, i) => { if (s) INDEX.push({ key: p.key, n: i, title: s, hay: (s + ' ' + (p.extra[i] || '') + ' ' + p.name).toLowerCase().replace(/\s+/g, '') }); }));
+const q = document.getElementById('q'), res = document.getElementById('results');
+const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+function mark(title, term) { if (!term) return esc(title); const i = title.toLowerCase().indexOf(term); return i < 0 ? esc(title) : esc(title.slice(0, i)) + '<mark>' + esc(title.slice(i, i + term.length)) + '</mark>' + esc(title.slice(i + term.length)); }
+function search() {
+  const raw = q.value.trim().toLowerCase(), t = raw.replace(/\s+/g, '');
+  if (!t) { res.innerHTML = `<p class="hint">여섯 권, ${INDEX.length}개 단계에서 찾습니다.</p>`; return; }
+  const hits = INDEX.filter((e) => e.hay.includes(t));
+  res.innerHTML = hits.length ? hits.slice(0, 40).map((e) => A(url(e.key, e.n), '', `<span class="p">${P[e.key].name} ${e.n}</span><span>${mark(e.title, raw)}</span>`, P[e.key].color)).join('') : `<p class="hint">‘${esc(q.value)}’가 들어간 단계가 없어요. 비슷한 낱말로 바꿔 보세요.</p>`;
+}
+q.addEventListener('input', search);
+document.getElementById('chipbar').innerHTML = ['칼만', '야코비안', '회전', '경사 하강', 'FFT', '최소제곱', '베이즈', '대기행렬', '신뢰구간', 'IK', 'MPC'].map((w) => `<button type="button">${w}</button>`).join('');
+document.getElementById('chipbar').addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { q.value = e.target.textContent; search(); q.focus(); } });
+search();
+</script>
+</body>
+</html>
